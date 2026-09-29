@@ -236,6 +236,14 @@ Homestay/
 
 ## 9. Git
 
-- Nhánh: `main` (chạy được) · `develop` (đang làm) · `feature/<tên>`
+**Repo:** https://github.com/Duongcute2604/HomeStay (private)
+
+- Nhánh chính: `main`
 - Commit **mỗi ngày tối thiểu 1 lần**, theo Conventional Commits.
-- Đẩy lên GitHub (repo private) **hằng ngày**.
+- Đẩy lên GitHub **hằng ngày** — mất máy là mất đồ án.
+
+```powershell
+git add -A
+git commit -m "feat: them chuc nang dat phong theo gio"
+git push
+```

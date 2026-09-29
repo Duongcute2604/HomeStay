@@ -226,6 +226,40 @@ Có 4 ký tự Unicode thật và **không có** ký tự `?` thay thế → fil
 
 ---
 
+## 13. Commit bằng tên/email giả sẽ thành "unverified author" trên GitHub
+
+**Ngày:** 29/09/2026
+**Sai ở đâu:** Mình commit 3 lần bằng `-c user.name="Nguyen Hai Nam" -c user.email="12523w1@student.hcmutrp.edu.vn"`. Trong khi git global của máy là `Duongcute2604 / Namnguyen10072000@gmail.com`.
+
+**Vì sao nguy hiểm:** GitHub **chỉ liên kết commit với tài khoản khi email khớp**. Email không khớp → commit hiện màu xám "Unverified" và **không tính vào contribution graph**. Với đồ án, thầy có thể mở repo xem và thấy tác giả không xác thực.
+
+**Đã sửa (làm trước khi push nên chỉ tốn 1 phút):**
+```powershell
+# 1. Ghi lại cây file để chứng minh không mất nội dung
+git rev-parse 'HEAD^{tree}'        # LƯU KẾT QUẢ
+
+# 2. Sửa author cho toàn bộ lịch sử
+git config user.name  "Duongcute2604"
+git config user.email "Namnguyen10072000@gmail.com"
+git filter-branch -f --env-filter "
+export GIT_AUTHOR_NAME='Duongcute2604'
+export GIT_AUTHOR_EMAIL='Namnguyen10072000@gmail.com'
+export GIT_COMMITTER_NAME='Duongcute2604'
+export GIT_COMMITTER_EMAIL='Namnguyen10072000@gmail.com'
+" -- --all
+
+# 3. Kiểm chứng: cây file phải GIỐNG HỆT
+git rev-parse 'HEAD^{tree}'
+```
+Kết quả: `c90f38d...` **trước = sau** → chỉ đổi metadata, không mất dòng code nào.
+
+**Lần sau tránh gì:**
+> **Không tự đặt `-c user.name/email` khi commit.** Để git lấy tự động từ config có sẵn (`git config --global user.email`).
+> Lỡ commit sai mà **chưa push** → sửa rẻ như trên. **Đã push rồi** thì phải `force-push`, lịch sử cũ biến mất khỏi remote.
+> → Vì vậy: **lần push đầu tiên cũng phải kiểm tra identity trước.**
+
+---
+
 # MẪU GHI BÀI HỌC (copy để dùng)
 
 ```markdown

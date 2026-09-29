@@ -75,13 +75,23 @@ git reset --hard HEAD~1              # xoá hẳn commit (chỉ khi chưa đẩy
 
 ---
 
-## D. Rule 10 — Việc đang nợ
+## D. Rule 10 — GitHub
 
 | Việc | Trạng thái |
 |------|-----------|
 | `git init` trong `Homestay` | ✅ xong |
-| Commit hằng ngày | ✅ 2 commit |
-| **Tạo repo private trên GitHub + push** | ❌ **CHƯA LÀM** |
-| Bật push tự động mỗi ngày | ❌ chưa |
+| Commit hằng ngày | ✅ đang thực hiện |
+| Tạo repo private + push | ✅ **xong 29/09** → https://github.com/Duongcute2604/HomeStay |
+| Tên/email commit trùng tài khoản GitHub | ✅ đã sửa cả 3 commit cũ, có kiểm chứng cây file không đổi |
 
-> Mất máy / hỏng ổ cứng = mất toàn bộ đồ án. Repo private miễn phí, đẩy lên mất 30 giây.
+**Cách đẩy từ giờ — chỉ 2 lệnh** (nhánh `main` đã làm mặc định):
+
+```powershell
+git add -A
+git commit -m "feat: them chuc nang dat phong theo gio"
+git push
+```
+
+> Lần sau không cần khai báo lại remote, không cần chỉ định `-u`.
+
+**Trước mỗi lần push nhớ:** chạy `git status` xem có file lạ lọt vào không (xem `AGENTS.md` mục 0.3).
