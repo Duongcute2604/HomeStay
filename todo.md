@@ -321,6 +321,87 @@ dotnet run            Now listening on: http://localhost:5080  (không có fail/
 
 **Ước lượng thực tế:** Backend ~2,5 giờ (đúng dự kiến) · Giao diện ~3 giờ (dự kiến 2 giờ, vượt vì phải sửa 3 lỗi phát hiện khi test tay). Tổng Bước 5: **~5,5 giờ**.
 
+
+#### PHẦN 3 — UNIT TEST GIAO DIỆN (lượt 30/09/2026) · Vitest · **60/60 pass**
+
+**Vì sao làm thêm phần này:** 147 unit test backend không bảo vệ được tầng giao diện,
+và kiểm thử tay cũng không với tới được phần xử lý 401. Cài Vitest là để đóng đúng
+khoảng trống đó.
+
+**Phiên bản — chọn có căn cứ, không đoán (bài học `lessons.md` mục 9):**
+
+| Package | Phiên bản | Căn cứ chọn |
+|---------|-----------|------------|
+| `vitest` | 2.1.9 | `dependencies.vite: ^5.0.0` — khớp đúng Vite 5.4.8 của dự án. **`vitest` 4.x và 5.x đòi Vite 6+ nên bị loại** dù là bản mới nhất |
+| `jsdom` | 26.1.0 | `engines.node: >=18`, máy đang dùng Node 24 |
+| `@testing-library/react` | 16.3.3 | `peerDependencies` chấp nhận React 18; cần `@testing-library/dom ^10` |
+| `@testing-library/dom` | 10.4.2 | Bản mới nhất trong major 10, khớp peer của RTL 16 |
+| `@testing-library/jest-dom` | 6.9.1 | Cài 6.10.0 trước, npm cảnh báo *"Incorrect minor release with breaking changes"* và chỉ định dùng 6.9.1 → đã hạ xuống 6.9.1 |
+
+> Không cài `@testing-library/user-event` vì không test nào cần gõ phím vào ô — giữ
+> đúng nguyên tắc YAGNI của `AGENTS.md` 3.4.
+
+**5 file test · 60 ca · 5,8 giây:**
+
+| File test | Số ca | Bảo vệ cái gì |
+|-----------|-------|---------------|
+| `schemas/authSchemas.test.ts` | 25 | Toàn bộ quy tắc kiểm dữ liệu: độ dài tối thiểu/tối đa, mật khẩu xác nhận khớp, lỗi gắn đúng ô. Gồm ca **"email sai định dạng thì KHÔNG báo lỗi"** để canh chỗ không ai thêm regex ở giao diện |
+| `api/client.interceptor.test.ts` | 13 | Tầng xử lý 401: gắn token vào header, 400/403/404/409 để nguyên thông báo gốc, 401 thì refresh rồi thử lại bằng token **mới**, gom nhiều request 401 về 1 lần gọi refresh, cờ chống vòng lặp, 3 kiểu không refresh được đều phải xoá phiên |
+| `services/authService.test.ts` | 10 | Ranh giới **endpoint có data / không có data**. 2 ca `dangXuat` và `doiMatKhau` được viết để **đỏ nếu ai đó gộp `bocDuLieu` với `kiemTraThanhCong` trở lại** |
+| `api/client.test.ts` | 6 | `layThongBaoLoi`: 4 nhánh — có body / không có response / lỗi nội bộ / không phải `Error` |
+| `components/ProtectedRoute.test.tsx` | 6 | Chặn trang: chưa đăng nhập, khách vào trang yêu cầu ADMIN, admin vào được, và thứ tự hai nhánh chặn |
+
+**Bằng chứng:**
+
+| Hạng mục | Kết quả |
+|----------|---------|
+| `npm test` | `Test Files 5 passed (5)` · `Tests 60 passed (60)` · 5,58 s |
+| `npm run build` | `✓ 167 modules transformed` — 0 lỗi TypeScript (kể cả trong file test) |
+| `npm run lint` | sạch |
+| `dotnet test` | 147/147 — không hỏng gì |
+| Test tay trình duyệt | 3/3 kịch bản sau khi tách schema: HP (đăng nhập) · EC (mật khẩu 5 ký tự + xác nhận không khớp) · AB (email trùng → 409 hiện đúng) |
+| Ca H2 của kiểm thử tay | **Đã đóng** bằng 13 unit test — xem `docs/KIEM_THU_TAY.md` mục 1B |
+
+**Lỗi thật do unit test phát hiện (đã sửa):**
+
+| Lỗi | Vì sao kiểm thử tay không thấy | Đã sửa |
+|------|----------------------------|--------|
+| `lamMoiToken()` nhánh không có refresh token chỉ `return false`, **quên `xoaPhien()`** | Phải tạo ra trạng thái "có access token nhưng không có refresh token" — bình thường không xảy ra, và cả 51 ca kiểm thử tay phía API lẫn 18 ca trình duyệt đều không đụng tới | Thêm `xoaPhien()`. Không có nó thì `daDangNhap` vẫn `true`, `ProtectedRoute` vẫn cho vào trang nhưng mọi request đều 401 — người dùng bị kẹt ở trang không dùng được mà không hiểu vì sao |
+
+**Tách bạch kèm theo — bắt buộc để test được, không phải refactor để đẹp:**
+
+Các Zod schema trước đó nằm **ngay trong component** (`Login.tsx`, `Register.tsx`,
+`Profile.tsx`) nên không test được. Đã gom ra `src/schemas/authSchemas.ts`. Ba lý do
+ghi ngay đầu file đó:
+
+1. **Test được** — hàm thuần, kiểm trực tiếp, không cần dựng trang (`AGENTS.md` 5.2).
+2. **Không lặp** — quy tắc "họ tên tối đa 100 ký tự" nằm ở cả trang đăng ký lẫn trang
+   hồ sơ; "mật khẩu 6–100 ký tự" nằm ở cả đăng ký lẫn đổi mật khẩu. Sửa một chỗ
+   là phải sửa cả hai, và sửa sót thì hai màn hình báo hai kiểu (DRY).
+3. **Một chỗ đối chiếu với server** — mọi số lấy từ `AuthDtos.cs`, đọc một file là biết
+   giao diện cho phép bao nhiêu ký tự, không phải mở 3 file trang.
+
+**Cấu hình đã thêm:**
+
+| File | Nội dung |
+|------|----------|
+| `vite.config.ts` | `test` block; `defineConfig` chuyển từ `vite` sang `vitest/config` vì bản của Vite không khai báo trường `test` |
+| `src/test/vitest.setup.ts` | Đăng ký matcher của jest-dom, `cleanup()` và xoá `localStorage` sau mỗi test |
+| `package.json` | Thêm `"test": "vitest run"` và `"test:watch": "vitest"` |
+
+**7 cảnh báo `npm audit` — CỐ Ý KHÔNG NÂNG PHIÊN BẢN, đã ghi rõ để bạn quyết:**
+
+| Package | Mức | Nội dung | Vì sao không nâng |
+|---------|-----|----------|------------------|
+| `vitest` | critical | Đọc / chạy file tùy ý khi bật Vitest UI server | Bản vá nằm ở 5.x, mà 5.x đòi Vite 6+ |
+| `vite` | high | Path traversal, `server.fs.deny` bypass trên Windows, NTLM hash disclosure | 5.4.21 **đã là bản mới nhất trong major 5** |
+| `esbuild` | moderate | Website bất kỳ gửi request tới dev server | Cùng lý do |
+| `react-router` / `react-router-dom` | moderate | Open redirect qua dấu `\` trong `<Link>` / `useNavigate` | 6.30.6 **đã là bản mới nhất trong major 6**, bản vá nằm ở 7.x |
+
+Đánh giá rủi ro thực tế: `vite`, `esbuild`, `vitest` chỉ ảnh hưởng **máy phát triển của
+tôi**, không nằm trong gói build đưa lên máy chủ. Lỗi `react-router` là lỗi runtime
+nhưng dự án **không nhận đường dẫn từ người dùng** (không có `?redirect=` hay dữ liệu
+từ query string) nên không có cách kích hoạt. Vẫn cần nói rõ với GVHD nếu hỏi tới.
 ---
 
 ## Giai đoạn 3 — Khách tìm kiếm & xem

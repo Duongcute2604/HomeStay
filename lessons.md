@@ -775,3 +775,145 @@ cũ: token **không hỏng**, server trả 200, và ca đó báo FAIL.
 > 4. **PowerShell 5.1 không hỗ trợ chỉ số âm trên `String`** (`$s[-1]` trả `$null`), chỉ
 >    hỗ trợ trên mảng. PowerShell 7 thì có — cùng một dòng code, hai kết quả khác
 >    nhau tuỳ phiên bản.
+## 30. `vi.mock` bị nâng lên đầu file, nên không được tham chiếu biến cấp module
+
+**Biểu hiện:** test viết đúng ý, chạy thì báo:
+
+```
+Error: [vitest] There was an error when mocking a module. If you are using
+"vi.mock" factory, make sure there are no top level variables inside, since this
+call is hoisted to top of the file.
+Caused by: ReferenceError: Cannot access 'mockPost' before initialization
+```
+
+**Vì sao sai:** `vi.mock(...)` được Vitest **nâng (hoist) lên trước cả các `import`**
+để đảm bảo mock kịp sẵn sàng trước khi module được nạp. Hệ quả là hàm trả về
+(factory) của nó chạy ở vị trí đó, nên không nhìn thấy `const mockPost = vi.fn()`
+khai báo ở giữa file — biến chưa khởi tạo.
+
+**Đã sửa:** bọc các biến trong `vi.hoisted`, hàm này tạo chúng **ở đúng vị trí được
+nâng lên**:
+
+```ts
+const { mockPost, mockGet, mockPut } = vi.hoisted(() => ({
+  mockPost: vi.fn(),
+  mockGet: vi.fn(),
+  mockPut: vi.fn(),
+}))
+
+vi.mock('../api/client', () => ({
+  apiClient: { post: mockPost, get: mockGet, put: mockPut },
+}))
+```
+
+**Lần sau tránh thế nào:**
+
+> 1. **Gặp lỗi "before initialization" trong test là do `vi.mock`**, không phải do
+>    vòng lặp import. Kiểm tra ngay: biến có nằm trong factory không.
+> 2. **`vi.hoisted` là lời giải chuẩn** cho mọi biến mà factory cần dùng.
+> 3. Cách còn lại là định nghĩa mock ngay trong factory, nhưng khi đó test không
+>    truy cập được vào chúng để `expect(...).toHaveBeenCalled()`. Với mock cần
+>    kiểm tra thì `vi.hoisted` là lựa chọn đúng.
+
+## 31. Chặn mạng bằng `adapter` của axios, đừng gọi tay hàm xử lý lỗi
+
+**Bài toán:** test phải chứng minh "401 thì tự làm mới token rồi thử lại request".
+
+**Cách làm sai:** lấy trực tiếp hàm xử lý lỗi trong interceptor rồi gọi tay
+(`apiClient.interceptors.response.handlers[0].rejected(loiGia)`).
+
+**Vì sao không nên:** cách đó bỏ qua chính xác thứ mình muốn kiểm. Lỗi "không gắn
+cờ đã thử lại" chỉ xảy ra khi request thật sự đi qua `apiClient(config)` một lần
+nữa — gọi tay hàm thì không có vòng đi qua lại đó, nên code có vòng lặp vô hạn
+vẫn xanh.
+
+**Cách đúng:** thay tầng thực thi của axios, giữ nguyên toàn bộ chuỗi interceptor:
+
+```ts
+const adapterGoc = apiClient.defaults.adapter   // nhớ giữ lại để trả sau mỗi test
+
+apiClient.defaults.adapter = async (config) => {
+  throw loiTuMayChu(config, 401, null)          // giả lập token hết hạn
+}
+```
+
+**Bài học:**
+
+> 1. **Test tầng trung gian thì thay tầng dưới, đừng gọi tay tầng giữa.** Thay
+>    `adapter` giữ được cả request-interceptor lẫn response-interceptor, và cả
+>    đường thử lại qua `apiClient(config)`.
+> 2. **Phải trả lại `apiClient.defaults.adapter` gốc sau mỗi test** (`afterEach`),
+>    nếu không test này để lại adapter giả và test sau chạy trên nền giả — loại
+>    rò trạng thái âm thầm khó nhất.
+> 3. **Kiểu của adapter phải lấy từ axios**: `AxiosAdapter` và
+>    `Parameters<AxiosAdapter>[0]`. Tự khai `config: { headers?: ... }` sẽ hỏng
+>    `tsc` vì `config.headers` của axios là bắt buộc, không phải tuỳ chọn.
+> 4. Thông báo tiếng Việt của server nằm ở **`error.response.data.message`**, KHÔNG
+>    phải ở `error.message`. Dùng `await expect(...).rejects.toThrow('thông báo')`
+>    sẽ **luôn đỏ dù code đúng** — phải bắt lỗi ra rồi tự kiểm
+>    `(loi as AxiosError<T>).response?.data.message`.
+
+## 32. `noUnusedLocals` bắt được code chết ngay lúc viết test
+
+**Biểu hiện:** `tsc -b` báo
+
+```
+src/api/client.interceptor.test.ts(71,10): error TS6133: 'adapterThanhCong' is
+declared but its value is never read.
+```
+
+**Vì sao xảy ra:** viết helper `adapterThanhCong()` xong thấy hai chỗ gọi đều cần
+ghi thêm thao tác (bắt header vào biến) nên tạm viết inline, quên xoá helper.
+
+**Đã sửa:** xoá hẳn, không giữ "có thể dùng sau này" — `AGENTS.md` 3.4 cấm code
+thừa cho tương lai, và `noUnusedLocals` trong `tsconfig.app.json` là công cụ bắt
+việc này. Cùng lúc đó `npm run lint` cũng báo `no-unused-vars` — hai cổng kiểm
+trùng nhau là cố ý.
+
+**Bài học:**
+
+> 1. **Hai cổng kiểm (TypeScript + ESLint) cùng báo một lỗi là bình thường** —
+>    không phải cấu hình thừa. Xem lỗi của cả hai, sửa một lần.
+> 2. **Test file cũng phải qua `tsc -b` và `eslint`** vì chúng nằm trong `src`.
+>    Đây là lợi thế của việc đặt test cạnh file được kiểm thử: không phải cấu
+>    hình thêm gì, quy tắc cũ áp dụng luôn.
+> 3. **Viết xong test phải chạy cả ba lệnh**: `npm test`, `npm run build`,
+>    `npm run lint`. Chỉ chạy `npm test` thì lọt các lỗi kiểu và biến thừa.
+
+## 33. Test phát hiện lỗi thật: nhánh `return false` mà quên dọn trạng thái
+
+**Biểu hiện:** test `KhongCoRefreshToken_KhongGoiApi_RejectVaXoaPhien` đỏ:
+
+```
+AssertionError: expected 'token-het-han' to be null
+```
+
+**Nguyên nhân gốc:** trong `lamMoiToken()` của `api/client.ts`:
+
+```ts
+if (!refreshToken) {
+  return false          // ← quên gọi xoaPhien()
+}
+```
+
+Nhánh `catch` bên dưới thì có gọi `xoaPhien()`, còn nhánh này thì không. Hậu quả:
+`accessToken` đã hết hạn vẫn còn trong store, nên `daDangNhap` vẫn `true`,
+`ProtectedRoute` vẫn cho khách vào trang — nhưng mọi request sau đó đều 401.
+Người dùng bị **kẹt ở một trang không dùng được mà không hiểu vì sao**, thay vì
+được đưa về trang đăng nhập.
+
+**Đã sửa:** thêm `xoaPhien()` vào nhánh đó.
+
+**Bài học:**
+
+> 1. **Khi một hàm có nhiều nhánh "thất bại", mỗi nhánh phải dọn trạng thái như
+>    nhau.** Nhánh nào quên là nhánh đó để lại dữ liệu nửa vời.
+> 2. **Trạng thái "đã đăng nhập" được suy ra từ `accessToken`**, nên giữ lại token
+>    chết tệ hơn xoá hẳn. Khi đã hết cách gia hạn thì cách duy nhất đúng là
+>    coi như chưa đăng nhập.
+> 3. **Lỗi này 147 unit test backend không bắt được vì nằm ở tầng client**, và
+>    kiểm thử tay cũng khó bắt vì cần tạo ra trạng thái "có access token nhưng
+>    không có refresh token" — điều mà bình thường không xảy ra. Test tạo được
+>    trạng thái đó trong 5 dòng.
+> 4. Đây là ca thứ hai cho thấy **kiểm thử tay không thay thế được unit test**:
+>    lần trước là `bocDuLieu`, lần này là `lamMoiToken`.

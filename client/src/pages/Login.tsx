@@ -1,32 +1,24 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
-import { z } from 'zod'
 
 import { layThongBaoLoi } from '../api/client'
 import Button from '../components/common/Button'
 import FormMessage from '../components/common/FormMessage'
 import Input from '../components/common/Input'
 import { useAuth } from '../hooks/useAuth'
+import { schemaDangNhap } from '../schemas/authSchemas'
+import type { DangNhapForm } from '../schemas/authSchemas'
 
 /**
- * Quy tắc kiểm tra ở giao diện.
+ * Quy tắc kiểm tra ở giao diện nằm ở `schemas/authSchemas.ts` — lý do tách
+ * (test được, không lặp giữa 3 màn hình) ghi ngay đầu file đó.
  *
- * Ghi rõ "phải báo lỗi ở đây" chứ không phải chờ server trả lỗi, vì server chỉ
- * kiểm khi bấm nút — người dùng phải điền hết form mới biết mật khẩu quá ngắn.
- *
- * Email cố tình CHỈ kiểm rỗng, không kiểm định dạng: backend dùng `EmailValidator`
- * và trả **409** cho cả email sai định dạng lẫn email trùng (quyết định đã
- * chốt ở Bước 5). Nếu ở đây bắt sai định dạng thì thông báo và mã lỗi sẽ
- * lệch với server — giao diện và API nói hai kiểu.
+ * Ở đây CHỈ kiểm "bắt buộc nhập", còn lại để server trả lỗi: server chỉ kiểm khi
+ * bấm nút, nên nếu bắt quá nhiều ở giao diện thì giao diện và API sẽ nói hai
+ * kiểu cho cùng một thao tác. Email cố tình không kiểm định dạng vì backend
+ * trả **409** cho cả email sai định dạng lẫn email trùng.
  */
-const schema = z.object({
-  email: z.string().min(1, 'Vui lòng nhập email'),
-  password: z.string().min(1, 'Vui lòng nhập mật khẩu'),
-})
-
-// Kiểu form suy ra thẳng từ schema, không khai tay 2 lần (AGENTS.md mục 7.2).
-type LoginForm = z.infer<typeof schema>
 
 export default function Login(): JSX.Element {
   const { dangNhap, dangXuLy, daDangNhap } = useAuth()
@@ -38,8 +30,8 @@ export default function Login(): JSX.Element {
     handleSubmit,
     setError,
     formState: { errors },
-  } = useForm<LoginForm>({
-    resolver: zodResolver(schema),
+  } = useForm<DangNhapForm>({
+    resolver: zodResolver(schemaDangNhap),
     defaultValues: { email: '', password: '' },
   })
 
@@ -48,7 +40,7 @@ export default function Login(): JSX.Element {
     return <Navigate to="/" replace />
   }
 
-  const xuLyPhatSubmit = async (duLieu: LoginForm): Promise<void> => {
+  const xuLyPhatSubmit = async (duLieu: DangNhapForm): Promise<void> => {
     const loi = await dangNhap(duLieu)
 
     if (loi) {

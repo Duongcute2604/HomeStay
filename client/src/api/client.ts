@@ -54,6 +54,12 @@ async function lamMoiToken(): Promise<boolean> {
   const { refreshToken, datPhien, xoaPhien } = useAuthStore.getState()
 
   if (!refreshToken) {
+    // Cũng phải xoá phiên chứ không chỉ `return false`. Nếu giữ lại
+    // `accessToken` đã hết hạn thì giao diện vẫn tưởng đang đăng nhập
+    // (`daDangNhap` = true, ProtectedRoute vẫn cho qua) nhưng mọi request sau
+    // đều 401 — người dùng bị kẹt ở một trang không dùng được mà không hiểu vì
+    // sao. Xoá phiên thì họ được đưa về trang đăng nhập, thấy nguyên nhân.
+    xoaPhien()
     return false
   }
 

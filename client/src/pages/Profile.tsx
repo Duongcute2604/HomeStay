@@ -2,42 +2,20 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useNavigate } from 'react-router-dom'
-import { z } from 'zod'
 
 import { layThongBaoLoi } from '../api/client'
 import Button from '../components/common/Button'
 import FormMessage from '../components/common/FormMessage'
 import Input from '../components/common/Input'
 import { useAuth } from '../hooks/useAuth'
+import { schemaDoiMatKhau, schemaHoSo } from '../schemas/authSchemas'
+import type { DoiMatKhauForm, HoSoForm } from '../schemas/authSchemas'
 import { UserRole } from '../types/auth'
 
-/** Giới hạn độ dài khớp với `UpdateProfileRequest` bên server. */
-const schemaHoSo = z.object({
-  fullName: z
-    .string()
-    .min(1, 'Vui lòng nhập họ và tên')
-    .max(100, 'Họ và tên không được vượt quá 100 ký tự'),
-  phoneNumber: z.string().max(15, 'Số điện thoại không được vượt quá 15 ký tự'),
-  address: z.string().max(255, 'Địa chỉ không được vượt quá 255 ký tự'),
-})
-
-/** Mật khẩu mới 6–100 ký tự, khớp `ChangePasswordRequest` bên server. */
-const schemaMatKhau = z
-  .object({
-    currentPassword: z.string().min(1, 'Vui lòng nhập mật khẩu hiện tại'),
-    newPassword: z
-      .string()
-      .min(6, 'Mật khẩu mới phải có ít nhất 6 ký tự')
-      .max(100, 'Mật khẩu không được vượt quá 100 ký tự'),
-    confirmNewPassword: z.string().min(1, 'Vui lòng nhập lại mật khẩu mới'),
-  })
-  .refine((duLieu) => duLieu.newPassword === duLieu.confirmNewPassword, {
-    path: ['confirmNewPassword'],
-    message: 'Mật khẩu xác nhận không khớp',
-  })
-
-type HoSoForm = z.infer<typeof schemaHoSo>
-type MatKhauForm = z.infer<typeof schemaMatKhau>
+/**
+ * Quy tắc kiểm tra của hai form bên dưới nằm ở `schemas/authSchemas.ts` —
+ * lý do tách ghi ngay đầu file đó.
+ */
 
 /** Nhãn hiển thị cho quyền, dùng chung ở cả phần thông tin và phần kết quả. */
 const NHAN_QUYEN: Record<UserRole, string> = {
@@ -59,8 +37,8 @@ export default function Profile(): JSX.Element {
     },
   })
 
-  const formMatKhau = useForm<MatKhauForm>({
-    resolver: zodResolver(schemaMatKhau),
+  const formMatKhau = useForm<DoiMatKhauForm>({
+    resolver: zodResolver(schemaDoiMatKhau),
     defaultValues: { currentPassword: '', newPassword: '', confirmNewPassword: '' },
   })
 
@@ -86,7 +64,7 @@ export default function Profile(): JSX.Element {
     setThongBao('Đã cập nhật hồ sơ thành công.')
   }
 
-  const xuLyDoiMatKhau = async (duLieu: MatKhauForm): Promise<void> => {
+  const xuLyDoiMatKhau = async (duLieu: DoiMatKhauForm): Promise<void> => {
     setThongBao(null)
     const loi = await doiMatKhau(duLieu)
 

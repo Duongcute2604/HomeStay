@@ -1,54 +1,22 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
-import { z } from 'zod'
 
 import { layThongBaoLoi } from '../api/client'
 import Button from '../components/common/Button'
 import FormMessage from '../components/common/FormMessage'
 import Input from '../components/common/Input'
 import { useAuth } from '../hooks/useAuth'
+import { schemaDangKy } from '../schemas/authSchemas'
+import type { DangKyForm } from '../schemas/authSchemas'
 import { useAuthStore } from '../store/authStore'
 
 /**
- * Quy tắc kiểm ở giao diện cho form đăng ký.
- *
- * Cố ý chỉ kiểm "bắt buộc nhập" và "độ dài tối đa" — đúng những thứ backend
- * đã chốt trong `AuthDtos.cs`:
- *
- * - `FullName` tối đa 100 ký tự · `Email` tối đa 150 · `Password` 6–100 ký tự
- * - `PhoneNumber` tối đa 15 · `Address` tối đa 255
- *
- * Không kiểm định dạng email ở đây: backend dùng `EmailValidator` và trả 409
- * cho cả email sai định dạng lẫn email trùng. Thêm regex phía giao diện sẽ khiến
- * hai tầng báo hai kiểu lỗi khác nhau cho cùng một thao tác.
+ * Quy tắc kiểm tra nằm ở `schemas/authSchemas.ts` — lý do tách ghi ngay đầu
+ * file đó. Ở đây KHÔNG kiểm định dạng email: backend trả 409 cho cả email sai
+ * định dạng lẫn email trùng. Thêm regex ở giao diện sẽ khiến hai tầng báo hai
+ * kiểu lỗi khác nhau cho cùng một thao tác.
  */
-const schema = z
-  .object({
-    fullName: z
-      .string()
-      .min(1, 'Vui lòng nhập họ và tên')
-      .max(100, 'Họ và tên không được vượt quá 100 ký tự'),
-    email: z
-      .string()
-      .min(1, 'Vui lòng nhập email')
-      .max(150, 'Email không được vượt quá 150 ký tự'),
-    password: z
-      .string()
-      .min(6, 'Mật khẩu phải có ít nhất 6 ký tự')
-      .max(100, 'Mật khẩu không được vượt quá 100 ký tự'),
-    confirmPassword: z.string().min(1, 'Vui lòng nhập lại mật khẩu'),
-    phoneNumber: z.string().max(15, 'Số điện thoại không được vượt quá 15 ký tự'),
-    address: z.string().max(255, 'Địa chỉ không được vượt quá 255 ký tự'),
-  })
-  .refine((duLieu) => duLieu.password === duLieu.confirmPassword, {
-    // Gắn lỗi vào `confirmPassword` chứ không phải `root` để nó hiện ngay
-    // dưới ô xác nhận — người dùng nhìn thấy chỗ vừa gõ sai.
-    path: ['confirmPassword'],
-    message: 'Mật khẩu xác nhận không khớp',
-  })
-
-type RegisterForm = z.infer<typeof schema>
 
 export default function Register(): JSX.Element {
   const { dangKy, dangXuLy, daDangNhap } = useAuth()
@@ -63,8 +31,8 @@ export default function Register(): JSX.Element {
     handleSubmit,
     setError,
     formState: { errors },
-  } = useForm<RegisterForm>({
-    resolver: zodResolver(schema),
+  } = useForm<DangKyForm>({
+    resolver: zodResolver(schemaDangKy),
     defaultValues: {
       fullName: userHienTai?.fullName ?? '',
       email: userHienTai?.email ?? '',
@@ -79,7 +47,7 @@ export default function Register(): JSX.Element {
     return <Navigate to="/" replace />
   }
 
-  const xuLyPhatSubmit = async (duLieu: RegisterForm): Promise<void> => {
+  const xuLyPhatSubmit = async (duLieu: DangKyForm): Promise<void> => {
     const loi = await dangKy({
       fullName: duLieu.fullName,
       email: duLieu.email,

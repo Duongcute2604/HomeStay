@@ -200,12 +200,16 @@
 | 3.5 | Kiểm tra quy tắc hiển thị bất biến | KHÔNG lộ `Id` nội bộ ở bất kỳ trang nào | Trang hồ sơ chỉ có email / quyền / ngày tạo, không có Id | ✅ |
 | 3.6 | Theo dõi console trình duyệt khi thao tác | Không có cảnh báo / lỗi | 0 warning, 0 error (đã tắt 2 cảnh báo React Router bằng cờ `future`) | ✅ |
 
-**2 ca hoãn — có lý do rõ ràng, không bỏ sót**
+**1 ca hoãn + 1 ca đã chuyển sang unit test — đều có lý do rõ ràng, không bỏ sót**
 
 | # | Kịch bản | Vì sao chưa làm | Khi nào làm |
 |---|----------|-----------------|------------|
 | H1 | Khách gõ thẳng URL `/admin` | **Chưa có route `/admin`** — trang quản trị thuộc Bước 14. `ProtectedRoute` đã sẵn sàng nhận tham số `yeuCauQuyen={UserRole.ADMIN}` | Bước 14 |
-| H2 | Token hết hạn giữa chừng, tự refresh | Cần sửa `localStorage` để ép access token hết hạn; công cụ kiểm thử trình duyệt ở đây không cho chạy lệnh trong trang. Phía server đã kiểm chứng ở mục 1A (refresh trả token **khác** token cũ) | Bước 14, khi có màn hình liên tục gọi API |
+| H2 | Token hết hạn giữa chừng, tự refresh | ~~Cần sửa `localStorage` để ép access token hết hạn; công cụ kiểm thử trình duyệt ở đây không cho chạy lệnh trong trang~~ → **ĐÃ ĐƯỢC KIỂM CHỨNG BẰNG UNIT TEST** (30/09, lượt cài vitest): `client/src/api/client.interceptor.test.ts` có 13 ca cho đúng phần này, gồm refresh thành công rồi thử lại bằng token mới, 3 request 401 cùng lúc chỉ gọi refresh **1 lần**, thử lại vẫn 401 thì không refresh lần nữa, và cả 3 kiểu không refresh được đều phải xoá phiên. Phía server đã kiểm chứng ở mục 1A | **Xong** — không còn là khoảng trống |
+
+> **Ghi chú:** ca H2 vẫn nên thử tay thêm một lần ở Bước 14 khi có màn hình liên tục
+> gọi API, vì lúc đó sẽ quan sát được hành vi thật (đang ở trang nào thì bị đưa về
+> đâu) chứ không chỉ logic bên trong interceptor.
 
 > **Ca "đăng ký có tham số `role: ADMIN`" đã bỏ khỏi bảng, không phải quên:** form đăng ký
 > không có ô nhập quyền nên giao diện không thể gửi `role` lên. Trường hợp này đã kiểm
