@@ -156,6 +156,10 @@ git status               # kiểm tra có file rác/ file nhạy cảm bị lỡ
 
 ## 0.4. THỰC HÀNH TỪ BÀI VIẾT "VIBE CODING" — 4 QUY TẮC BỔ SUNG
 
+> Bản tra cứu ngắn 12 rules + chỗ áp dụng: [`docs/12_QUY_TAC_VIBE_CODING.md`](./docs/12_QUY_TAC_VIBE_CODING.md)
+>
+> ⚠️ **AI này KHÔNG đọc được ảnh.** Khi cần ngữ cảnh giao diện/lỗi, phải **dán log Console hoặc JSON response** — chi tiết ở file trên mục A.
+
 ### a) `README.md` là đặc tả sống, chỉ tối đa 5 mốc
 - Mỗi mốc = **một chức năng chạy được** mà bạn có thể mở trình duyệt thấy ngay.
 - Không chia nhỏ hơn mức đó — mốc quá nhỏ thì không kiểm chứng được.
@@ -598,6 +602,24 @@ chore: them index cho bang booking
 ```
 - Không commit file nhạy cảm: `.env`, `appsettings.Production.json`, `secrets.json`.
 - Đẩy lên GitHub (private repo) **hằng ngày** — để mất máy không mất đồ án.
+
+### 8.1 Đừng ngần ngại hoàn trả lại
+AI sửa code làm hỏng ứng dụng, hoặc đi vào vòng lặp sửa lỗi không ra — **quay lui ngay**, đừng cố.
+
+```powershell
+git log --oneline                 # xem đã commit gì
+git diff HEAD~1                   # xem 1 commit vừa rồi đổi gì
+git revert <mã-commit>            # hoàn tác 1 commit, GIỮ lịch sử
+git reset --hard HEAD~1           # xoá hẳn commit — chỉ khi CHƯA push
+```
+
+| Tình huống | Dùng |
+|---|---|
+| Commit chưa push lên GitHub | `git reset --hard HEAD~1` |
+| **Đã push lên GitHub rồi** | **`git revert`** (không xoá lịch sử) |
+
+> `revert` an toàn hơn: giữ lại lịch sử cho thấy bạn đã thử và đã sửa, thay vì giấu lỗi đi.
+> **Sửa lại code rác trong 1 giờ tốt hơn một đồ án không chạy được.**
 
 ---
 
