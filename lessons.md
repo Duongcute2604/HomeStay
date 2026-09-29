@@ -499,3 +499,37 @@ string thongBao = /* lấy ErrorMessage tiếng Việt đầu tiên */ ;
 
 **Lần sau tránh gì:**
 > Khi cần biết framework xử lý thế nào thì **cứ log ra xem, đoán là tốn thời gian hơn**. Bật log chẩn đoán tạm thời, chạy vài request, đọc log, rồi **xoá đoạn chẩn đoán** — quên xoá là nợ kỹ thuật.
+
+---
+
+## 24. `git rm --cached` + `git rebase` = mất file secret khỏi ổ đĩa
+
+**Ngày:** 30/09/2026
+
+**Sai ở đâu:** Muốn đưa `appsettings.Development.json` (chứa khoá ký JWT thật) ra khỏi git:
+
+```
+1. Thêm vào .gitignore          -> file VẪN còn trong git, vì file đã được track từ trước
+2. git rm --cached <file>       -> index bỏ theo dõi, file VẪN còn trên ổ đĩa  (đúng ý)
+3. git add -A && git commit     -> commit ghi lại "xoá file"
+4. git push                     -> BỊ TỪ CHỐI, vì trên GitHub có commit bạn tự sửa README từ trước
+5. git rebase origin/main       -> checkout lại cây mới
+```
+
+Sau bước 5, **file secret bi xoá khỏi ổ đĩa** — vì commit của mình ghi "file này không tồn tại", nên `rebase` checkout cây đó là mất file. Chạy `dotnet run` thì sập:
+
+```
+Unhandled exception. System.InvalidOperationException: Thiếu khối cấu hình 'Jwt' trong appsettings
+   at Program.<Main>$(String[] args) in ...\Program.cs:line 118
+```
+
+**Vì sao nguy hiểm:** `git status` vẫn sạch, `git push` thành công, không có gì báo sai. Mất file chỉ lộ ra khi chạy app. Và file đó là **secret** — mất nó thì phải sinh lại, mà sinh lại thì mọi token đang có cũng hỏng.
+
+**Đã sửa:** tạo lại file từ bản commit gần nhất có nó (`git show <commit>:<path>`), ghi khoá cũ vào lại.
+
+**Lần sau tránh gì:**
+> 1. `.gitignore` **chỉ có tác dụng với file chưa từng được track**. Muốn gỡ file đã track thì bắt buộc `git rm --cached`.
+> 2. Sau `git rm --cached`, **kiểm tra lại bằng `git status`** — trước khi commit, phải thấy đúng 1 dòng `D` cho file đó, và **phải chạy app thử lại** trước khi push.
+> 3. **Đừng rebase khi đang dở dang việc dùng file local.** Nếu buộc phải rebase, làm nó **trước** khi commit, hoặc chuẩn bị sẵn bản sao file secret ra chỗ khác (`$env:TEMP`).
+> 4. Khi app không khởi động được, **đọc dòng lỗi đầu tiên** trước. Ở đây lỗi nói thẳng "Thiếu khối cấu hình 'Jwt'" — đủ để biết ngay là thiếu file cấu hình, không cần đoán.
+> 5. Lưu khoá bí mật ra **nhiều nơi hơn một** chỗ, và biết cách sinh lại (xem `appsettings.Development.example.json` có sẵn lệnh sinh chuỗi ngẫu nhiên).
