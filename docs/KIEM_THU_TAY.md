@@ -80,13 +80,89 @@
 
 ---
 
-## 1. Đăng ký / Đăng nhập (Bước 5)
+## 1. Đăng ký / Đăng nhập / Phiên (Bước 5)
+
+> **Phạm vi lượt này: chỉ Backend.** Giao diện (mục 1B) làm ở lượt kế tiếp.
+> Bộ kịch bản dưới đây chạy bằng PowerShell gọi thẳng API qua `http://localhost:5080`.
+> Ngày chạy: **29/09/2026**. Kết quả tổng: **51/51 đúng mã lỗi**, log sạch.
+
+### 1A. Backend — 3 kịch bản bắt buộc
+
+**Kịch bản 1 — Happy path** (đúng dữ liệu hợp lệ → thành công)
+
+| # | Loại | Kịch bản | Kỳ vọng | Thực tế | Kết quả |
+|---|------|----------|---------|---------|---------|
+| 1.1 | HP | `POST /api/auth/register` dữ liệu hợp lệ, lần đầu | 201 + access + refresh token | 201, `expiresInMinutes=60`, `role=0`, `status=0` | ✅ |
+| 1.2 | HP | `POST /api/auth/login` đúng email/mật khẩu | 200 + token hạn 60 phút | 200, `expiresInMinutes=60` | ✅ |
+| 1.3 | HP | `GET /api/auth/me` kèm access token | 200 + hồ sơ | 200, đúng email vừa đăng ký | ✅ |
+| 1.4 | HP | `POST /api/auth/refresh` | 200 + cặp token mới | 200, refresh token **khác** token cũ | ✅ |
+| 1.5 | HP | `PUT /api/auth/profile` | 200, cập nhật tên/SĐT/địa chỉ | 200, dữ liệu mới ghi đúng | ✅ |
+| 1.6 | HP | `PUT /api/auth/change-password` | 200, yêu cầu đăng nhập lại | 200 | ✅ |
+| 1.7 | HP | `POST /api/auth/logout` | 200, kết thúc phiên | 200 | ✅ |
+
+**Kịch bản 2 — Edge case** (giá trị biên → vẫn phải xử lý đúng)
+
+| # | Loại | Kịch bản | Kỳ vọng | Thực tế | Kết quả |
+|---|------|----------|---------|---------|---------|
+| 2.1 | EC | Email viết HOA + khoảng trắng thừa | Chuẩn hoá về chữ thường rồi lưu | 201, lưu `bienhoachu...@gmail.com` | ✅ |
+| 2.2 | EC | SĐT đúng 9 chữ số (biên dưới) | Chấp nhận | 201 | ✅ |
+| 2.3 | EC | SĐT đúng 11 chữ số (biên trên) | Chấp nhận | 201 | ✅ |
+| 2.4 | EC | Mật khẩu đúng 6 ký tự (biên dưới) | Chấp nhận | 201 | ✅ |
+| 2.5 | EC | Bỏ trống SĐT và địa chỉ | Chấp nhận, lưu `null` | 201, `phoneNumber=null`, `address=null` | ✅ |
+| 2.6 | EC | Họ tên có khoảng trắng ở hai đầu | Cắt khoảng trắng thừa | 201, lưu `"Nguyen Van C"` | ✅ |
+| 2.7 | EC | Mật khẩu có ký tự đặc biệt `Abc@123!#` | Chấp nhận | 201 | ✅ |
+| 2.8 | EC | Đăng ký lại bằng email HOA CHU đã có | 409 trùng với bản chữ thường | **409** "Email này đã được đăng ký" | ✅ |
+
+**Kịch bản 3 — Bất thường** (hệ thống phải từ chối, không lộ chi tiết kỹ thuật)
+
+| # | Nhóm | Kịch bản | Kỳ vọng | Thực tế | Kết quả |
+|---|------|----------|---------|---------|---------|
+| 3.1 | ĐK | Email đã tồn tại | 409 | 409 | ✅ |
+| 3.2 | ĐK | Email sai định dạng (không có `@`) | 409 | 409 "Email không hợp lệ…" | ✅ |
+| 3.3 | ĐK | Mật khẩu 5 ký tự (dưới biên) | 400 | 400 | ✅ |
+| 3.4 | ĐK | Xác nhận mật khẩu không khớp | 400 | 400 | ✅ |
+| 3.5 | ĐK | SĐT 8 chữ số (dưới biên) | 400 | 400 | ✅ |
+| 3.6 | ĐK | SĐT 12 chữ số (trên biên) | 400 | 400 | ✅ |
+| 3.7 | ĐK | SĐT chứa chữ cái | 400 | 400 | ✅ |
+| 3.8 | ĐK | Body không phải JSON | 400, **không** lộ lỗi kỹ thuật | 400 "Dữ liệu gửi lên không hợp lệ" | ✅ |
+| 3.9 | ĐK | Body là mảng `[1,2,3]` thay vì object | 400, thông báo chung | 400 "Dữ liệu gửi lên không hợp lệ" | ✅ |
+| 3.10 | ĐK | Body rỗng `{}` | 400, báo **đúng** trường thiếu | 400 "Vui lòng nhập email" | ✅ |
+| 3.11 | ĐK | `email` gửi sai kiểu (số thay vì chuỗi) | 400, thông báo chung | 400 "Dữ liệu gửi lên không hợp lệ" | ✅ |
+| 3.12 | ĐK | Gửi kèm `role:1` và `status:1` trong JSON | 201 nhưng bỏ qua, tự chọn quyền không được | 201 | ✅ |
+| 3.13 | ĐK | `GET /me` tài khoản tạo ở 3.12 | `role=0`, `status=0` | `role:0`, `status:0` | ✅ |
+| 3.14 | ĐN | Sai mật khẩu | 401, không trả token | 401 | ✅ |
+| 3.15 | ĐN | Email không tồn tại | 401, **thông báo y hệt 3.14** | 401, trùng khớp từng chữ | ✅ |
+| 3.16 | ĐN | Tài khoản bị khoá (`khach3@gmail.com`) | 403 | 403 "Tài khoản đã bị khoá…" | ✅ |
+| 3.17 | ĐN | So sánh lại 3.14 | Không lộ email nào tồn tại | Hai thông báo giống hệt nhau | ✅ |
+| 3.18 | Token | `GET /me` không gửi token | 401 **có body tiếng Việt** | 401 "Bạn chưa đăng nhập…" | ✅ |
+| 3.19 | Token | `POST /logout` không gửi token | 401 có body | 401 | ✅ |
+| 3.20 | Token | Token ký bằng khoá khác (giả mạo) | 401 | 401 | ✅ |
+| 3.21 | Token | Token đã hết hạn | 401 | 401 | ✅ |
+| 3.22 | Token | `refresh` với chuỗi không phải JWT | 401 | 401 | ✅ |
+| 3.23 | Token | Gõ sai đường dẫn API | 404 có body | 404 "Không tìm thấy dữ liệu yêu cầu" | ✅ |
+| 3.24–3.26 | Phiên | Máy 1 và máy 2 đăng nhập cùng tài khoản | Hai refresh token phải **khác nhau** | `A == B` → **False** | ✅ |
+| 3.27 | Phiên ⭐ | Dùng refresh token **cũ** (máy 1) sau khi máy 2 đăng nhập | **401** — phiên cũ mất tác dụng | 401 "Phiên đăng nhập đã hết hạn" | ✅ |
+| 3.28 | Phiên | Dùng refresh token **mới** (máy 2) | 200 | 200 | ✅ |
+| 3.29 | Phiên | `GET /me` bằng access token còn hiệu lực | 200 | 200 | ✅ |
+| 3.30 | Phiên | `POST /logout` | 200 | 200 | ✅ |
+| 3.31 | Phiên ⭐ | Dùng lại refresh token **sau khi đã đăng xuất** | **401** — đăng xuất phải vô hiệu thật | 401 | ✅ |
+| 3.32 | MK | Đổi mật khẩu nhưng sai mật khẩu hiện tại | 400, không đổi | 400 | ✅ |
+| 3.33 | MK | Mật khẩu mới trùng mật khẩu cũ | 409 | 409 | ✅ |
+| 3.34 | MK | Mật khẩu mới 5 ký tự | 400 | 400 | ✅ |
+| 3.35 | MK | Đổi mật khẩu thành công | 200 | 200 | ✅ |
+| 3.36 | Phiên ⭐ | Dùng lại refresh token **sau khi đổi mật khẩu** | **401** — đổi mật khẩu phải đuổi phiên cũ | 401 | ✅ |
+| 3.37 | MK | Đăng nhập lại bằng mật khẩu **cũ** | 401 | 401 | ✅ |
+| 3.38 | MK | Đăng nhập lại bằng mật khẩu **mới** | 200 | 200, đúng email | ✅ |
+| 3.39 | HS | `PUT /profile` gửi kèm `email` mới và `role` | 200 nhưng không đổi 2 trường này | 200, `email` và `role` giữ nguyên | ✅ |
+| 3.40 | HS | `GET /me` xác nhận lại | Email & quyền không đổi | `khach1@gmail.com`, `role:0` | ✅ |
+
+### 1B. Giao diện (lượt kế tiếp — chưa làm)
 
 | # | Loại | Kịch bản | Kỳ vọng | Thực tế | Kết quả |
 |---|------|----------|---------|---------|---------|
 | 1 | HP | Đăng ký email mới, mật khẩu 6 ký tự | Tạo tài khoản, quyền CUSTOMER | | |
 | 2 | EC | Đăng ký lại cùng email | Báo "Email đã tồn tại", KHÔNG tạo tài khoản | | |
-| 3 | AB | Đăng ký mật khẩu 4 ký tự | Báo lỗi, KHÔNG tạo tài khoản | | |
+| 3 | AB | Đăng ký mật khẩu 4 ký tự | Báo lỗi ngay dưới ô nhập, KHÔNG tạo tài khoản | | |
 | 4 | AB | Đăng ký có tham số `role: "ADMIN"` trong body | Tài khoản vẫn là CUSTOMER (bỏ qua role) | | |
 | 5 | HP | Đăng nhập đúng email/mật khẩu | Vào trang chủ, hiện tên + menu | | |
 | 6 | AB | Đăng nhập sai mật khẩu | Báo lỗi 401, không tạo token | | |
@@ -96,6 +172,19 @@
 | 10 | HP | Đổi mật khẩu rồi đăng nhập lại bằng mật khẩu mới | Đăng nhập được | | |
 | 11 | EC | Đổi mật khẩu nhưng nhập sai mật khẩu cũ | Báo lỗi, không đổi | | |
 | 12 | HP | F5 lại trang sau khi đăng nhập | Vẫn giữ phiên, không bị đẩy ra trang đăng nhập | | |
+| 13 | EC | Mở DevTools → Application → Local Storage | Thấy access + refresh token, KHÔNG thấy mật khẩu | | |
+| 14 | AB | Token hết hạn khi đang dùng | Tự refresh hoặc bị đưa về trang đăng nhập, KHÔNG trắng màn | | |
+
+### 1C. Lỗ hổng phát hiện & đã sửa trong lúc kiểm thử
+
+> Ghi lại vì đây là bằng chứng cho việc "kiểm thử tay không thay thế được unit test":
+> 2 lỗi dưới đây đã đi qua **toàn bộ 147 unit test mà không bị bắt**.
+
+| Lỗi | Biểu hiện | Nguyên nhân gốc | Đã sửa |
+|------|-----------|-----------------|---------|
+| **Refresh token cũ vẫn dùng được** (3.27 trả 200 thay vì 401) | Đăng nhập ở máy 2 không làm mất tác dụng token máy 1 → giới hạn "mỗi tài khoản một phiên" ghi trong báo cáo là vô hiệu | Refresh token dài ~196 ký tự nhưng lại băm bằng **BCrypt**, mà BCrypt chỉ xét **72 byte đầu**. Hai token chỉ khác nhau ở phần cuối nên cho **cùng một hash** | Tách `ITokenHasher` (SHA-256, xét toàn bộ chuỗi) khỏi `IPasswordHasher` (BCrypt, dành cho mật khẩu). Cột `RefreshTokenHash` giữ nguyên `varchar(100)` — SHA-256 hex đúng 64 ký tự |
+| **Hai lần đăng nhập trong cùng giây sinh ra token giống hệt nhau** | Refresh token không thay đổi sau khi làm mới phiên → token bị đánh cắp không bị vô hiệu hoá | JWT chỉ chứa `userId` + `exp`, mà `exp` tính theo giây; không có mã định danh duy nhất | Thêm claim `jti` = `Guid.NewGuid()` vào refresh token (chuẩn JWT 7519 mục 4.1.7) |
+| **147 unit test không bắt được cả hai lỗi trên** | Test xanh trong khi bản thật hỏng | `FakeJwtTokenService` trả về `fake-refresh-{id}` — **giống nhau mọi lần gọi**; `FakePasswordHasher` so sánh chuỗi thuần. Bản giả che mất đúng đặc tính gây lỗi của hàm thật | Sửa `FakeJwtTokenService` sinh token khác nhau mỗi lần (`fake-refresh-{id}-{số thứ tự}`), dùng `TokenHasher` **thật** trong `AuthServiceTests`. Bài học ở `lessons.md` mục 20 |
 
 ---
 

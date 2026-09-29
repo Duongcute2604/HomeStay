@@ -24,6 +24,9 @@ dist-ssr/
 .env.*
 !.env.example
 appsettings.Production.json
+# File này chứa khoá ký JWT thật. Bản mẫu để người khác clone về dùng là
+# appsettings.Development.example.json (đã commit, không có secret thật).
+appsettings.Development.json
 secrets.json
 
 # ===== Tài liệu Word (báo cáo) =====

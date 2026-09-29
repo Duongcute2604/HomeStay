@@ -137,11 +137,121 @@ dotnet run            Now listening on: http://localhost:5080  (không có fail/
 
 ## Giai đoạn 2 — Tài khoản
 
-### [ ] BƯỚC 5 — Đăng ký / đăng nhập / hồ sơ
+### [x] BƯỚC 5 — Đăng ký / đăng nhập / hồ sơ · **Backend xong 29/09/2026** 🟨 còn giao diện
 - **Mục tiêu đo được:** 7 API xong (`register`, `login`, `refresh`, `logout`, `me`, `profile`, `change-password`) · **3/3 kịch bản test tay** theo `docs/KIEM_THU_TAY.md` mục 1 · **≥ 8 unit test pass** trong `AuthServiceTests`
-- **Bằng chứng test:** `dotnet test --filter "Auth"` → `Passed! 8/8`
-- **Ảnh chụp:** trang đăng nhập, trang hồ sơ
-- **Ghi chú:**
+- **Kết quả đo được:**
+  - 7/7 API hoàn chỉnh
+  - Test tay: **51/51 ca đúng mã lỗi** (7 HP + 8 EC + 36 AB), ghi ở `docs/KIEM_THU_TAY.md` mục 1A
+  - Unit test: `dotnet test` → **`Passed! 147/147`** (thêm 92 so với 55 của Bước 4)
+  - `dotnet build --no-incremental` → **0 error 0 warning**
+  - Migration `20260929163853_AddRefreshTokenToUsers` đã apply lên MySQL thật
+- **Ảnh chụp:** Swagger UI — màn hình `POST /api/auth/login` (bấm Try it out) + màn hình response 401 khi sai mật khẩu
+- **Ghi chú:** Lượt này **chỉ làm Backend** (quyết định #3). Giao diện đăng ký / đăng nhập / hồ sơ để phiên chat sau — ảnh chụp 2 màn hình giao diện sẽ bổ sung sau khi làm phần UI.
+
+#### Bằng chứng cụ thể (không phải "tôi nghĩ là xong")
+
+| Hạng mục | Kết quả thật |
+|----------|--------------|
+| `dotnet build --no-incremental` | `0 Warning(s)` · `0 Error(s)` |
+| `dotnet test` | `Passed! - Failed: 0, Passed: 147, Skipped: 0, Total: 147` |
+| Test tay — kịch bản 1 (HP) | 1.1–1.7 đều `201`/`200` |
+| Test tay — kịch bản 2 (EC) | 2.1–2.7 `201` · 2.8 `409` |
+| Test tay — kịch bản 3 (AB) | 3.1–3.41 đúng mã lỗi mong đợi, **0 sai** |
+| Log server | Không có exception, không có lỗi lặp lại |
+| Dữ liệu sau khi test | Đã xoá tài khoản test, chỉ còn 4 tài khoản demo |
+
+#### 2 lỗ hổng phát hiện khi kiểm thử tay (đã sửa — xem `lessons.md` mục 20–21)
+
+| Lỗi | Biểu hiện | Nguyên nhân gốc | Cách sửa |
+|------|-----------|-----------------|----------|
+| Refresh token cũ vẫn dùng được sau khi máy khác đăng nhập | Test tay 3.27 trả `200` thay vì `401` → giới hạn "1 tài khoản 1 phiên" ghi trong báo cáo là vô hiệu | Refresh token dài ~196 ký tự nhưng băm bằng **BCrypt** — BCrypt chỉ xét **72 byte đầu**, nên hai token khác nhau ở phần cuối cho **cùng một hash** | Tách `ITokenHasher` (SHA-256) khỏi `IPasswordHasher` (BCrypt). Thêm 2 file `ITokenHasher.cs` + `TokenHasher.cs`. Cột `RefreshTokenHash` giữ nguyên `varchar(100)` (SHA-256 hex = 64 ký tự) — **không cần migration mới** |
+| Hai lần đăng nhập trong cùng giây cho token giống hệt nhau | Làm mới phiên không đổi được token → token bị đánh cắp không bị vô hiệu | JWT chỉ chứa `userId` + `exp` (tính theo giây), thiếu mã định danh duy nhất | Thêm claim `jti` = `Guid.NewGuid()` vào refresh token (chuẩn JWT 7519 mục 4.1.7) |
+
+> ⚠️ **147 unit test cũ KHÔNG bắt được 2 lỗi này** — vì `FakeJwtTokenService` trả về token
+> giống nhau mọi lần gọi, còn `FakePasswordHasher` so sánh chuỗi thuần: bản giả che mất
+> đúng đặc tính gây lỗi của hàm thật. Đã sửa bản giả + bổ sung 2 test bắt đúng lỗi.
+> Chi tiết: `lessons.md` mục 20.
+
+#### 3 vấn đề khác đã xử lý trong lượt này
+
+| Vấn đề | Cách xử lý |
+|--------|------------|
+| Body JSON hỏng trả `ProblemDetails` kèm lỗi kỹ thuật `.NET` ra ngoài | Kiểm key `ModelState` bắt đầu bằng `$` → trả thông báo chung; key là tên trường → trả đúng message tiếng Việt (`lessons.md` mục 23) |
+| 401/403/404/415 trả về **không có body** → client đọc `message` ra `undefined` | Thêm `app.UseStatusCodePages` trả `ApiResponse` cho mọi mã lỗi không có body; gỡ khối 401/403 thủ công khỏi `ExceptionMiddleware` (tránh xử lý trùng ở 2 chỗ) |
+| Cột `RefreshTokenHash` trong CSDL | SHA-256 hex = 64 ký tự, `varchar(100)` vẫn vừa → **không cần migration mới** |
+
+#### Quyết định đã chốt (29/09/2026)
+
+| # | Vấn đề | Chốt | Lý do |
+|---|--------|------|-------|
+| 1 | Lưu refresh token | **Thêm 2 cột vào bảng `Users`**: `RefreshTokenHash` varchar(100), `RefreshTokenExpiresAt` datetime | Giữ đúng **9 bảng** đã duyệt ở Bước 3, mà `logout` vô hiệu hoá token thật được. Giới hạn: 1 tài khoản chỉ 1 phiên — ghi rõ trong báo cáo |
+| 2 | Mã lỗi email | **Cả hai trả 409** — sai định dạng *và* trùng | Cả hai đều là "email này không dùng được". Vì vậy **không** dùng `[EmailAddress]` trên DTO (DataAnnotations ép 400), phải tự kiểm định dạng trong Service |
+| 3 | Phạm vi lượt này | **Chỉ Backend.** Giao diện tách sang phiên chat sau | Nhanh hơn, kiểm chứng API bằng Swagger + unit test |
+| 4 | Thời hạn token | Access **1 giờ**, Refresh **7 ngày** | Access ngắn để token bị lộ cũng hết hạn nhanh |
+
+**Quy tắc mã lỗi rút ra (dùng nhất quán cho cả dự án):**
+- `400` — lỗi **định dạng dữ liệu thuần**: thiếu trường bắt buộc, mật khẩu < 6 ký tự, mật khẩu ≠ xác nhận
+- `409` — lỗi liên quan tới **giá trị** người dùng gửi lên: email sai định dạng, email trùng, mật khẩu mới trùng mật khẩu cũ
+
+**Backend — 9 file mới + 4 file sửa:**
+
+| # | File | Viết gì | Lý do cần |
+|---|------|---------|-----------|
+| 1 | `DTOs/ApiResponse.cs` | `{ success, message, data }` | Controller luôn trả về `ApiResponse<T>`, không trả entity thô (`AGENTS.md` 6.2). Dùng cho cả Bước 5 trở đi |
+| 2 | `DTOs/AuthDtos.cs` | 6 request/response | **Không bao giờ** trả `PasswordHash` ra ngoài |
+| 3 | `Common/ErrorCodes.cs` + `Common/AppException.cs` | Hằng số 400/401/403/404/409 + exception có mã | Controller không tự `if` từng lỗi |
+| 4 | `Middleware/ExceptionMiddleware.cs` | Bắt mọi lỗi → trả format thống nhất, **không lộ stack trace** | `AGENTS.md` 6.5 |
+| 5 | `Services/Auth/IAuthService.cs` + `AuthService.cs` | 7 hàm nghiệp vụ, **mỗi hàm ≤ 40 dòng** | Logic phải nằm trong Service mới test được (5.2) |
+| 6 | `Services/Auth/IJwtTokenService.cs` + `JwtTokenService.cs` | Ký access + refresh, đọc secret từ `IOptions` | Không hardcode secret |
+| 7 | `Services/Auth/IPasswordHasher.cs` + `PasswordHasher.cs` | Bọc `BCrypt.Net.BCrypt` | Test được mà không cần DB |
+| 8 | `Services/Auth/EmailValidator.cs` | Regex kiểm định dạng email, hàm thuần | Quyết định #2 — trả 409 chứ không để DataAnnotations ép 400 |
+| 8 | `Services/Auth/AuthRules.cs` | Hằng số: min 6 ký tự, độ dài access/refresh, giới hạn độ dài FullName | Không có magic number rải rác (DRY) |
+| 9 | `Controllers/AuthController.cs` | 7 endpoint, chỉ validate + trả response | Cấm logic nghiệp vụ trong Controller (6.1) |
+| 10 | *Sửa* `Entities/User.cs` + **migration mới** | + `RefreshTokenHash`, `RefreshTokenExpiresAt` | Quyết định #1 |
+| 11 | *Sửa* `Program.cs` | JWT bearer, DI 4 interface, CORS, middleware | — |
+| 12 | *Sửa* `appsettings.Development.json` | Khối `Jwt` (secret **chỉ** ở file này, file này gitignore) | Không commit secret (6.6) |
+
+> ⚠️ `appsettings.Development.json` có secret JWT nên phải nằm trong `.gitignore`.
+> Nhưng file này đã được commit ở Bước 2 → phải dùng `git rm --cached` và tạo
+> `appsettings.Development.example.json` (giá trị mẫu, không phải secret thật) để người clone về chạy được.
+
+**Frontend — 11 file mới + 2 file sửa:**
+
+> ⚠️ **Quyết định #3: lượt này CHƯA làm giao diện.** Mục B dưới đây giữ lại làm kế hoạch cho phiên chat sau, không phải việc phải làm ngay.
+
+| # | File | Viết gì |
+|---|------|---------|
+| 1 | `api/client.ts` | axios + interceptor gắn token + tự refresh khi 401 |
+| 2 | `types/auth.ts` | Interface `User`, `AuthTokens`, `LoginRequest`… |
+| 3 | `services/authService.ts` | Chỉ gọi API, **không** chứa JSX |
+| 4 | `store/authStore.ts` (Zustand) | Token + thông tin user = **dữ liệu phiên** → Zustand (7.2) |
+| 5 | `hooks/useAuth.ts` | Hook bọc store + `authService` |
+| 6 | `components/ProtectedRoute.tsx` | Chặn khách vào `/admin` (kiểm `role === 'ADMIN'`) |
+| 7–9 | `components/common/Input.tsx` · `Button.tsx` · `FormMessage.tsx` | Dùng chung, có nhãn + lỗi a11y |
+| 10–12 | `pages/Login.tsx` · `Register.tsx` · `Profile.tsx` | React Hook Form + Zod, `z.infer` suy kiểu |
+| 13 | *Sửa* `App.tsx` | Router + `<Route>` cho 3 trang + ProtectedRoute |
+| 14 | *Sửa* `main.tsx` | Bọc `QueryClientProvider` + `BrowserRouter` |
+
+**Unit test — dự kiến 16 test (bắt buộc có 4 cái AGENTS.md 5.4 liệt kê):**
+
+| Nhóm | Test |
+|-------|------|
+| Đăng ký | email trùng → 409 · **email sai định dạng → 409** · mật khẩu < 6 ký tự → 400 · mật khẩu ≠ xác nhận → 400 · hash khác bản gốc · **user mới luôn `CUSTOMER`** (chống đăng ký thành admin) · response **không** chứa `PasswordHash` |
+| Đăng nhập | **mật khẩu sai** → 401 · **email không tồn tại** → 401 (cùng thông báo, không lộ email nào tồn tại) · **tài khoản `LOCKED`** → 403 "Tài khoản đã bị khoá" · thành công → có access + refresh token |
+| Token | access token chứa `role` + `exp` · thiếu `UserId` → ném lỗi |
+| Refresh / Logout | refresh hợp lệ → cấp token mới · refresh sai → 401 · logout xoá hash trong DB |
+| Đổi mật khẩu | mật khẩu cũ sai → 400 · mật khẩu mới trùng mật khẩu cũ → 409 · thành công → đăng nhận bằng mật khẩu mới được |
+| Hồ sơ | tên rỗng → 400 · thành công → chỉ cập nhật tên/SĐT/địa chỉ, **không** đụng email/quyền/trạng thái |
+
+**3 kịch bản test tay (bắt buộc khác nhau) — chạy trên Swagger UI + curl:**
+
+| Lần | Loại | Kịch bản | Kỳ vọng |
+|-----|------|----------|---------|
+| 1 | **HP** | Đăng ký `haintest1@gmail.com` → đăng nhập → `me` → sửa hồ sơ → đổi mật khẩu → refresh → logout | 8 bước trả đúng 200/201, `me` **không** lộ `PasswordHash` |
+| 2 | **EC** | ① email trùng ② email sai định dạng ③ mật khẩu 5 ký tự ④ sai mật khẩu ⑤ đăng nhập `khach3@gmail.com` (LOCKED) | ①②④⑤ → 409/403 · ③ → 400, thông báo tiếng Việt rõ ràng |
+| 3 | **AB** | ① Gọi `/api/auth/me` không có token ② Refresh bằng token sai ③ Đăng nhập lại rồi dùng refresh token cũ đã logout | ①②③ → 401 (token đã bị vô hiệu hoá), **không** phải 500 |
+
+**Ước lượng:** ~2,5 giờ cho phần Backend. Rủi ro thấp vì không đụng nghiệp vụ phòng/đơn.
 
 ---
 
@@ -299,8 +409,8 @@ dotnet run            Now listening on: http://localhost:5080  (không có fail/
 
 | Mốc | Hạn | Trạng thái |
 |-----|-----|-----------|
-| Xong Bước 1–4 (môi trường + CSDL) | 01/10 | ⬜ |
-| Xong Bước 5 (tài khoản) | 02/10 | ⬜ |
+| Xong Bước 1–4 (môi trường + CSDL) | 01/10 | ✅ Xong 29/09 |
+| Xong Bước 5 (tài khoản) | 02/10 | 🟨 Backend xong 29/09, còn giao diện |
 | Xong Bước 11 (khách đặt phòng xong) | 06/10 | ⬜ |
 | Xong Bước 16 (hết tính năng) | 11/10 | ⬜ |
 | Xong Bước 18 (kiểm thử) | 12/10 | ⬜ |

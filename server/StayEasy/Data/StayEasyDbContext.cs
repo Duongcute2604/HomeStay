@@ -59,6 +59,7 @@ public class StayEasyDbContext : DbContext
         user.Property(x => x.PhoneNumber).HasMaxLength(15);
         user.Property(x => x.PasswordHash).HasMaxLength(255).IsRequired();
         user.Property(x => x.Address).HasMaxLength(255);
+        user.Property(x => x.RefreshTokenHash).HasMaxLength(100);
 
         // Email là tài khoản đăng nhập nên phải duy nhất — chặn trùng ngay ở tầng CSDL
         user.HasIndex(x => x.Email).IsUnique();

@@ -399,3 +399,103 @@ Chạy demo ngày nào thì dữ liệu "sống" đúng ngày đó.
 | Để TODO/FIXME bỏ lại | Cố làm nhanh cho kịp hạn | Cấm tuyệt đối TODO trong code (AGENTS.md mục 3.4) |
 | Ghi cứng ngày tháng cho dữ liệu mẫu | Xét lẻ "cho dễ đọc" mà không nghĩ tới ngày GVHD chạy demo | Mốc thời gian mẫu luôn tính từ `DateTime.Now` |
 | Lọc log ngay trong lệnh `dotnet run` nền | Muốn xem "chỗ nào lỗi" cho nhanh | Ghi log **nguyên văn** ra file, lọc ở bước đọc — vừa không khoá file vừa giữ nguyên bằng chứng |
+
+---
+
+## 20. Bản giả (fake) trong unit test che mất đúng lỗi cần tìm
+
+**Ngày:** 29/09/2026 — Bài học quan trọng nhất từ Bước 5.
+
+**Sai ở đâu:** Viết `AuthService` xong, chạy `dotnet test` → **147 test xanh**. Tưởng phần đăng nhập đã chắc chắn. Chạy kiểm thử tay mới phát hiện: đăng nhập ở máy 2 **không** làm mất tác dụng refresh token của máy 1 — trả `200` thay vì `401`.
+
+**Vì sao 2 lớp test đều xanh trong khi bản thật hỏng:**
+
+1. `FakeJwtTokenService.TaoRefreshToken` trả về `fake-refresh-{id}` — **cùng một chuỗi mọi lần gọi**. Nên "đăng nhập lần 2" trong test sinh ra đúng token của lần 1, và kiểm tra "token cũ có còn dùng được không" trở nên vô nghĩa. Bản thật thì token có mốc hết hạn nên **khác nhau**.
+2. `FakePasswordHasher.Verify` so sánh chuỗi thuần. Nhưng lỗi thật nằm ở chỗ **BCrypt cắt cốt 72 byte đầu** — thuộc tính của thư viện bên ngoài mà bản giả không có. So sánh thuần thì luôn đúng.
+
+Lỗi gốc còn sâu hơn: tôi dùng **BCrypt để băm refresh token**. Refresh token dài ~196 ký tự, BCrypt chỉ xét 72 byte đầu, mà payload chỉ khác nhau ở vài chữ số cuối → **hai token khác nhau cho cùng một hash** → bước đối chiếu hash trong CSDL trở nên vô hiệu, đúng cái lỗ hổng mà việc lưu hash sinh ra để chặn.
+
+**Đã sửa:**
+- Tách `ITokenHasher` (SHA-256, xét **toàn bộ** chuỗi) khỏi `IPasswordHasher` (BCrypt, dành cho mật khẩu người dùng). Hai mục đích khác nhau thì hai lớp khác nhau — không phải thừa.
+- Sửa `FakeJwtTokenService` sinh token **khác nhau mỗi lần** (`fake-refresh-{id}-{số thứ tự}`).
+- `AuthServiceTests` dùng `TokenHasher` **thật** (SHA-256 chạy nhanh, không làm chậm test).
+- Bổ sung 2 test bắt đúng lỗi: `LamMoiTokenAsync_DangNhapLaiLanNua_TokenCuKhongConDungDuoc` và `TaoRefreshToken_GoiHaiLan_CoHaiTokenKhacNhau`.
+
+**Lần sau tránh gì:**
+> 1. **Bản giả phải mô phỏng cả TÍNH CHẤT của hàm thật, không chỉ hành vi "đúng".** Hỏi: "Nếu hàm thật có đặc tính X, bản giả của mình có X không?"
+> 2. **Khi dùng thư viện băm mật khẩu cho thứ KHÔNG phải mật khẩu, phải kiểm giới hạn của thuật toán.** BCrypt 72 byte, PBKDF2/Argon2 cũng có giới hạn tương tự. Chuỗi cần so sánh 1-1 (token, khoá phiên) thì dùng hàm băm nhanh xét toàn bộ chuỗi.
+> 3. **Test xanh KHÔNG chứng minh đúng** — nó chỉ chứng minh "những gì test kiểm thì đúng". 147 test xanh mà bản thật hỏng là chuyện có thật.
+> 4. **Kiểm thử tay không thay thế được unit test, và ngược lại.** Hai cái bắt lỗi khác nhau: unit test bắt lỗi logic lặp lại được, kiểm thử tay bắt lỗi do **cách dùng thực tế** — mà người kế hoạch không thấy trước.
+
+---
+
+## 21. Hai thuật toán băm khác nhau cho hai mục đích khác nhau
+
+**Ngày:** 29/09/2026
+**Sai ở đâu:** Một `IPasswordHasher` duy nhất dùng cho cả mật khẩu người dùng lẫn refresh token. Nghe thì "đừng lặp lại" nhưng thực ra **khác bản chất**:
+
+| | Mật khẩu người dùng | Refresh token |
+|---|---|---|
+| Ai chọn | Người dùng tự nghĩ ra | Hệ thống tự sinh |
+| Độ dài | Ngắn, lặp lại, dễ đoán | Dài, ngẫu nhiên hàng trăm bit |
+| Cần chậm để chống dò? | **Có** | **Không** — đã ngẫu nhiên sẵn |
+| Cần xét hết chuỗi? | Không quan trọng | **Bắt buộc** |
+
+Dùng BCrypt cho token thì "chậm" không tạo thêm an toàn nào, mà "cắt cốt 72 byte" thì gây hại thật.
+
+**Lần sau tránh gì:**
+> Không phải thứ gì lặp code cũng nên gộp. Hỏi **"hai chỗ này có cùng bản chất không"** trước khi gộp. Gộp nhầm còn tệ hơn là viết hai lớp riêng.
+> Và khi tách interface: **1 interface = 1 lý do tồn tại**, không phải "1 interface = 1 class".
+
+---
+
+## 22. PowerShell: dùng biến trước khi khai báo, và hậu tố thời gian gọi nhiều lần
+
+**Ngày:** 29/09/2026
+**Sai ở đâu (2 lỗi cùng lúc, đều làm ca kiểm thử tự vô hiệu mà không nhận ra):**
+
+1. Khai báo `$EMAIL = "buoc5kt$HAU_TO@gmail.com"` ở **trên** dòng `$HAU_TO = ...`. PowerShell chạy tuần tự từ trên xuống nên `$HAU_TO` rỗng → email thành `buoc5kt@gmail.com` → trùng tài khoản đã có → `409` ở kịch bản happy path.
+2. Gọi `$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())` ở **từng dòng**. Ca "đăng ký email HOA CHU phải trùng với bản chữ thường" lấy hậu tố ở hai chỗ khác nhau vài giây → hai email **khác nhau** → luôn `201` → ca kiểm tra đó im lặng biến thành vô nghĩa.
+
+**Vì sao nguy hiểm:** cả hai đều cho kết quả "hợp lý" (409 hoặc 201 đều là mã lỗi thật). Không có ca nào báo đỏ. Chỉ lúc **đọc kỹ từng dòng mới thấy** ca kiểm tra không còn kiểm tra được điều cần kiểm tra.
+
+**Đã sửa:** tính `$HAU_TO` **một lần** ở đầu script, khai báo **trước** chỗ dùng.
+
+**Lần sau tránh gì:**
+> 1. Mỗi dòng `<dấu>----- <mã ca> -----` trong script kiểm thử phải có **mã riêng để đối chiếu**. Không có mã thì không biết ca nào hỏng.
+> 2. Script kiểm thử phải **chạy lại được nhiều lần** — sinh dữ liệu duy nhất mỗi lần chạy, và **tự dọn dữ liệu về trạng thái ban đầu** ở cuối.
+> 3. Khi một ca kiểm thử trả kết quả "đúng như mong đợi" mà mình vẫn thấy nghi ngờ, hãy in ra **giá trị thật** (email đã dùng, timestamp) rồi so sánh bằng mắt — đừng tin vào tên ca kiểm thử.
+
+---
+
+## 23. Phân biệt lỗi tầng form binding với lỗi do DTO tự đặt — bằng KEY của ModelState
+
+**Ngày:** 29/09/2026
+**Sai ở đâu:** `InvalidModelStateResponseFactory` mặc định của ASP.NET trả `ProblemDetails` kèm lỗi kỹ thuật của .NET ra ngoài, ví dụ:
+```
+"'d' is an invalid start of a value. Path: $ | LineNumber: 0 | BytePositionInLine: 0"
+```
+Client hiển thị lỗi này cho người dùng — vi phạm `AGENTS.md` mục 6.5. Nhưng nếu đổi thành trả thông báo chung luôn thì lại nuốt mất thông báo tiếng Việt đã soạn sẵn trong DTO.
+
+**Vì sao phân biệt được:** đọc log chẩn đoán (in ra `ModelState` tạm thời rồi xoá) cho thấy:
+
+| Nguồn lỗi | Key trong `ModelState` | `ErrorMessage` |
+|---|---|---|
+| Lỗi đọc body (JSON hỏng, body là mảng, sai kiểu) | `"$"` hoặc `"$.email"` | chuỗi kỹ thuật của .NET |
+| Lỗi do attribute trong DTO đặt ra | tên trường: `FullName`, `Password`… | thông báo tiếng Việt đã soạn |
+
+Cả hai loại đều có `Exception = null`, nên **không** phân biệt được bằng `Exception` — buộc phải dựa vào key.
+
+**Đã sửa:**
+```csharp
+bool coLoiDinhDang = context.ModelState.Keys
+    .Any(khoa => khoa == JsonInputFormatterErrorKeyPrefix
+        || khoa.StartsWith(JsonInputFormatterErrorKeyPrefix + ".", StringComparison.Ordinal));
+
+if (coLoiDinhDang)   // lỗi định dạng → thông báo chung, không lộ kỹ thuật
+{ ... }
+string thongBao = /* lấy ErrorMessage tiếng Việt đầu tiên */ ;
+```
+
+**Lần sau tránh gì:**
+> Khi cần biết framework xử lý thế nào thì **cứ log ra xem, đoán là tốn thời gian hơn**. Bật log chẩn đoán tạm thời, chạy vài request, đọc log, rồi **xoá đoạn chẩn đoán** — quên xoá là nợ kỹ thuật.

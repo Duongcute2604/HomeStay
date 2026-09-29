@@ -31,6 +31,22 @@ public class User
     /// <summary>Trạng thái tài khoản — khách bị khoá vẫn giữ nguyên lịch sử đặt phòng.</summary>
     public UserStatus Status { get; set; } = UserStatus.ACTIVE;
 
+    /// <summary>
+    /// Hash SHA-256 của refresh token hiện hành. Null nghĩa là chưa đăng nhập,
+    /// hoặc đã đăng xuất / đổi mật khẩu nên token bị vô hiệu hoá.
+    ///
+    /// Lưu hash chứ không lưu token thô: database bị lấy cũng không dùng được token.
+    /// Dùng SHA-256 chứ không phải BCrypt như mật khẩu, vì BCrypt chỉ xét 72 byte đầu
+    /// mà refresh token dài ~196 ký tự — xem giải thích ở ITokenHasher.
+    ///
+    /// Giới hạn đã biết: mỗi tài khoản chỉ giữ một refresh token tại một thời điểm,
+    /// nên đăng nhập ở máy thứ hai sẽ làm token máy thứ nhất mất tác dụng.
+    /// </summary>
+    public string? RefreshTokenHash { get; set; }
+
+    /// <summary>Thời điểm refresh token hiện hành hết hạn.</summary>
+    public DateTime? RefreshTokenExpiresAt { get; set; }
+
     /// <summary>Thời điểm tạo tài khoản.</summary>
     public DateTime CreatedAt { get; set; }
 

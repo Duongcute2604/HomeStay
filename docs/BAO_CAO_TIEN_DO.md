@@ -14,7 +14,8 @@
 | | 2 | Khung project + git repo | — | — | ✅ Xong (29/09) |
 | | 3 | 9 bảng CSDL + project test | ✅ 6/6 kịch bản SQL | 27 pass | ✅ Xong (29/09) |
 | | 4 | Dữ liệu mẫu (4 tài khoản, 3 địa điểm, 10 phòng, 15 đơn, 6 đánh giá) + 8 ảnh SVG | ✅ 17/17 kịch bản (HP/AB/EC) | 55 pass (thêm 28) | ✅ Xong (29/09) |
-| | 5 | Tài khoản (đăng ký/đăng nhập/hồ sơ) | ⬜ | ⬜ | ⬜ Chưa làm |
+| | 5 | Tài khoản (đăng ký/đăng nhập/hồ sơ) — **Backend** | ✅ 51/51 kịch bản (HP/EC/AB) | 147 pass (thêm 92) | 🟨 Backend xong, chờ giao diện |
+| | 5b | Tài khoản — giao diện (11 file FE) | ⬜ | — | ⬜ Chưa làm |
 | | 6 | Xem địa điểm | ⬜ | ⬜ | ⬜ Chưa làm |
 | | 7 | Tìm kiếm & lọc phòng | ⬜ | ⬜ | ⬜ Chưa làm |
 | | 8 | Chi tiết phòng | ⬜ | ⬜ | ⬜ Chưa làm |
@@ -47,7 +48,7 @@
 
 | Tuần | Nội dung | Tình trạng |
 |------|----------|-----------|
-| Tuần 1 (29/09–05/10) | Môi trường, CSDL, seed, tài khoản | 🟨 4/5 xong (Bước 5 tiếp theo) |
+| Tuần 1 (29/09–05/10) | Môi trường, CSDL, seed, tài khoản | 🟨 Backend tài khoản xong, còn giao diện |
 | Tuần 2 (06/10–12/10) | Tìm kiếm, chi tiết phòng, đặt phòng, đơn của tôi | ⬜ |
 | Tuần 3 (13/10–19/10) | Admin, thống kê, đánh giá, kiểm thử, Chương 4 | ⬜ |
 | Tuần 4 (20/10) | Bảo vệ | ⬜ |
@@ -71,6 +72,12 @@
 
 | Ngày | Vấn đề | Cách xử lý | Trạng thái |
 |------|--------|------------|-----------|
-| | | | |
+| 29/09 | Lỗi form binding: body JSON hỏng trả `ProblemDetails` kèm lỗi kỹ thuật .NET (`'d' is an invalid start of a value. Path: $`) ra ngoài | Tự kiểm `ModelState` — key bắt đầu bằng `$` là lỗi đọc body → trả thông báo chung; key là tên trường là lỗi do DTO đặt ra → trả đúng message tiếng Việt | ✅ Đã sửa |
+| 29/09 | 401/403/404/415 trả về **không có body**, client đọc `response.data.message` ra `undefined` đúng lúc cần báo "phiên đã hết hạn" | Thêm `app.UseStatusCodePages` trả `ApiResponse` cho mọi mã lỗi không có body; gỡ khối xử lý 401/403 thủ công khỏi `ExceptionMiddleware` để tránh trùng logic | ✅ Đã sửa |
+| 29/09 | **Lỗ hổng**: refresh token cũ vẫn dùng được sau khi máy khác đăng nhập (kiểm thử tay 3.27 trả 200 thay vì 401) | Tách `ITokenHasher` (SHA-256) khỏi `IPasswordHasher` (BCrypt) — BCrypt chỉ xét 72 byte đầu nên token dài ~196 ký tự bị cắt cốt, hai token khác nhau ở đuôi cho cùng hash | ✅ Đã sửa |
+| 29/09 | **Lỗ hổng**: hai lần đăng nhập trong cùng giây sinh refresh token giống hệt nhau | Thêm claim `jti` (GUID) vào refresh token theo chuẩn JWT 7519 | ✅ Đã sửa |
+| 29/09 | 147 unit test **không bắt được** 2 lỗi trên vì bản giả (`FakeJwtTokenService` trả token giống nhau mọi lần, `FakePasswordHasher` so sánh chuỗi thuần) che mất đặc tính gây lỗi của hàm thật | Sửa bản giả sinh token khác nhau mỗi lần; dùng `TokenHasher` thật trong test nghiệp vụ; bổ sung test bắt đúng 2 lỗi trên | ✅ Đã sửa |
+| 29/09 | PowerShell 5.1: JSON trong script bọc bằng **dấu nháy đơn** thì backtick thành ký tự thật → body hỏng, 6 ca trả 400 nhầm là lỗi code | Bọc **dấu nháy kép** với backtick (`` `{``"fullName`":...} ``) | ✅ Đã sửa |
+| 29/09 | Ca kiểm thử tự vô hiệu mà không nhận ra: `$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())` gọi ở từng dòng → email lệch nhau vài giây, ca "trùng email" luôn trả 201 | Tính hậu tố **một lần** ở đầu script rồi dùng lại; khai báo biến **trước** chỗ dùng (PowerShell chạy tuần tự từ trên xuống) | ✅ Đã sửa |
 
 > Ghi lại ở đây, cuối kỳ dùng làm cơ sở cho phần "Hạn chế" và "Bài học kinh nghiệm" trong Kết luận.
