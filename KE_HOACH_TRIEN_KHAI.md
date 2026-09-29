@@ -141,8 +141,12 @@ Homestay/
 | `bookings` | Đơn đặt phòng | `code` (mã hiển thị cho người dùng), user_id, room_id, check_in, check_out, mode (HOUR/DAY), số giờ/ngày, **tổng tiền snapshot**, status, giờ nhận/trả |
 | `booking_status_history` | Lịch sử trạng thái | booking_id, from, to, người thực hiện, thời điểm |
 | `reviews` | Đánh giá | booking_id, user_id, rating 1–5, nội dung |
-| `notifications` | Thông báo | user_id, tiêu đề, nội dung, read_at |
-| `payments` | *(cắt nếu gấp)* | booking_id, số tiền, trạng thái, phương thức |
+| `notifications` | Thông báo *(Bước 23, tuỳ chọn)* | user_id, tiêu đề, nội dung, read_at — **CHƯA LÀM** |
+| `payments` | *(Bước 22, tuỳ chọn)* | booking_id, số tiền, trạng thái, phương thức — **CHƯA LÀM** |
+
+> ⚠️ **Bảng `notifications` và `payments` KHÔNG nằm trong 9 bảng của Bước 3.**
+> Đề xuất làm sau cùng, chỉ khi Bước 1–21 xong hết và còn ≥ 3 ngày → xem `todo.md` Giai đoạn 8.
+> Trong lúc chưa làm: **không tạo bảng rng**, không để lại model/service chờ sẵn (YAGNI).
 
 **Quy tắc:** mỗi bảng có `created_at`, `updated_at`, soft-delete (`is_deleted`) cho dữ liệu nghiệp vụ.
 **Index bắt buộc** (báo cáo có nhắc): `rooms(location_id)`, `bookings(room_id)`, `bookings(check_in, check_out)`, `bookings(status)`.
@@ -232,11 +236,14 @@ Homestay/
 
 Cắt theo thứ tự, không cắt những mục trước:
 
-1. 🔴 **Thanh toán thật (VNPay/MoMo)** — báo cáo đã ghi là *chức năng giới hạn*, dựng trạng thái "chuyển khoản" giả lập là đủ
+1. 🔴 **Thanh toán** (Bước 22) — đã dời xuống **cuối cùng**, làm sau Bước 1–21. Báo cáo đã ghi là *chức năng giới hạn* → nếu không kịp thì viết vào mục "Hướng phát triển" là được điểm.
 2. 🔴 **Upload ảnh thật từ máy** — dùng ảnh mẫu trong `uploads/` là được
-3. 🟡 **Notification / nhắc check-in** — cắt được, không nằm trong yêu cầu chính
+3. 🟡 **Thông báo / nhắc check-in** (Bước 23) — đã dời xuống **cuối cùng**, cũng chỉ làm nếu còn thời gian
 4. 🟡 **Phân trang nâng cao / nhiều bộ lọc** — giữ phân trang cơ bản
 5. 🟢 **Dark mode, i18n, đa ngôn ngữ** — không làm
+
+> **Thứ tự ưu tiên nếu chỉ đủ làm 1 cái trong 2 mục mở rộng:** làm **Thông báo** trước.
+> Nó ít code hơn, thấy rõ ngay trên giao diện, và không sinh mâu thuẫn với báo cáo.
 
 **Tuyệt đối KHÔNG cắt:** Auth, tìm kiếm phòng trống theo ngày, đặt phòng, chống đặt trùng, quản lý đơn, Dashboard thống kê, ảnh chụp Chương 4.
 

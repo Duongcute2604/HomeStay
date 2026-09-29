@@ -31,8 +31,15 @@
 | | 19 | 22 hình cho Chương 3 | — | — | ⬜ Chưa làm |
 | | 20 | Viết Chương 4 | — | — | ⬜ Chưa làm |
 | | 21 | Kết luận, slide, luyện trình bày | — | — | ⬜ Chưa làm |
+| | 22 | **Thanh toán** (mở rộng, tuỳ chọn) | ⬜ | ⬜ | ⬜ Chỉ làm nếu còn thời gian |
+| | 23 | **Thông báo** (mở rộng, tuỳ chọn) | ⬜ | ⬜ | ⬜ Chỉ làm nếu còn thời gian |
 
 **Ký hiệu:** ⬜ Chưa làm · 🟨 Đang làm · ✅ Xong · ❌ Cắt (ghi lý do)
+
+> ⚠️ **Bước 22 & 23 KHÔNG nằm trong phạm vi đã chốt của báo cáo.**
+> Chỉ bắt tay vào khi Bước 1–21 xong hết **và** còn ≥ 3 ngày trước ngày bảo vệ.
+> Làm thì **phải bổ sung mục vào báo cáo cho khớp**, nếu không sẽ tự tạo mâu thuẫn.
+> Điều kiện & phạm vi chi tiết: `todo.md` → Giai đoạn 8.
 
 ---
 

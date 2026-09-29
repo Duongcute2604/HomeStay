@@ -194,6 +194,48 @@ Phiên bản thực tế đã cài: React 18.3.1 · Vite 5.4.21 · TS 5.9.3 · T
 
 ---
 
+## Giai đoạn 8 — PHẦN MỞ RỘNG (TUỲ CHỌN — chỉ làm nếu còn thời gian)
+
+> ⚠️ **ĐÂY KHÔNG PHẢI PHẦN BẮT BUỘC.** Hai mục này **nằm ngoài phạm vi đã chốt** trong báo cáo.
+> Chỉ bắt tay vào khi **Bước 1 → 21 đã xong hết** và còn **ít nhất 3 ngày** trước ngày bảo vệ.
+> Nếu không đủ thời gian → bỏ luôn, **không phải làm nửa vời**.
+
+> **Lưu ý báo cáo:** nếu làm 2 mục này thì **phải bổ sung mục vào báo cáo cho khớp**
+> (bảng CSDL, sơ đồ Use Case, danh sách chức năng, ảnh chụp Chương 4).
+> Làm mà không sửa báo cáo = **tự tạo mâu thuẫn**, tệ hơn là không làm.
+
+### [ ] BƯỚC 22 — Thanh toán (mở rộng)
+- **Điều kiện bắt đầu:** Bước 1–21 xong hết · còn ≥ 3 ngày · sẵn sàng sửa báo cáo
+- **Phạm vi tối thiểu (KISS — KHÔNG làm cổng thanh toán thật):**
+  - Bảng `payments` (id · booking_id · amount · method · status · paid_at)
+  - `method`: `CASH` (tiền mặt) · `MOMO` · `BANK_TRANSFER` — **ghi nhận thủ công, không nối API thật**
+  - `status`: `PENDING` · `PAID` · `FAILED`
+  - Khách xem lịch sử thanh toán · Admin đánh dấu đã thu tiền
+  - Dashboard: cột doanh thu **đã thu** tách khỏi tổng giá trị đơn
+- **Mục tiêu đo được:** ≥ 3 unit test (đơn `COMPLETED` mới được đánh dấu `PAID` · không thu 2 lần · số tiền khớp `TotalAmount`)
+- **Bằng chứng:**
+
+### [ ] BƯỚC 23 — Thông báo trong hệ thống (mở rộng)
+- **Điều kiện bắt đầu:** Bước 22 xong **hoặc** còn ≥ 3 ngày
+- **Phạm vi tối thiểu:**
+  - Bảng `notifications` (id · user_id · title · content · is_read · created_at)
+  - **Trong ứng dụng** (in-app), KHÔNG gửi email/SMS thật
+  - Tự sinh thông báo khi: Admin xác nhận / check-in / check-out / từ chối đơn
+  - Icon chuông trên header + số badge chưa đọc + trang danh sách thông báo
+- **Mục tiêu đo được:** 1 thông báo sinh đúng khi đổi trạng thái đơn · đánh dấu đã đọc hoạt động · ≥ 2 unit test
+- **Bằng chứng:**
+
+### Thứ tự ưu tiên nếu chỉ đủ làm 1 cái
+| Ưu tiên | Mục | Vì sao |
+|---|---|---|
+| 1 | **Bước 23 Thông báo** | Ít code hơn, thấy rõ trên giao diện, **không sinh mâu thuẫn với báo cáo** vì thông báo vốn đã được báo cáo nhắc tới |
+| 2 | Bước 22 Thanh toán | Phải sửa báo cáo nhiều hơn (bảng mới, thay đổi luồng đặt phòng) |
+
+> **Khuyến nghị thật lòng:** cả 2 mục này đều **đáng giá cho phần "hướng phát triển"** trong Kết luận hơn là làm thật.
+> Viết *"hệ thống đã hỗ trợ sẵn cấu trúc cho thanh toán và thông báo, phát triển trong tương lai"* — thầy chấp điểm cho câu đó, mà không tốn giờ làm.
+
+---
+
 ## Mốc cứng (deadline)
 
 | Mốc | Hạn | Trạng thái |

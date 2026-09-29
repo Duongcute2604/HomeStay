@@ -12,6 +12,12 @@ Web app cho phép **khách** tìm kiếm homestay và đặt phòng theo **giờ
 
 **Chỉ có 2 tác nhân:** Khách (`CUSTOMER`) và Admin (`ADMIN`).
 
+**Phạm vi đã chốt (9 bảng CSDL):** `users` · `locations` · `rooms` · `room_images` ·
+`amenities` · `room_amenities` · `bookings` · `booking_status_history` · `reviews`
+
+> **Thanh toán** (`payments`) và **thông báo** (`notifications`) **không nằm trong phạm vi**.
+> Đã ghi vào kế hoạch làm sau cùng (Bước 22 & 23), chỉ khi còn thời gian — xem `todo.md` Giai đoạn 8.
+
 ---
 
 ## 2. Ngăn xếp công nghệ

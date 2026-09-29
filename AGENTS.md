@@ -250,6 +250,22 @@ npm view tailwindcss version
 - Không thêm package mà chưa nêu rõ "dùng để làm gì, bắt buộc không".
 - **Không nâng cấp phiên bản ghim** kể cả khi bản mới có tính năng hay hơn.
 
+### 1.4 Thanh toán & Thông báo — CHƯA LÀM, để dành cuối cùng
+
+> Người dùng đã chốt: 2 mục này làm **sau cùng, chỉ khi còn thời gian** (Bước 22 & 23 trong `todo.md`).
+
+| Mục | Trạng thái hiện tại | Điều kiện để bắt đầu |
+|---|---|---|
+| Thanh toán | ❌ Chưa làm. **Không có bảng `payments`** | Bước 1–21 xong + còn ≥ 3 ngày + sẵn sàng sửa báo cáo |
+| Thông báo | ❌ Chưa làm. **Không có bảng `notifications`** | Tương tự |
+
+**Trong lúc chưa làm, tuyệt đối:**
+- Không tạo bảng `payments` / `notifications` rỗng (YAGNI — thầy hỏi "bảng này dùng làm gì?" thì không trả lời được).
+- Không để lại service / interface / model **chưa dùng** mà chờ sẵn cho 2 mục này.
+- Không viết trong báo cáo là đã có thanh toán / thông báo.
+
+> Làm xong mà **không sửa báo cáo** thì tệ hơn là không làm → tự tạo mâu thuẫn giữa code và tài liệu.
+
 **Hai tác nhân duy nhất:** `CUSTOMER` và `ADMIN`. Không tạo `Employee`, `Staff`, `Host`, `Manager`, `Receptionist`.
 → Mọi chức năng vận hành (check-in, check-out, cập nhật trạng thái phòng) thuộc **Admin**.
 
