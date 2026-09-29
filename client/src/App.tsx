@@ -1,22 +1,43 @@
+import { Route, Routes } from 'react-router-dom'
+
+import PageLayout from './components/common/PageLayout'
+import ProtectedRoute from './components/ProtectedRoute'
+import Home from './pages/Home'
+import Login from './pages/Login'
+import NotFound from './pages/NotFound'
+import Profile from './pages/Profile'
+import Register from './pages/Register'
+
 /**
- * Trang chủ — khung tối thiểu của Bước 2.
- * Nội dung thật (danh sách phòng từ API) sẽ làm ở Bước 7.
- * Hiện tại chỉ chứng minh: React + TypeScript + Tailwind đã chạy được.
+ * Bảng điều hướng.
+ *
+ * Mọi trang nằm trong `PageLayout` để dùng chung thanh điều hướng. Route cần
+ * đăng nhập thì bọc thêm `ProtectedRoute`; những trang quản trị sẽ truyền thêm
+ * `yeuCauQuyen={UserRole.ADMIN}` ở Bước 14.
+ *
+ * `*` cuối cùng bắt mọi đường dẫn còn lại vào 404 — thiếu nó thì gõ sai URL sẽ
+ * ra trang trắng của React Router.
  */
-function App(): JSX.Element {
+export default function App(): JSX.Element {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-gray-50 px-4">
-      <h1 className="text-3xl font-bold text-brand-700">StayEasy</h1>
-      <p className="text-gray-600">Hệ thống đặt phòng &amp; quản lý homestay</p>
+    <PageLayout>
+      <Routes>
+        <Route path="/" element={<Home />} />
 
-      {/* Kiểm tra format tiền VND và căn lề phải — quy tắc bất biến AGENTS.md mục 7.3 */}
-      <p className="number-vn text-gray-500">Giá ví dụ: 1.200.000 ₫</p>
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
 
-      <span className="rounded-full bg-brand-50 px-3 py-1 text-sm text-brand-700">
-        Khung project đã dựng xong — Mốc 1 / Bước 2
-      </span>
-    </main>
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </PageLayout>
   )
 }
-
-export default App

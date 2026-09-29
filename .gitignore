@@ -43,3 +43,8 @@ temp/
 Thumbs.db
 desktop.ini
 .DS_Store
+
+# ===== Công cụ hỗ trợ =====
+# Ảnh chụp màn hình sinh ra khi kiểm thử tay — chỉ dùng để trao đổi trong
+# cuộc trò chuyện, không phải tài liệu của đồ án nên không commit.
+.openchamber/

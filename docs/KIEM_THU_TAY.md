@@ -82,9 +82,10 @@
 
 ## 1. Đăng ký / Đăng nhập / Phiên (Bước 5)
 
-> **Phạm vi lượt này: chỉ Backend.** Giao diện (mục 1B) làm ở lượt kế tiếp.
-> Bộ kịch bản dưới đây chạy bằng PowerShell gọi thẳng API qua `http://localhost:5080`.
-> Ngày chạy: **29/09/2026**. Kết quả tổng: **51/51 đúng mã lỗi**, log sạch.
+> **Bước 5 chia làm 2 lượt.** Mục 1A kiểm tầng API bằng PowerShell gọi thẳng
+> `http://localhost:5080` (ngày 29/09/2026, **51/51 đúng mã lỗi**). Mục 1B kiểm tầng
+> giao diện bằng trình duyệt thật trên `http://localhost:5174` (ngày 30/09/2026,
+> **18/20 ca đạt, 2 ca hoãn có ghi rõ lý do**).
 
 ### 1A. Backend — 3 kịch bản bắt buộc
 
@@ -156,35 +157,77 @@
 | 3.39 | HS | `PUT /profile` gửi kèm `email` mới và `role` | 200 nhưng không đổi 2 trường này | 200, `email` và `role` giữ nguyên | ✅ |
 | 3.40 | HS | `GET /me` xác nhận lại | Email & quyền không đổi | `khach1@gmail.com`, `role:0` | ✅ |
 
-### 1B. Giao diện (lượt kế tiếp — chưa làm)
+### 1B. Giao diện (đã làm)
 
-| # | Loại | Kịch bản | Kỳ vọng | Thực tế | Kết quả |
-|---|------|----------|---------|---------|---------|
-| 1 | HP | Đăng ký email mới, mật khẩu 6 ký tự | Tạo tài khoản, quyền CUSTOMER | | |
-| 2 | EC | Đăng ký lại cùng email | Báo "Email đã tồn tại", KHÔNG tạo tài khoản | | |
-| 3 | AB | Đăng ký mật khẩu 4 ký tự | Báo lỗi ngay dưới ô nhập, KHÔNG tạo tài khoản | | |
-| 4 | AB | Đăng ký có tham số `role: "ADMIN"` trong body | Tài khoản vẫn là CUSTOMER (bỏ qua role) | | |
-| 5 | HP | Đăng nhập đúng email/mật khẩu | Vào trang chủ, hiện tên + menu | | |
-| 6 | AB | Đăng nhập sai mật khẩu | Báo lỗi 401, không tạo token | | |
-| 7 | AB | Đăng nhập tài khoản bị Admin khoá | Báo "Tài khoản đã bị khoá" | | |
-| 8 | AU | Đăng nhập bằng `admin@stayeasy.vn` | Có menu Quản trị | | |
-| 9 | AU | Khách gõ thẳng URL `/admin` | Bị chuyển hướng ra ngoài | | |
-| 10 | HP | Đổi mật khẩu rồi đăng nhập lại bằng mật khẩu mới | Đăng nhập được | | |
-| 11 | EC | Đổi mật khẩu nhưng nhập sai mật khẩu cũ | Báo lỗi, không đổi | | |
-| 12 | HP | F5 lại trang sau khi đăng nhập | Vẫn giữ phiên, không bị đẩy ra trang đăng nhập | | |
-| 13 | EC | Mở DevTools → Application → Local Storage | Thấy access + refresh token, KHÔNG thấy mật khẩu | | |
-| 14 | AB | Token hết hạn khi đang dùng | Tự refresh hoặc bị đưa về trang đăng nhập, KHÔNG trắng màn | | |
+> **Ngày chạy: 30/09/2026.** Giao diện chạy ở `http://localhost:5174`
+> (cổng 5173 bị pm2 chiếm cho dự án khác trên máy — xem `client/vite.config.ts`).
+> Test bằng trình duyệt thật, thao tác từng bước, quan sát nội dung trang và console.
+>
+> **Kết quả: 18/20 ca đạt, 2 ca hoãn có lý do rõ ràng.** Xem bảng chi tiết bên dưới.
+
+**Kịch bản 1 — Happy path**
+
+| # | Kịch bản | Kỳ vọng | Thực tế | Kết quả |
+|---|----------|---------|---------|---------|
+| 1.1 | Đăng ký `kieuthu123@gmail.com`, mật khẩu 6 ký tự, có SĐT + địa chỉ | Tạo tài khoản, quyền CUSTOMER, tự đăng nhập | Tạo xong, tự vào trang chủ, header hiện tên. Hồ sơ hiện Quyền = **Khách** | ✅ |
+| 1.2 | Đăng nhập đúng `khach1@gmail.com` / `123456` | Vào trang chủ, hiện tên + menu | Vào trang chủ, header hiện "Trần Thị Mai" + nút Đăng xuất | ✅ |
+| 1.3 | Mở `/profile`, sửa họ tên rồi bấm "Lưu thay đổi" | Thông báo thành công, tên mới hiện | Hiện "Đã cập nhật hồ sơ thành công.", header đổi sang tên mới | ✅ |
+| 1.4 | Đổi mật khẩu (nhập đúng mật khẩu hiện tại) | Thành công, buộc đăng nhập lại | Thành công, tự chuyển về `/login`, header mất tên + nút Đăng xuất | ✅ |
+| 1.5 | F5 lại trang `/profile` khi đang đăng nhập | Vẫn giữ phiên | Vẫn ở `/profile`, dữ liệu hồ sơ đầy đủ | ✅ |
+| 1.6 | Đăng nhập bằng `admin@stayeasy.vn` | Nhận đúng quyền quản trị | Trang chủ hiện "Xin chào Nguyễn Minh Quân **(Quản trị viên)**" | ✅ |
+
+**Kịch bản 2 — Edge case**
+
+| # | Kịch bản | Kỳ vọng | Thực tế | Kết quả |
+|---|----------|---------|---------|---------|
+| 2.1 | Đăng ký mật khẩu **5 ký tự** | Báo lỗi ngay dưới ô, KHÔNG gọi API | Hiện "Mật khẩu phải có ít nhất 6 ký tự" dưới ô Mật khẩu, vẫn ở `/register` | ✅ |
+| 2.2 | Xác nhận mật khẩu **không khớp** | Báo lỗi dưới ô xác nhận | Hiện "Mật khẩu xác nhận không khớp" đúng dưới ô Xác nhận mật khẩu | ✅ |
+| 2.3 | Đăng ký lại email đã có (`khach1@gmail.com`) | Báo email đã đăng ký, KHÔNG tạo tài khoản | Hiện "Email này đã được đăng ký. Vui lòng đăng nhập hoặc dùng email khác" (409) | ✅ |
+| 2.4 | Đăng ký email sai định dạng `khong-phai-email` | Báo lỗi 409 của server | Hiện "Email không hợp lệ. Vui lòng nhập đúng định dạng, ví dụ: ten@gmail.com" | ✅ |
+| 2.5 | Đổi mật khẩu nhưng nhập **sai** mật khẩu hiện tại | Báo lỗi, không đổi | Hiện "Mật khẩu hiện tại không đúng" (401), vẫn ở `/profile` | ✅ |
+| 2.6 | Gõ thẳng `/profile` khi **chưa** đăng nhập | Bị chuyển về `/login` | Tự chuyển sang `http://localhost:5174/login` | ✅ |
+| 2.7 | Mở `/login` khi **đã** đăng nhập | Tự về trang chủ | Tự chuyển về `/` | ✅ |
+| 2.8 | Gõ URL không tồn tại `/trang-khong-ton-tai` | Trang 404, không trắng màn | Hiện trang 404 kèm nút "Về trang chủ" | ✅ |
+
+**Kịch bản 3 — Bất thường / người dùng khác / hiển thị**
+
+| # | Kịch bản | Kỳ vọng | Thực tế | Kết quả |
+|---|----------|---------|---------|---------|
+| 3.1 | Đăng nhập sai mật khẩu | Báo lỗi 401, không tạo token | Hiện "Email hoặc mật khẩu không đúng", vẫn ở `/login` | ✅ |
+| 3.2 | Đăng nhập tài khoản **bị khoá** `khach3@gmail.com` | Báo "Tài khoản đã bị khoá" | Hiện "Tài khoản đã bị khoá. Vui lòng liên hệ quản trị viên" (403) | ✅ |
+| 3.3 | Bấm "Đăng xuất" | Về `/login`, phiên xoá cả hai phía | Về `/login`. Truy vấn CSDL xác nhận `RefreshTokenHash = NULL` cho cả 4 tài khoản | ✅ |
+| 3.4 | Xem trang đăng ký ở màn hình điện thoại 390px | Không tràn ngang, dùng được | 6 ô nhập nằm trọn trong 390px, thanh điều hướng vừa khít | ✅ |
+| 3.5 | Kiểm tra quy tắc hiển thị bất biến | KHÔNG lộ `Id` nội bộ ở bất kỳ trang nào | Trang hồ sơ chỉ có email / quyền / ngày tạo, không có Id | ✅ |
+| 3.6 | Theo dõi console trình duyệt khi thao tác | Không có cảnh báo / lỗi | 0 warning, 0 error (đã tắt 2 cảnh báo React Router bằng cờ `future`) | ✅ |
+
+**2 ca hoãn — có lý do rõ ràng, không bỏ sót**
+
+| # | Kịch bản | Vì sao chưa làm | Khi nào làm |
+|---|----------|-----------------|------------|
+| H1 | Khách gõ thẳng URL `/admin` | **Chưa có route `/admin`** — trang quản trị thuộc Bước 14. `ProtectedRoute` đã sẵn sàng nhận tham số `yeuCauQuyen={UserRole.ADMIN}` | Bước 14 |
+| H2 | Token hết hạn giữa chừng, tự refresh | Cần sửa `localStorage` để ép access token hết hạn; công cụ kiểm thử trình duyệt ở đây không cho chạy lệnh trong trang. Phía server đã kiểm chứng ở mục 1A (refresh trả token **khác** token cũ) | Bước 14, khi có màn hình liên tục gọi API |
+
+> **Ca "đăng ký có tham số `role: ADMIN`" đã bỏ khỏi bảng, không phải quên:** form đăng ký
+> không có ô nhập quyền nên giao diện không thể gửi `role` lên. Trường hợp này đã kiểm
+> ở tầng API trong mục 1A (ca 3.39 và 3.40) — `PUT /profile` có gửi email và role mới
+> nhưng server bỏ qua, dữ liệu giữ nguyên.
+>
+> **Sau khi đăng ký, người dùng vào thẳng hệ thống chứ không qua trang đăng nhập** — vì
+> endpoint đăng ký cũng trả về cặp token giống đăng nhập. Đây là hành vi chủ ý.
 
 ### 1C. Lỗ hổng phát hiện & đã sửa trong lúc kiểm thử
 
 > Ghi lại vì đây là bằng chứng cho việc "kiểm thử tay không thay thế được unit test":
-> 2 lỗi dưới đây đã đi qua **toàn bộ 147 unit test mà không bị bắt**.
+> 2 lỗi đầu đã đi qua **toàn bộ 147 unit test mà không bị bắt**. Lỗi thứ 3 ở tầng
+> giao diện, không có unit test nào phủ nên đã đi qua **toàn bộ 51 ca kiểm thử tay
+> phía API mà vẫn không lộ ra** — phải mở trình duyệt thao tác thật mới thấy.
 
 | Lỗi | Biểu hiện | Nguyên nhân gốc | Đã sửa |
 |------|-----------|-----------------|---------|
 | **Refresh token cũ vẫn dùng được** (3.27 trả 200 thay vì 401) | Đăng nhập ở máy 2 không làm mất tác dụng token máy 1 → giới hạn "mỗi tài khoản một phiên" ghi trong báo cáo là vô hiệu | Refresh token dài ~196 ký tự nhưng lại băm bằng **BCrypt**, mà BCrypt chỉ xét **72 byte đầu**. Hai token chỉ khác nhau ở phần cuối nên cho **cùng một hash** | Tách `ITokenHasher` (SHA-256, xét toàn bộ chuỗi) khỏi `IPasswordHasher` (BCrypt, dành cho mật khẩu). Cột `RefreshTokenHash` giữ nguyên `varchar(100)` — SHA-256 hex đúng 64 ký tự |
 | **Hai lần đăng nhập trong cùng giây sinh ra token giống hệt nhau** | Refresh token không thay đổi sau khi làm mới phiên → token bị đánh cắp không bị vô hiệu hoá | JWT chỉ chứa `userId` + `exp`, mà `exp` tính theo giây; không có mã định danh duy nhất | Thêm claim `jti` = `Guid.NewGuid()` vào refresh token (chuẩn JWT 7519 mục 4.1.7) |
 | **147 unit test không bắt được cả hai lỗi trên** | Test xanh trong khi bản thật hỏng | `FakeJwtTokenService` trả về `fake-refresh-{id}` — **giống nhau mọi lần gọi**; `FakePasswordHasher` so sánh chuỗi thuần. Bản giả che mất đúng đặc tính gây lỗi của hàm thật | Sửa `FakeJwtTokenService` sinh token khác nhau mỗi lần (`fake-refresh-{id}-{số thứ tự}`), dùng `TokenHasher` **thật** trong `AuthServiceTests`. Bài học ở `lessons.md` mục 20 |
+| **Đổi mật khẩu & đăng xuất báo "Đã xảy ra lỗi" dù server đã làm đúng** (lượt làm giao diện, ca 1.4) | Bấm "Đổi mật khẩu" với mật khẩu đúng → hiện lỗi chung chung, **không** chuyển về trang đăng nhập. Log server cho thấy `UPDATE Users SET PasswordHash...` đã chạy thành công, không có exception | `bocDuLieu()` trong `authService.ts` coi `data === null` là lỗi. Nhưng `POST /auth/logout` và `PUT /auth/change-password` trả `ApiResponse<object>.Success(...)` — **không có data, tức `data` là `null` cả khi thành công**. Hàm này viết cho endpoint có data rồi dùng lại cho endpoint không có data | Tách hàm `kiemTraThanhCong()` chỉ kiểm `success`, dành cho endpoint không mang dữ liệu. Đồng thời cho `layThongBaoLoi()` trả `error.message` khi lỗi do chính tầng service ném ra, thay vì nuốt mất nguyên nhân. Bài học ở `lessons.md` mục 25 |
 
 ---
 

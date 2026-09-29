@@ -14,8 +14,8 @@
 | | 2 | Khung project + git repo | — | — | ✅ Xong (29/09) |
 | | 3 | 9 bảng CSDL + project test | ✅ 6/6 kịch bản SQL | 27 pass | ✅ Xong (29/09) |
 | | 4 | Dữ liệu mẫu (4 tài khoản, 3 địa điểm, 10 phòng, 15 đơn, 6 đánh giá) + 8 ảnh SVG | ✅ 17/17 kịch bản (HP/AB/EC) | 55 pass (thêm 28) | ✅ Xong (29/09) |
-| | 5 | Tài khoản (đăng ký/đăng nhập/hồ sơ) — **Backend** | ✅ 51/51 kịch bản (HP/EC/AB) | 147 pass (thêm 92) | 🟨 Backend xong, chờ giao diện |
-| | 5b | Tài khoản — giao diện (11 file FE) | ⬜ | — | ⬜ Chưa làm |
+| 29/09 | 5 | Tài khoản (đăng ký/đăng nhập/hồ sơ) — **Backend** | ✅ 51/51 kịch bản (HP/EC/AB) | 147 pass (thêm 92) | ✅ Xong (29/09) |
+| 30/09 | 5 | Tài khoản — **giao diện** (16 file FE) | ✅ 18/20 ca (HP/EC/AB), 2 ca hoãn có lý do | 147 pass (không đổi) | ✅ Xong (30/09) |
 | | 6 | Xem địa điểm | ⬜ | ⬜ | ⬜ Chưa làm |
 | | 7 | Tìm kiếm & lọc phòng | ⬜ | ⬜ | ⬜ Chưa làm |
 | | 8 | Chi tiết phòng | ⬜ | ⬜ | ⬜ Chưa làm |
@@ -48,7 +48,7 @@
 
 | Tuần | Nội dung | Tình trạng |
 |------|----------|-----------|
-| Tuần 1 (29/09–05/10) | Môi trường, CSDL, seed, tài khoản | 🟨 Backend tài khoản xong, còn giao diện |
+| Tuần 1 (29/09–05/10) | Môi trường, CSDL, seed, tài khoản (cả 2 tầng) | ✅ Xong cả backend lẫn giao diện tài khoản |
 | Tuần 2 (06/10–12/10) | Tìm kiếm, chi tiết phòng, đặt phòng, đơn của tôi | ⬜ |
 | Tuần 3 (13/10–19/10) | Admin, thống kê, đánh giá, kiểm thử, Chương 4 | ⬜ |
 | Tuần 4 (20/10) | Bảo vệ | ⬜ |
@@ -79,5 +79,10 @@
 | 29/09 | 147 unit test **không bắt được** 2 lỗi trên vì bản giả (`FakeJwtTokenService` trả token giống nhau mọi lần, `FakePasswordHasher` so sánh chuỗi thuần) che mất đặc tính gây lỗi của hàm thật | Sửa bản giả sinh token khác nhau mỗi lần; dùng `TokenHasher` thật trong test nghiệp vụ; bổ sung test bắt đúng 2 lỗi trên | ✅ Đã sửa |
 | 29/09 | PowerShell 5.1: JSON trong script bọc bằng **dấu nháy đơn** thì backtick thành ký tự thật → body hỏng, 6 ca trả 400 nhầm là lỗi code | Bọc **dấu nháy kép** với backtick (`` `{``"fullName`":...} ``) | ✅ Đã sửa |
 | 29/09 | Ca kiểm thử tự vô hiệu mà không nhận ra: `$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())` gọi ở từng dòng → email lệch nhau vài giây, ca "trùng email" luôn trả 201 | Tính hậu tố **một lần** ở đầu script rồi dùng lại; khai báo biến **trước** chỗ dùng (PowerShell chạy tuần tự từ trên xuống) | ✅ Đã sửa |
+| 30/09 | **Lỗi**: bấm "Đổi mật khẩu" / "Đăng xuất" báo "Đã xảy ra lỗi" dù server đã cập nhật `PasswordHash` thành công (log có `UPDATE`, không có exception) | `bocDuLieu()` coi `data === null` là lỗi, nhưng `logout` và `change-password` trả `ApiResponse<object>.Success(...)` — **không có data, tức `data` là `null` cả khi thành công**. Tách `kiemTraThanhCong()` cho endpoint không mang dữ liệu; cho `layThongBaoLoi()` trả `error.message` khi lỗi nội bộ | ✅ Đã sửa |
+| 30/09 | Cổng 5173 bị **pm2** chiếm cho project khác (`cook-web`) nên gọi `/api/...` qua Vite trả 404 rỗng, trong khi gọi thẳng 5080 thì 200 | Chuyển Vite sang cổng 5174 kèm `strictPort: true`; thêm 5174 vào danh sách CORS server. Không tắt process của người dùng | ✅ Đã sửa |
+| 30/09 | 2 warning React Router v6 (future flags) lặp lại trong console mỗi lần tải trang | Bật `future={{ v7_startTransition, v7_relativeSplatPath }}` cho `BrowserRouter` | ✅ Đã sửa |
+| 30/09 | Script kiểm thử tay backend ở lượt trước **làm bẩn dữ liệu mẫu**: `khach1` đổi tên thành "Khach Thu Doi Email", `khach2` thành "Admin Doi Quyen", refresh token còn treo trong CSDL | Khôi phục qua chính API `PUT /profile` (tránh lỗi encoding khi gõ SQL tiếng Việt) rồi `POST /logout` để xoá refresh token; xoá tài khoản test `kieuthu123@gmail.com`; kiểm tra lại CSDL khớp `DuLieuMau.cs` | ✅ Đã sửa |
+| 30/09 | Ảnh chụp màn hình lúc kiểm thử tay lọt vào `.openchamber/` chưa bị `.gitignore` chặn, có nguy cơ commit nhầm vào repo | Thêm `.openchamber/` vào `.gitignore` nhóm "Công cụ hỗ trợ" | ✅ Đã sửa |
 
 > Ghi lại ở đây, cuối kỳ dùng làm cơ sở cho phần "Hạn chế" và "Bài học kinh nghiệm" trong Kết luận.

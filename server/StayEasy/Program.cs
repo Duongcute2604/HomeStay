@@ -149,7 +149,11 @@ builder.Services.AddCors(options =>
     options.AddPolicy(CorsPolicyName, policy => policy
         .WithOrigins(
             "http://localhost:5173",
-            "http://127.0.0.1:5173")
+            "http://127.0.0.1:5173",
+            // Dự phòng: cổng 5173 có thể đã bị ứng dụng khác trên máy chiếm,
+            // lúc đó Vite chuyển sang 5174 (xem client/vite.config.ts).
+            "http://localhost:5174",
+            "http://127.0.0.1:5174")
         .AllowAnyHeader()
         .AllowAnyMethod());
 });

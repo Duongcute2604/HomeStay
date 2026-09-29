@@ -1,5 +1,8 @@
 # StayEasy — Hệ thống đặt phòng & quản lý Homestay
 
+> Đồ án 4 · SV: **Nguyễn Hải Nam — 12523W.1** · GVHD: **TS. Hồng Quốc Việt**
+> Bắt đầu 29/09/2026 · Bảo vệ dự kiến ~20/10/2026
+
 ---
 
 ## 1. Hệ thống này là gì

@@ -533,3 +533,134 @@ Unhandled exception. System.InvalidOperationException: Thiếu khối cấu hìn
 > 3. **Đừng rebase khi đang dở dang việc dùng file local.** Nếu buộc phải rebase, làm nó **trước** khi commit, hoặc chuẩn bị sẵn bản sao file secret ra chỗ khác (`$env:TEMP`).
 > 4. Khi app không khởi động được, **đọc dòng lỗi đầu tiên** trước. Ở đây lỗi nói thẳng "Thiếu khối cấu hình 'Jwt'" — đủ để biết ngay là thiếu file cấu hình, không cần đoán.
 > 5. Lưu khoá bí mật ra **nhiều nơi hơn một** chỗ, và biết cách sinh lại (xem `appsettings.Development.example.json` có sẵn lệnh sinh chuỗi ngẫu nhiên).
+
+## 25. Hàm bóc dữ liệu dùng chung cho cả endpoint có data và không có data
+
+**Sai ở đâu:** `bocDuLieu()` trong `authService.ts` viết để bóc `ApiResponse<T>` cho
+endpoint **có** trả về dữ liệu, nhưng lại dùng luôn cho mọi endpoint:
+
+```ts
+function bocDuLieu<T>(response: ApiResponse<T>): T {
+  if (!response.success || response.data === null) {
+    throw new Error(response.message)
+  }
+  return response.data
+}
+```
+
+**Biểu hiện:** bấm "Đổi mật khẩu" với mật khẩu đúng, hoặc bấm "Đăng xuất" — giao diện
+báo "Đã xảy ra lỗi. Vui lòng thử lại." và **không chuyển trang**. Log server lại cho thấy
+`UPDATE Users SET PasswordHash = ...` đã chạy thành công, không có exception nào.
+
+**Vì sao sai:** `POST /auth/logout` và `PUT /auth/change-password` trả
+`ApiResponse<object>.Success("...")` — **không gán `data`**, nên `data` là `null`
+**cả khi thành công**. Điều kiện `response.data === null` viết để bắt lỗi "máy chủ trả
+về rỗng", nhưng lại dính vào một trường hợp hoàn toàn bình thường rồi ném lỗi.
+
+**Đã sửa:** tách hai hàm, mỗi hàm một việc (nguyên lý SRP):
+
+```ts
+// Endpoint không mang dữ liệu: chỉ kiểm success, không có ý "data là gì"
+function kiemTraThanhCong(response: ApiResponse<unknown>): void {
+  if (!response.success) { throw new Error(response.message) }
+}
+
+// Endpoint có mang dữ liệu: bóc thêm, và báo lỗi nếu rỗng
+function bocDuLieu<T>(response: ApiResponse<T>): T {
+  kiemTraThanhCong(response)
+  if (response.data === null) { throw new Error('Máy chủ trả về dữ liệu rỗng...') }
+  return response.data
+}
+```
+
+Kèm theo, sửa `layThongBaoLoi()` cho trả `error.message` khi lỗi do chính tầng service
+ném ra. Trước đó hàm này chỉ biết `AxiosError`, nên mọi lỗi nội bộ đều bị quang về
+một câu chung chung — mất nguyên nhân thật đúng lúc cần tìm lỗi.
+
+**Bài học rút ra — "sai ở đâu":**
+
+> 1. **Một hàm được viết để giải một bài toán, nhưng bị dùng cho bài toán khác** là
+>    nguồn của lỗi. Khi viết hàm phải hỏi: "hết tham số này thì còn dùng được không?
+>    Có biến nào là **thuộc tính bắt buộc có mặt** không?" Nếu có trường hợp hợp lệ
+>    mà hàm lại coi là lỗi, hàm đó viết sai chính nó.
+> 2. **Khai báo kiểu `T` không bao giờ đảm bảo hình thức.** `ApiResponse<T>` cho phép
+>    `data` là `null` ngay cả khi `T` là `object`. Xem `ApiResponse<object>.Success(...)`
+>    trong controller để biết endpoint nào thật sự có data.
+> 3. **Khi UI báo lỗi chung chung "Đã xảy ra lỗi" mà log server không sai — đó là lỗi
+>    phía giao diện chưa đọc log.** Đọc log trước đã đúng ở đây: máy chạy hết, database
+>    cập nhật đúng, chỉ có lỗi ở lớp gọi API của client.
+> 4. **51 ca kiểm thử tay phía API không bắt được lỗi này** vì lỗi nằm ở tầng client,
+>    không nằm trong request/response. Chỉ mở trình duyệt thao tác thật mới thấy — đó là
+>    lý do AGENTS.md yêu cầu 3 kịch bản cho mỗi chức năng.
+
+## 26. File .ps1 lưu UTF-8 KHÔNG BOM sẽ bị PowerShell 5.1 đọc sai
+
+**Sai ở đâu:** viết file `.ps1` có chứa chữ tiếng Việt, rồi chạy `& file.ps1` — PowerShell
+báo lỗi parse:
+
+```
+Unexpected token '45' in expression or statement.
+```
+
+trong khi `Số 45` có gốc là dữ liệu hợp lệ. Lỗi nào là đọc **sai mã chữ** nên thông báo
+về dấu chấm/số lại trỏ lên chỗ không liên quan.
+
+**Nguyên nhân:** Windows PowerShell 5.1 đọc file script theo mã ANSI (cp1252) khi file
+không có BOM, trong khi UTF-8 không BOM bị hiểu sai từng byte. Riêng **Windows
+PowerShell 7+** luôn đọc UTF-8 nên không dính lỗi này — cùng một file, hai kết quả
+khác nhau tuỳ phiên bản.
+
+**Đã sửa:** thêm BOM trước khi chạy (làm 1 lần, dùng lại được):
+
+```powershell
+$p = "C:\temp\script.ps1"
+$noiDung = [System.IO.File]::ReadAllText($p, [System.Text.Encoding]::UTF8)
+[System.IO.File]::WriteAllText($p, $noiDung, (New-Object System.Text.UTF8Encoding($true)))
+```
+
+**Lần sau tránh thế nào:**
+
+> 1. **Mọi file `.ps1` có tiếng Việt đều phải có BOM** khi chạy bằng Windows
+>    PowerShell 5.1 (PowerShell 7+ thì không cần).
+> 2. **Muốn chắc chắn thì đừng gõ tiếng Việt vào script** — đưa dữ liệu vào biến tại
+>    chỗ khác, hoặc dùng `here-string` rồi ghi ra file cho chạy.
+> 3. **Khi báo lỗi parse mà nhìn không liên quan giới hạn dòng đang có lỗi** (ví dụ lỗi
+>    ở dòng 35 lại trỏ vào số 35) — do đọc sai mã chữ, dừng lại đọc lại. Đây là dấu hiệu
+>    nhận biết nhanh nhất.
+> 4. File Markdown/JSON nên để **không BOM** — công cụ đọc file đúng BOM sẽ tính ký tự
+>    BOM là ký tự lạ ở đầu file và làm hỏng dòng đầu tiên.
+
+## 27. Cổng 5173 bị chiếm bởi app khác chạy dưới pm2
+
+**Sai ở đâu:** cấu hình Vite chạy ở cổng 5173 (chuẩn của Vite). Chạy `npm run dev` thì
+báo "ready" nhưng gọi `/api/auth/login` qua cổng 5173 trả **404 rỗng**. Gọi trực tiếp
+`http://localhost:5080/api/auth/login` thì trả **200 bình thường** — server ASP.NET Core
+không có vấn đề gì.
+
+**Nguyên nhân:** cổng 5173 đã bị một ứng dụng khác trên máy chiếm trước. Tìm process:
+
+```powershell
+$ket = Get-NetTCPConnection -LocalPort 5173 -State Listen
+Get-CimInstance Win32_Process -Filter "ProcessId = $($ket[0].OwningProcess)" |
+  Select-Object -ExpandProperty CommandLine
+```
+
+kết quả là `pm2\lib\ProcessContainerFork.js` — một project khác do pm2 quản lý. App đó
+không phải Vite của dự án này nên nó trả 404 cho mọi đường dẫn lạ.
+
+**Đã sửa:** chuyển Vite sang **5174** kèm `strictPort: true` (báo lỗi sớm nếu cổng bị
+chiếm thay vì tự nhảy sang 5175), và thêm `localhost:5174` vào danh sách CORS bên server.
+CORS chỉ là dự phòng — request đi qua proxy nên cùng origin, thực tế luồng dev không cần
+CORS.
+
+**Lần sau tránh thế nào:**
+
+> 1. **Khi gọi API qua cổng của Vite mà nhận 404 rỗng, đừng nghi do server ASP.NET Core.**
+>    Log server không có dòng nào, response rỗng không có body là ký hiệu Vite/SPA
+>    fallback trả về chứ không phải API trả về.
+> 2. **Trước khi chạy dự án, kiểm tra cổng đã bị chiếm chưa:**
+>    `Get-NetTCPConnection -LocalPort <cổng> -State Listen`.
+> 3. **Không tự tắt process lạ không rõ của ai** — process đang chạy là của người dùng,
+>    tắt nhầm sẽ làm hỏng việc khác của họ. Phải đổi cổng cho dự án mình.
+> 4. **`strictPort: true`** là mặc định đáng bật cho mọi dự án Vite: mặc định Vite tự
+>    nhảy cổng khi cổng bị chiếm, người khác thấy app chạy ở 5175 sẽ tưởng lỗi code.

@@ -137,7 +137,7 @@ dotnet run            Now listening on: http://localhost:5080  (không có fail/
 
 ## Giai đoạn 2 — Tài khoản
 
-### [x] BƯỚC 5 — Đăng ký / đăng nhập / hồ sơ · **Backend xong 29/09/2026** 🟨 còn giao diện
+### [x] BƯỚC 5 — Đăng ký / đăng nhập / hồ sơ · **XONG 30/09/2026** (Backend 29/09 · giao diện 30/09)
 - **Mục tiêu đo được:** 7 API xong (`register`, `login`, `refresh`, `logout`, `me`, `profile`, `change-password`) · **3/3 kịch bản test tay** theo `docs/KIEM_THU_TAY.md` mục 1 · **≥ 8 unit test pass** trong `AuthServiceTests`
 - **Kết quả đo được:**
   - 7/7 API hoàn chỉnh
@@ -146,7 +146,7 @@ dotnet run            Now listening on: http://localhost:5080  (không có fail/
   - `dotnet build --no-incremental` → **0 error 0 warning**
   - Migration `20260929163853_AddRefreshTokenToUsers` đã apply lên MySQL thật
 - **Ảnh chụp:** Swagger UI — màn hình `POST /api/auth/login` (bấm Try it out) + màn hình response 401 khi sai mật khẩu
-- **Ghi chú:** Lượt này **chỉ làm Backend** (quyết định #3). Giao diện đăng ký / đăng nhập / hồ sơ để phiên chat sau — ảnh chụp 2 màn hình giao diện sẽ bổ sung sau khi làm phần UI.
+- **Ghi chú:** Phần **Backend** làm lượt 29/09, phần **giao diện** làm lượt 30/09 (16 file, xem mục "PHẦN 2" bên dưới). Cả hai lượt đều theo đủ 6 bước trong `AGENTS.md` mục 0.
 
 #### Bằng chứng cụ thể (không phải "tôi nghĩ là xong")
 
@@ -178,7 +178,74 @@ dotnet run            Now listening on: http://localhost:5080  (không có fail/
 |--------|------------|
 | Body JSON hỏng trả `ProblemDetails` kèm lỗi kỹ thuật `.NET` ra ngoài | Kiểm key `ModelState` bắt đầu bằng `$` → trả thông báo chung; key là tên trường → trả đúng message tiếng Việt (`lessons.md` mục 23) |
 | 401/403/404/415 trả về **không có body** → client đọc `message` ra `undefined` | Thêm `app.UseStatusCodePages` trả `ApiResponse` cho mọi mã lỗi không có body; gỡ khối 401/403 thủ công khỏi `ExceptionMiddleware` (tránh xử lý trùng ở 2 chỗ) |
-| Cột `RefreshTokenHash` trong CSDL | SHA-256 hex = 64 ký tự, `varchar(100)` vẫn vừa → **không cần migration mới** |
+| Cột `RefreshTokenHash` trong CSDL | SHA-256 hex = 64 ký tự, `varchar(100)` vẫn vừa nên **không cần migration mới** |
+
+#### PHẦN 2 — GIAO DIỆN (lượt 30/09/2026) · 16 file · `npm run build` 0 lỗi
+
+| Hạng mục | Kết quả thật |
+|----------|--------------|
+| `npm run build` | 0 lỗi TypeScript (chạy lại sau mọi lần sửa) |
+| `npm run lint` | Sạch, không cảnh báo |
+| Test tay trình duyệt | **18/20 ca đạt** — HP 6 · EC 8 · AB/bất thường 4 · 2 ca hoãn có lý do ghi rõ (`docs/KIEM_THU_TAY.md` mục 1B) |
+| Console trình duyệt | **0 warning, 0 error** trong cả 3 kịch bản |
+| Màn hình điện thoại 390px | Trang đăng ký 6 ô nhập nằm trọn, không tràn ngang |
+| Quy tắc hiển thị | Không lộ `Id` nội bộ ở bất kỳ trang nào; số/tiền căn phải, chữ căn trái |
+| `dotnet test` (chạy lại sau khi sửa CORS) | `Passed! 147/147` — không hỏng gì |
+| Dữ liệu demo sau khi test | Đã khôi phục đúng 4 tài khoản gốc, mọi `RefreshTokenHash = NULL` |
+
+**3 kịch bản test tay giao diện (bảng đầy đủ ở `docs/KIEM_THU_TAY.md` mục 1B):**
+
+| Lần | Loại | Ví dụ đã chạy |
+|-----|------|---------------|
+| 1 | **Happy path** | Đăng ký tài khoản mới 1.1 · đăng nhập 1.2 · sửa hồ sơ 1.3 · đổi mật khẩu 1.4 · F5 giữ phiên 1.5 · đăng nhập Admin 1.6 |
+| 2 | **Edge case** | Mật khẩu 5 ký tự 2.1 · xác nhận không khớp 2.2 · email trùng 2.3 · email sai định dạng 2.4 · sai mật khẩu hiện tại 2.5 · gõ thẳng `/profile` 2.6 · mở `/login` khi đã đăng nhập 2.7 · URL sai 2.8 |
+| 3 | **Bất thường / người dùng khác** | Sai mật khẩu 3.1 · tài khoản bị khoá 3.2 · đăng xuất xoá cả hai phía 3.3 · điện thoại 390px 3.4 · không lộ Id 3.5 · console sạch 3.6 |
+
+**3 lỗi phát hiện khi làm giao diện (đã sửa):**
+
+| Lỗi | Biểu hiện | Nguyên nhân gốc | Cách sửa | Bài học |
+|------|-----------|-----------------|----------|---------|
+| Bấm "Đổi mật khẩu" / "Đăng xuất" báo "Đã xảy ra lỗi" | Server log cho thấy `UPDATE Users SET PasswordHash` **đã chạy thành công**, không có exception, nhưng giao diện báo lỗi và không chuyển trang | `bocDuLieu()` coi `data === null` là lỗi. Mà `logout` và `change-password` trả `ApiResponse<object>.Success(...)` — **không gán data**, nên `data` là `null` **cả khi thành công** | Tách `kiemTraThanhCong(response)` chỉ kiểm `success` cho endpoint không mang dữ liệu; `bocDuLieu` gọi hàm này rồi mới kiểm `data === null`. Thêm `error instanceof Error` vào `layThongBaoLoi` để lỗi nội bộ không bị nuốt | `lessons.md` mục 25 |
+| Gọi `/api/...` qua Vite trả **404 rỗng**, gọi thẳng 5080 thì 200 | `npm run dev` báo "ready" nhưng form đăng nhập báo lỗi mạng | Cổng 5173 bị **pm2** (`cook-web` pid 14884) chiếm cho project khác. App lạ trả 404 cho mọi đường dẫn | Chuyển Vite sang **5174** kèm `strictPort: true`; thêm 5174 vào CORS server. **Không tắt process của người dùng** | `lessons.md` mục 27 |
+| 2 cảnh báo React Router v6 lặp mỗi lần tải trang | Console có warning về `v7_startTransition`, `v7_relativeSplatPath` | React Router 6.28 cảnh báo sẵn cho phiên bản 7 | `<BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>` | — |
+
+**Ghi chú quan trọng — 2 ca test tay hoãn, KHÔNG phải bỏ sót:**
+
+| # | Kịch bản | Vì sao hoãn | Khi nào làm |
+|---|----------|-------------|------------|
+| H1 | Khách gõ thẳng URL `/admin` | **Chưa có route `/admin`** — thuộc Bước 14. `ProtectedRoute` đã viết sẵn tham số `yeuCauQuyen` | Bước 14 |
+| H2 | Token hết hạn giữa chừng thì tự refresh | Cần ép access token hết hạn bằng cách sửa `localStorage`; công cụ kiểm thử trình duyệt ở đây không cho chạy lệnh trong trang. **Phía server đã kiểm chứng** ở mục 1A (refresh trả token khác token cũ) | Bước 14, khi có màn hình liên tục gọi API |
+
+**File frontend đã tạo (16 file) — khác kế hoạch 14 file, thêm 2 vì tách bạch:**
+
+| # | File | Vai trò | Ghi chú |
+|---|------|---------|---------|
+| 1 | `types/auth.ts` | Kiểu dữ liệu + `UserRole = { CUSTOMER: 0, ADMIN: 1 }` | BE serialize enum thành **số** (`role: 0`), FE tuyệt đối không so sánh chuỗi |
+| 2 | `store/authStore.ts` | Zustand + persist `stayeasy.auth` | Token là dữ liệu phiên |
+| 3 | `api/client.ts` | axios + interceptor + refresh 401 đúng 1 lần | Đọc token qua `useAuthStore.getState()` để không tạo vòng import |
+| 4 | `services/authService.ts` | 7 hàm gọi API, không chứa JSX | Tách `bocDuLieu` / `kiemTraThanhCong` |
+| 5 | `hooks/useAuth.ts` | Bọc store + service cho component | — |
+| 6 | `components/common/Input.tsx` | Ô nhập có nhãn + lỗi a11y | — |
+| 7 | `components/common/Button.tsx` | Nút có trạng thái loading | — |
+| 8 | `components/common/FormMessage.tsx` | Dòng báo lỗi/thành công | — |
+| 9 | `components/common/PageLayout.tsx` | Khung trang dùng chung | Tách riêng để 3 trang không lặp layout |
+| 10 | `components/ProtectedRoute.tsx` | Chặn chưa đăng nhập + kiểm quyền | Generic nhận `yeuCauQuyen` |
+| 11 | `pages/Home.tsx` | Trang chủ | — |
+| 12 | `pages/Login.tsx` | Đăng nhập | React Hook Form + Zod |
+| 13 | `pages/Register.tsx` | Đăng ký | 6 trường |
+| 14 | `pages/Profile.tsx` | Hồ sơ + đổi mật khẩu | **Không tạo `utils/format.ts`** vì trang này không hiện tiền (YAGNI) |
+| 15 | `pages/NotFound.tsx` | 404 | — |
+| 16 | *Sửa* `App.tsx` + `main.tsx` | Router + provider | 5 route |
+
+**Quyết định đã chốt trong lượt giao diện (30/09/2026):**
+
+| # | Vấn đề | Chốt | Lý do |
+|---|--------|------|-------|
+| 1 | Cổng dev Vite | **5174** kèm `strictPort: true` | 5173 do pm2 `cook-web` chiếm. `strictPort` để lỗi báo ngay thay vì tự nhảy 5175 gây rối |
+| 2 | Bố cục hàm bóc dữ liệu | Tách `bocDuLieu` (có data) + `kiemTraThanhCong` (không data) | Nguyên lý SRP — 1 hàm 1 việc |
+| 3 | Có cài vitest cho frontend không? | **Chưa quyết** — đã hỏi người dùng | `AGENTS.md` 1.3 cấm thêm package chưa có lý do rõ ràng. Logic nghiệp vụ tài khoản đã có 147 test backend |
+| 4 | Có tạo `utils/format.ts` không? | **Không** | YAGNI — chỉ tạo khi có màn hình hiện tiền (Bước 10 trở đi) |
+
 
 #### Quyết định đã chốt (29/09/2026)
 
@@ -215,9 +282,10 @@ dotnet run            Now listening on: http://localhost:5080  (không có fail/
 > Nhưng file này đã được commit ở Bước 2 → phải dùng `git rm --cached` và tạo
 > `appsettings.Development.example.json` (giá trị mẫu, không phải secret thật) để người clone về chạy được.
 
-**Frontend — 11 file mới + 2 file sửa:**
+**Frontend — 16 file (kế hoạch ban đầu 14 file, thêm 2 do tách bạch — xem bảng file thật ở PHẦN 2):**
 
-> ⚠️ **Quyết định #3: lượt này CHƯA làm giao diện.** Mục B dưới đây giữ lại làm kế hoạch cho phiên chat sau, không phải việc phải làm ngay.
+> ⚠️ **Quyết định #3 ban đầu: lượt Backend CHƯA làm giao diện.** Phần giao diện đã làm xong
+> ở lượt 30/09/2026. Danh sách dưới đây là **kế hoạch đã thực hiện**, giữ lại để đối chiếu.
 
 | # | File | Viết gì |
 |---|------|---------|
@@ -251,7 +319,7 @@ dotnet run            Now listening on: http://localhost:5080  (không có fail/
 | 2 | **EC** | ① email trùng ② email sai định dạng ③ mật khẩu 5 ký tự ④ sai mật khẩu ⑤ đăng nhập `khach3@gmail.com` (LOCKED) | ①②④⑤ → 409/403 · ③ → 400, thông báo tiếng Việt rõ ràng |
 | 3 | **AB** | ① Gọi `/api/auth/me` không có token ② Refresh bằng token sai ③ Đăng nhập lại rồi dùng refresh token cũ đã logout | ①②③ → 401 (token đã bị vô hiệu hoá), **không** phải 500 |
 
-**Ước lượng:** ~2,5 giờ cho phần Backend. Rủi ro thấp vì không đụng nghiệp vụ phòng/đơn.
+**Ước lượng thực tế:** Backend ~2,5 giờ (đúng dự kiến) · Giao diện ~3 giờ (dự kiến 2 giờ, vượt vì phải sửa 3 lỗi phát hiện khi test tay). Tổng Bước 5: **~5,5 giờ**.
 
 ---
 
