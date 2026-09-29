@@ -1,0 +1,42 @@
+# ===== .NET / Visual Studio =====
+[Bb]in/
+[Oo]bj/
+.vs/
+*.user
+*.suo
+*.userprefs
+*.userosscache
+*.sln.docstates
+TestResults/
+
+# ===== Node / Vite =====
+node_modules/
+dist/
+dist-ssr/
+.vite/
+*.local
+# File cache incremental của TypeScript — sinh ra mỗi lần build, không cần lưu
+*.tsbuildinfo
+
+# ===== SECRET — TUYỆT ĐỐI KHÔNG COMMIT =====
+# Mật khẩu thật, JWT key, connection string production
+.env
+.env.*
+!.env.example
+appsettings.Production.json
+secrets.json
+
+# ===== Tài liệu Word (báo cáo) =====
+# Báo cáo đang được chỉnh sửa liên tục trong Word → commit gây xung đột merge
+# và repo phình to. Bản gốc nằm ở thư mục cha, PHẢI tự sao lưu riêng.
+*.docx
+~$*.docx
+
+# ===== File rác =====
+*.log
+logs/
+tmp/
+temp/
+Thumbs.db
+desktop.ini
+.DS_Store

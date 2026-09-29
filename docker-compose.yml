@@ -1,0 +1,39 @@
+# ============================================================
+#  StayEasy — MySQL 8.0 chạy bằng Docker
+#  Nguyễn Hải Nam — 12523W.1
+#
+#  CỔNG 3307: cổng 3306 đang bị container `cookbook-mysql`
+#  của dự án cũ chiếm. Dự án này KHÔNG đụng vào container đó.
+#
+#  Mật khẩu bên dưới là dữ liệu GIẢ, chỉ dùng cho máy local.
+# ============================================================
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: stayeasy-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root123456
+      MYSQL_DATABASE: stayeasy
+      MYSQL_USER: stayeasy
+      MYSQL_PASSWORD: stayeasy123
+      TZ: Asia/Ho_Chi_Minh
+    ports:
+      - "3307:3306"
+    volumes:
+      - stayeasy-mysql-data:/var/lib/mysql
+    # utf8mb4 là bắt buộc: tiếng Việt có dấu + emoji trong mô tả phòng
+    command: >
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot123456"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+volumes:
+  stayeasy-mysql-data:
+    name: stayeasy-mysql-data

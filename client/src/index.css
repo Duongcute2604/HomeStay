@@ -1,0 +1,39 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /*
+   * Quy tắc bất biến (AGENTS.md mục 7.3): mọi số / tiền / diện tích đều căn phải
+   * và dùng chữ số đều nhau (tabular-nums) để cột dọc thẳng hàng, không nhảy dọc.
+   */
+  .number-vn {
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+  }
+
+  /* Số tiền VND: dấu chấm phân cách nghìn, ví dụ 500.000 ₫ */
+  .text-price {
+    @apply number-vn font-semibold text-gray-900;
+  }
+}
+
+@layer components {
+  /* Nút chính — dùng chung để không lặp lại class ở mọi trang (DRY) */
+  .btn-primary {
+    @apply inline-flex items-center justify-center rounded-lg bg-brand-500 px-4 py-2
+           font-medium text-white transition-colors hover:bg-brand-600
+           disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .btn-outline {
+    @apply inline-flex items-center justify-center rounded-lg border border-gray-300
+           px-4 py-2 font-medium text-gray-700 transition-colors hover:bg-gray-50
+           disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  /* Thẻ bao nội dung — dùng ở mọi trang danh sách */
+  .card {
+    @apply rounded-xl border border-gray-200 bg-white shadow-sm;
+  }
+}
