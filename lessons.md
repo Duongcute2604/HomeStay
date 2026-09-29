@@ -204,6 +204,28 @@ npm warn install-scripts  esbuild@0.21.5 (postinstall: node install.js) chưa đ
 
 ---
 
+## 12. Tiếng Việt hiện lỗi trong terminal ≠ file hỏng
+
+**Ngày:** 29/09/2026
+**Triệu chứng:** đọc `<title>` trong `index.html` ra `StayEasy � �?t ph?ng Homestay` — tưởng file bị hỏng encoding, sắp sửa lại cả dự án.
+
+**Nguyên nhân gốc:** **console Windows dùng codepage 437/850, không có nét dấu tiếng Việt.** Chỉ là hỏng ở tầng hiển thị, file trên đĩa vẫn UTF-8 đúng.
+
+**Cách kiểm chứng đúng (không đoán):**
+```powershell
+$text = [System.Text.Encoding]::UTF8.GetString([System.IO.File]::ReadAllBytes('index.html'))
+$t = [regex]::Match($text, '(?<=<title>)[^<]*').Value
+($t.ToCharArray() | Where-Object { [int]$_ -gt 127 }).Count   # => 4  (Đ, ặ, ồ, ụ)
+$t.Contains('?')                                              # => False
+```
+Có 4 ký tự Unicode thật và **không có** ký tự `?` thay thế → file chuẩn.
+
+**Lần sau tránh gì:**
+> **Đừng sửa file vì lỗi hiển thị của terminal.** Muốn kiểm tra encoding thật thì đếm ký tự Unicode hoặc mở bằng VS Code.
+> Nếu cần terminal hiện đúng tiếng Việt: `chcp 65001` (UTF-8) hoặc `chcp 65001; [Console]::OutputEncoding = [System.Text.Encoding]::UTF8`.
+
+---
+
 # MẪU GHI BÀI HỌC (copy để dùng)
 
 ```markdown
