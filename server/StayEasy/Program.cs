@@ -1,44 +1,33 @@
+using Microsoft.EntityFrameworkCore;
+using StayEasy.Data;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+const string ConnectionStringName = "DefaultConnection";
+
+// Chốt đúng phiên bản MySQL đang chạy trong docker-compose.yml.
+// Dùng AutoDetect sẽ mở kết nối ngay lúc khởi động, khiến `dotnet ef` hỏng nếu MySQL chưa bật.
+var serverVersion = new MySqlServerVersion(new Version(8, 0, 36));
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// Nối 9 bảng trong StayEasyDbContext với MySQL trong Docker (cổng 3307).
+// Kiểm tra chuỗi kết nối tồn tại ngay khi khởi động, để lỗi cấu hình lộ ra lúc chạy chứ không phải lúc có request.
+builder.Services.AddDbContext<StayEasyDbContext>(options =>
+{
+    string connectionString = builder.Configuration.GetConnectionString(ConnectionStringName)
+        ?? throw new InvalidOperationException($"Thiếu chuỗi kết nối '{ConnectionStringName}' trong appsettings.json");
+
+    options.UseMySql(connectionString, serverVersion);
+});
+
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
-
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
-
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast =  Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast")
-.WithOpenApi();
-
 app.Run();
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}

@@ -62,11 +62,49 @@ Phiên bản thực tế đã cài: React 18.3.1 · Vite 5.4.21 · TS 5.9.3 · T
 
 ## Giai đoạn 1 — Cơ sở dữ liệu
 
-### [ ] BƯỚC 3 — 9 bảng + project test
-- **Mục tiêu đo được:** database `stayeasy` có đủ 9 bảng (`users`, `locations`, `rooms`, `room_images`, `amenities`, `room_amenities`, `bookings`, `booking_status_history`, `reviews`); có index trên `bookings(RoomId)`, `bookings(CheckIn,CheckOut)`, `bookings(Status)`; `StayEasy.Tests` chạy `dotnet test` ra 1 test mặc định pass
+### [x] BƯỚC 3 — 9 bảng + project test
+- **Mục tiêu đo được:** database `stayeasy` có đủ 9 bảng; index trên `bookings(RoomId)`, `bookings(CheckIn,CheckOut)`, `bookings(Status)`; `dotnet test` xanh
 - **Ghi chú thực hiện:**
-- **Kết quả:**
+  - **3 quyết định đã hỏi và được duyệt:** enum lưu **dạng chữ** (`varchar(20)`) · tên bảng **PascalCase số nhiều** (`RoomImages`) · **không** thêm cột `is_deleted` (xoá thật).
+  - Cột tiền dùng `decimal(18,2)`; `RatingAvg` dùng `decimal(3,2)`.
+  - **Không tạo bảng `payments` / `notifications`** — nằm ngoài phạm vi, để Bước 22/23.
+  - **Không lưu cột `Units` (số giờ/ngày)** trong `Bookings` — suy ra được từ `CheckIn`/`CheckOut`, lưu thêm là tạo chỗ hai nơi có thể mâu thuẫn.
+  - Ràng buộc nghiệp vụ đẩy xuống CSDL bằng **CHECK constraint** (6 ràng buộc) thay vì chỉ kiểm tra trong C#.
+  - **"1 đơn 1 đánh giá"** dựng bằng `UNIQUE(Reviews.BookingId)`, không kiểm tra bằng code — code có lỗ hổng khi 2 người gửi cùng lúc.
+  - `CreatedAt`/`UpdatedAt` do `DbContext` tự điền lúc `SaveChanges`, không bắt service nào phải nhớ set.
+  - Gỡ endpoint mẫu `/weatherforecast` của template .NET (code chết).
+  - `EFCore.Design` và `EFCore.InMemory` hạ từ **8.0.10 → 8.0.2** để khớp Pomelo 8.0.2 (xem `lessons.md` mục 15).
+- **Kết quả:** 9 bảng trong MySQL · 11 khoá ngoại · 6 CHECK constraint · 27 unit test xanh · build 0 warning · app khởi động log sạch.
 - **Bằng chứng:**
+```
+SHOW TABLES           Amenities, BookingStatusHistory, Bookings, Locations,
+                      Reviews, RoomAmenities, RoomImages, Rooms, Users
+DESCRIBE Bookings     Code=varchar(20) UNI · Status=varchar(20) MUL
+                      CheckIn=datetime(6) MUL · RoomId MUL · UserId MUL
+                      TotalAmount/PricePerHourSnapshot/PricePerDaySnapshot = decimal(18,2)
+FK                    11 khoá ngoại đúng quan hệ đã thiết kế
+
+dotnet build          Build succeeded.  0 Warning(s)  0 Error(s)
+dotnet test           Passed!  Failed: 0, Passed: 27, Total: 27
+dotnet run            Now listening on: http://localhost:5080  (không có fail/warn)
+```
+**Test tay 3 kịch bản** (chạy trực tiếp SQL trên MySQL, xem `docs/KIEM_THU_TAY.md` mục 0):
+
+| # | Loại | Kịch bản | Kết quả thực tế |
+|---|------|----------|------------------|
+| 1 | Happy path | Tạo 9 bảng, thêm User/Location/Room/Booking hợp lệ | ✅ 9/9 bảng, enum hiện `CUSTOMER`/`PENDING` đọc được bằng mắt |
+| 2 | Edge case | Thêm 2 tài khoản trùng email `khach1@gmail.com` | ✅ `ERROR 1062 Duplicate entry ... key 'Users.IX_Users_Email'` |
+| 3 | Bất thường | Trả phòng trước khi nhận (`CheckOut < CheckIn`) | ✅ `ERROR 3819 Check constraint 'CK_Bookings_TimeRange' is violated` |
+| 3b | Bất thường | Đánh giá 7 sao (ngoài khoảng 1–5) | ✅ `ERROR 3819 Check constraint 'CK_Reviews_Rating' is violated` |
+| 3c | Bất thường | Đánh giá lần 2 cho cùng 1 đơn | ✅ `ERROR 1062 Duplicate entry '1' for key 'Reviews.IX_Reviews_BookingId'` |
+| 3d | Bất thường | Gán cùng 1 tiện nghi cho 1 phòng 2 lần | ✅ `ERROR 1062 Duplicate entry '1-1' for key 'RoomAmenities.PRIMARY'` |
+
+> **27 unit test chia làm 2 nhóm** (tách file theo trách nhiệm):
+> - `StayEasyDbContextModelTests` — 22 test kiểm tra **cấu hình**: đủ 9 bảng, tên bảng, 6 enum lưu dạng `varchar(20)`, unique index (Email/Code/BookingId), index chống trùng lịch, khoá chính ghép, 6 CHECK constraint.
+> - `StayEasyDbContextDataTests` — 5 test kiểm tra **ghi/đọc dữ liệu**: lưu đồ thị quan hệ đầy đủ, cascade delete, tự điền mốc thời gian.
+>
+> **Hai file dùng lại cho mọi test sau:** `Helpers/TestDbContextFactory.cs` + `Common/TestDataBuilder.cs`.
+> Dữ liệu test trong MySQL đã dọn sạch sau khi kiểm thử (3 bảng đếm 0).
 
 ### [ ] BƯỚC 4 — Seed data
 - **Mục tiêu đo được:** seed thành công 4 user · 3 location · 10 room · 8 amenity · 15 booking (đủ 6 trạng thái, rải nhiều tháng) · 6 review. Đăng nhập được `admin@stayeasy.vn` / `123456`

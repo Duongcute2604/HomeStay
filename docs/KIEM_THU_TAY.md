@@ -16,6 +16,28 @@
 
 ---
 
+## 0. Cơ sở dữ liệu — 9 bảng (Bước 3)
+
+> Bước này không có giao diện nên kiểm thử tay chạy **trực tiếp SQL trên MySQL**.
+> Cách mở: `docker exec -it stayeasy-mysql mysql -ustayeasy -pstayeasy123 -D stayeasy`
+
+| STT | Chức năng | Kịch bản | Kỳ vọng | Thực tế | Kết quả |
+|-----|----------|----------|---------|---------|---------|
+| 1 | 9 bảng | HP: `SHOW TABLES` | Đủ 9 bảng | Đủ 9 bảng + `__EFMigrationsHistory` | ✅ |
+| 2 | Cấu trúc `Bookings` | HP: `DESCRIBE Bookings` | `Code` unique, enum lưu dạng chữ, có index `RoomId`/`Status` | `Code=varchar(20) UNI` · `Status=varchar(20) MUL` · `CheckIn=datetime(6) MUL` · tiền `decimal(18,2)` | ✅ |
+| 3 | Khoá ngoại | HP: đọc `information_schema` | 11 FK đúng quan hệ đã thiết kế | Đúng 11 FK, không thừa không thiếu | ✅ |
+| 4 | Enum đọc được | HP: `SELECT Role, Status FROM Users` | Thấy `CUSTOMER` / `ADMIN`, không phải số | `CUSTOMER`, `ADMIN` hiển thị đúng chữ | ✅ |
+| 5 | Chống trùng tài khoản | EC: thêm 2 user cùng email `khach1@gmail.com` | MySQL từ chối | `ERROR 1062 Duplicate entry 'khach1@gmail.com' for key 'Users.IX_Users_Email'` | ✅ |
+| 6 | Chặn trả phòng trước | AB: đặt `CheckOut < CheckIn` | MySQL từ chối | `ERROR 3819 Check constraint 'CK_Bookings_TimeRange' is violated` | ✅ |
+| 7 | Chặn đánh giá 7 sao | AB: `INSERT Reviews` rating = 7 | MySQL từ chối | `ERROR 3819 Check constraint 'CK_Reviews_Rating' is violated` | ✅ |
+| 8 | 1 đơn 1 đánh giá | AB: đánh giá lần 2 cho cùng đơn | MySQL từ chối | `ERROR 1062 Duplicate entry '1' for key 'Reviews.IX_Reviews_BookingId'` | ✅ |
+| 9 | Chặn trùng tiện nghi | AB: gán 2 lần cùng tiện nghi cho 1 phòng | MySQL từ chối | `ERROR 1062 Duplicate entry '1-1' for key 'RoomAmenities.PRIMARY'` | ✅ |
+| 10 | Xoá phòng | AU: xoá 1 phòng đã có ảnh + tiện nghi | Ảnh và liên kết tiện nghi bị xoá theo, địa điểm còn lại | Kiểm chứng bằng unit test `XoaPhong_TuDongXoaAnhVaLienKetTienNghi` | ✅ |
+
+**Kết quả: 10/10 đạt.** Dữ liệu test đã dọn sạch sau khi kiểm thử (`Users`/`Rooms`/`Bookings` = 0 dòng).
+
+---
+
 ## 1. Đăng ký / Đăng nhập (Bước 5)
 
 | # | Loại | Kịch bản | Kỳ vọng | Thực tế | Kết quả |

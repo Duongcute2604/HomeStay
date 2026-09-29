@@ -12,7 +12,7 @@
 |------|------|----------------------|----------|-----------|-----------|
 | | 1 | Cài .NET SDK, Docker, Node | — | — | ✅ Xong (29/09) |
 | | 2 | Khung project + git repo | — | — | ✅ Xong (29/09) |
-| | 3 | 9 bảng CSDL + project test | — | — | ⬜ Chưa làm |
+| | 3 | 9 bảng CSDL + project test | ✅ 6/6 kịch bản SQL | 27 pass | ✅ Xong (29/09) |
 | | 4 | Seed data | ⬜ | — | ⬜ Chưa làm |
 | | 5 | Tài khoản (đăng ký/đăng nhập/hồ sơ) | ⬜ | ⬜ | ⬜ Chưa làm |
 | | 6 | Xem địa điểm | ⬜ | ⬜ | ⬜ Chưa làm |
