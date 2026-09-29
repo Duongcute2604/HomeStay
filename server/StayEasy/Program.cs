@@ -100,12 +100,13 @@ builder.Services.AddSwaggerGen(options =>
     options.OperationFilter<SwaggerBearerOperationFilter>();
 });
 
+// Chuỗi kết nối chứa mật khẩu nên nằm ở appsettings.Development.json — file đó KHÔNG commit lên git (AGENTS.md 6.7).
 // Nối 9 bảng trong StayEasyDbContext với MySQL trong Docker (cổng 3307).
 // Kiểm tra chuỗi kết nối tồn tại ngay khi khởi động, để lỗi cấu hình lộ ra lúc chạy chứ không phải lúc có request.
 builder.Services.AddDbContext<StayEasyDbContext>(options =>
 {
     string connectionString = builder.Configuration.GetConnectionString(ConnectionStringName)
-        ?? throw new InvalidOperationException($"Thiếu chuỗi kết nối '{ConnectionStringName}' trong appsettings.json");
+        ?? throw new InvalidOperationException($"Thiếu chuỗi kết nối '{ConnectionStringName}' trong appsettings.Development.json");
 
     options.UseMySql(connectionString, serverVersion);
 });

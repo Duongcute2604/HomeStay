@@ -664,3 +664,114 @@ CORS.
 >    tắt nhầm sẽ làm hỏng việc khác của họ. Phải đổi cổng cho dự án mình.
 > 4. **`strictPort: true`** là mặc định đáng bật cho mọi dự án Vite: mặc định Vite tự
 >    nhảy cổng khi cổng bị chiếm, người khác thấy app chạy ở 5175 sẽ tưởng lỗi code.
+## 28. Repo từng public: khoá bí mật nằm trong lịch sử git, phải ĐỔI KHOÁ chứ không chỉ `git rm --cached`
+
+**Bối cảnh:** Bước 2 khởi tạo project đã commit `appsettings.Development.json` (chứa
+khoá JWT). Sang Bước 5 mới phát hiện và `git rm --cached` + thêm `.gitignore`. Nhưng
+người dùng nhớ lại **repo từng là public** — tức khoá đó đã bị ai đó tải về.
+
+**Sai ở đâu:** tưởng `git rm --cached` là đủ. Thực tế:
+
+```powershell
+git log --all --oneline -- server/StayEasy/appsettings.Development.json
+# 18245ab feat: them chuc nang tai khoan ...
+# 947ebde chore: khoi tao khung du an StayEasy (Moc 1)
+# 2ba48b8 chore: khoi tao khung du an StayEasy (Moc 1)
+```
+
+Ba commit vẫn chứa đầy đủ khoá. Bất kỳ ai cũng lấy được bằng
+`git show 2ba48b8:server/StayEasy/appsettings.Development.json`.
+
+**Đã sửa — 3 việc, theo đúng thứ tự:**
+
+1. **Sinh khoá mới bằng CSPRNG**, không dùng `[guid]::NewGuid()` hay `Get-Random`:
+
+   ```powershell
+   $bytes = New-Object byte[] 48
+   $rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+   $rng.GetBytes($bytes)
+   $rng.Dispose()
+   $secret = -join ($bytes | ForEach-Object { $_.ToString('x2') })
+   ```
+
+   48 byte = 96 ký tự hex. `Guid` chỉ 122 bit lấy từ đồng hồ hệ thống và có 6 bit cố
+   định ở đuôi — đoán được nếu biết thời điểm tạo. `Get-Random` không tạo được khóa
+   mật mã, chỉ phù hợp để chọn số ngẫu nhiên.
+
+2. **Ghi đè `Secret` trong `appsettings.Development.json`** (file này gitignore nên
+   thay đổi không vào commit) rồi **khởi động lại API** — `IOptions` chỉ đọc cấu hình
+   lúc khởi động, sửa file mà không restart thì vẫn dùng khoá cũ.
+
+3. **Kiểm chứng token cũ thực sự chết**, không chỉ "đăng nhập được":
+
+   | Ca | Kỳ vọng | Kết quả |
+   |----|---------|---------|
+   | Token ký bằng khoá mới gọi `/api/auth/me` | 200 | 200 |
+   | Sửa 1 ký tự cuối chữ ký (mô phỏng token cũ) | 401 | 401 |
+   | Không gửi token | 401 | 401 |
+   | Sai mật khẩu | 401 | 401 |
+   | `logout` trả `success=true`, `data=null` | đúng | đúng |
+
+**Kèm theo — dọn nốt bí mật còn sót trong file đang được commit:**
+
+`appsettings.json` (file NÀY được commit) chứa
+`Password=stayeasy***` của MySQL trong Docker. Đã chuyển cả chuỗi kết nối sang
+`appsettings.Development.json`, để lại trong `appsettings.json` một dòng chú thích
+hướng dẫn, và thêm giá trị mẫu vào `appsettings.Development.example.json`.
+
+**Lần sau tránh thế nào:**
+
+> 1. **`.gitignore` chỉ có tác dụng với file chưa từng được track.** Muốn gỡ file đã
+>    commit thì `git rm --cached` + thêm `.gitignore` (đã học ở mục 24).
+> 2. **Bí mật đã lọt ra ngoài thì phải ĐỔI giá trị bí mật, không chỉ gỡ file.** Xoá
+>    hậu quả của việc xoá (token cũ, mật khẩu cũ), giữ nguyên hậu quả của việc lọt.
+> 3. **Cấu hình có mật khẩu nên nằm ở tên file có `Development`** — file đó gitignore
+>    sẵn theo quy ước của chính ASP.NET Core, không phải nhớ thêm `.gitignore`.
+> 4. **Đặt file bí mật ngoài git ngay từ commit đầu tiên**, đừng làm ở Bước 2 rồi xử
+>    lý lại ở Bước 5. Chi phí 1 dòng `.gitignore` lúc tạo repo rẻ hơn nhiều lần
+>    phải đổi khoá giữa chừng.
+> 5. **Không dùng `git log` hiển thị nội dung bí mật.** Xem danh sách file từng bị
+>    commit bằng `git log --oneline -- <đường dẫn>` — lệnh này chỉ in tên file, không
+>    in nội dung.
+
+## 29. Script kiểm chứng báo FAIL thì phải nghi ngờ chính script, không nghi ngờ app
+
+**Bối cảnh:** chạy kiểm chứng sau khi đổi khoá JWT, 1 trong 5 ca báo `FAIL` dù
+đọc log server thì rõ ràng server trả 401 đúng như mong đợi.
+
+**Biểu hiện:**
+
+```
+PASS   | Token moi (chua khoa moi) goi /me            | ky vong 200 | thuc te 200
+FAIL   | Token chu ky sai (mo phong token cu)         | ky vong 401 | thuc te 401
+```
+
+**Vì sao sai:** trong script có đoạn sửa 1 ký tự cuối chữ ký JWT:
+
+```powershell
+$kyDoi = $kyCu.Substring(0, $kyCu.Length - 1) + $(if ($kyCu[-1] -eq 'A') { 'B' } else { 'A' })
+```
+
+`$kyCu[-1]` là **chỉ số âm trên kiểu `String`**, PowerShell 5.1 **không hỗ trợ** và trả
+`$null`. Vì vậy nhánh `if` luôn rơi vào `'A'`. Ở lần chạy đó ký tự cuối vốn đã là
+`'w'`, nên chữ ký **bị sửa đúng một ký tự** — token thực sự hỏng. Nhưng ở lần chạy
+sau, ký tự cuối lại **trùng `'A'`**, nên `Substring` cộng `'A'` cho ra y hệt chữ ký
+cũ: token **không hỏng**, server trả 200, và ca đó báo FAIL.
+
+Đã sửa thành `$kyCu[$kyCu.Length - 1]` (tính thủ công, đúng trên mọi phiên bản).
+
+**Bài học rút ra:**
+
+> 1. **Khi ca kiểm thử FAIL mà log server lại đúng, dừng lại và soi script trước.**
+>    Đây là lần thứ hai trong dự án (lần đầu là script test tay tự vô hiệi vì hậu tố
+>    timestamp gọi ở từng dòng). Script kiểm thử là **mã nguồn** — nó cũng có bug.
+> 2. **Kịch bản kiểm thử phải "hỏng theo đúng cách mình cố ý tạo ra".** Sửa 1 ký tự
+>    cuối là cách hỏng có kiểm soát. Nếu dùng cách hỏng phụ thuộc giá trị ngẫu nhiên
+>    thì đôi khi ca kiểm thử lại **tự vô hiệu** mà không ai nhận ra — giống hệt
+>    trường hợp "email trùng" luôn trả 201.
+> 3. **In giá trị thật ra, đừng in lại giá trị kỳ vọng.** Bảng log trên cột "thực tế"
+>    lại in đúng giá trị kỳ vọng nên nhìn tưởng đã đạt. Script kiểm thử mà hiển thị sai
+>    thông tin thì tệ hơn không có script.
+> 4. **PowerShell 5.1 không hỗ trợ chỉ số âm trên `String`** (`$s[-1]` trả `$null`), chỉ
+>    hỗ trợ trên mảng. PowerShell 7 thì có — cùng một dòng code, hai kết quả khác
+>    nhau tuỳ phiên bản.
