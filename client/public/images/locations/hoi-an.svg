@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" width="1200" height="800" role="img" aria-label="Minh hoa dia diem Hoi An pho co">
+  <title>Minh hoa dia diem Hoi An pho co</title>
+  <defs>
+    <linearGradient id="tuong" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fbe9d4" />
+      <stop offset="100%" stop-color="#eec493" />
+    </linearGradient>
+    <linearGradient id="san" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#eec493" />
+      <stop offset="100%" stop-color="#9c4a1e" />
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="800" fill="url(#tuong)" />
+  <rect y="500" width="1200" height="300" fill="url(#san)" />
+  <rect x="70" y="90" width="300" height="240" rx="10" fill="#fbe9d4" stroke="#9c4a1e" stroke-width="12" />
+  <line x1="220" y1="90" x2="220" y2="330" stroke="#9c4a1e" stroke-width="12" />
+  <line x1="70" y1="210" x2="370" y2="210" stroke="#9c4a1e" stroke-width="12" />
+  <rect x="430" y="380" width="520" height="150" rx="16" fill="#ffffff" opacity="0.88" />
+  <rect x="430" y="430" width="520" height="100" rx="16" fill="#6d3113" opacity="0.32" />
+  <rect x="452" y="344" width="152" height="72" rx="14" fill="#ffffff" />
+  <rect x="620" y="344" width="152" height="72" rx="14" fill="#ffffff" />
+  <rect x="430" y="520" width="520" height="26" rx="10" fill="#6d3113" />
+  <rect x="960" y="430" width="120" height="110" rx="10" fill="#ffffff" opacity="0.72" />
+  <circle cx="1020" cy="452" r="28" fill="#d4813f" />
+  <path d="M110 660 C 148 566, 214 566, 252 660 Z" fill="#d4813f" />
+  <rect x="176" y="656" width="12" height="94" rx="4" fill="#6d3113" />
+  <rect x="50" y="704" width="1100" height="72" rx="12" fill="#4a200c" opacity="0.72" />
+  <text x="90" y="752" font-family="Segoe UI, Arial, sans-serif" font-size="38" font-weight="700" fill="#ffffff">Hội An</text>
+  <text x="1110" y="752" text-anchor="end" font-family="Segoe UI, Arial, sans-serif" font-size="26" font-weight="600" fill="#ffffff" opacity="0.85">STAYEASY</text>
+</svg>

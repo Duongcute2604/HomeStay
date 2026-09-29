@@ -38,6 +38,48 @@
 
 ---
 
+## 0b. Dữ liệu mẫu tự sinh (Bước 4)
+
+> Bước này cũng không có giao diện nên kiểm thử tay chạy **bằng cách khởi động app thật**
+> rồi xem log `dotnet run` + truy vấn SQL trên MySQL.
+> Lệnh: `dotnet run --project server\StayEasy\StayEasy.csproj`
+
+### Kịch bản 1 — Database rỗng → chạy app lần 1 (Happy path)
+
+| STT | Kịch bản | Kỳ vọng | Thực tế | Kết quả |
+|-----|----------|---------|---------|---------|
+| 1 | HP | App khởi động không lỗi, seed đủ 9 bảng | Log 731 dòng, `Now listening on: http://localhost:5080`, **không có** `fail:` / `Exception` | ✅ |
+| 2 | HP | Đủ số lượng bản ghi | `Users 4` · `Locations 3` · `Rooms 10` · `Amenities 8` · `RoomAmenities 59` · `RoomImages 20` · `Bookings 15` · `BookingStatusHistory 42` · `Reviews 6` | ✅ |
+| 3 | HP | Enum lưu đúng dạng chữ | `Status` in ra `COMPLETED`, `CANCELLED`, `PENDING`…; `Role` in ra `ADMIN`, `CUSTOMER` | ✅ |
+| 4 | HP | Mật khẩu lưu dạng BCrypt, **không** lưu thô | Cả 4 tài khoản: `LEFT(PasswordHash,7) = $2a$11$`, `LENGTH = 60` | ✅ |
+| 5 | HP | 4 người 4 hash khác nhau (BCrypt tự sinh salt) | `COUNT(DISTINCT PasswordHash) = 4` | ✅ |
+| 6 | HP | Đủ 5 trạng thái phòng | `AVAILABLE 5` · `BOOKED 2` · `CLEANING 1` · `MAINTENANCE 1` · `OCCUPIED 1` | ✅ |
+| 7 | HP | Đủ 6 trạng thái đơn | `COMPLETED 7` · `CANCELLED 1` · `REJECTED 1` · `CHECKED_IN 1` · `CONFIRMED 2` · `PENDING 3` | ✅ |
+| 8 | HP | Ngày tháng **tương đối** so với hôm nay, không ghi cứng | Đơn `PENDING` nằm ở `30/09`, `03/10`, `29/10` — quanh ngày chạy app `29/09/2026` | ✅ |
+| 9 | HP | Tiền khớp công thức | VD `HS-260929-0006` (theo giờ 4h × 85.000) = `340000.00` ✅ · `HS-261002-0011` (1 đêm `02/10 14:00 → 04/10 12:00` × 950.000) = `1900000.00` ✅ | ✅ |
+| 10 | HP | Lịch sử trạng thái đúng người thực hiện | Đơn `CHECKED_IN`: `NULL→PENDING` (khách) · `PENDING→CONFIRMED` (admin) · `CONFIRMED→CHECKED_IN` (admin) | ✅ |
+| 11 | HP | Điểm phong tính lại từ đánh giá chưa ẩn | Phòng có 1 đánh giá 5 sao → `RatingAvg 5.00, RatingCount 1`; đánh giá bị ẩn không tính | ✅ |
+
+### Kịch bản 2 — Chạy app lần 2 (Bất thường: khởi động lại)
+
+| STT | Kịch bản | Kỳ vọng | Thực tế | Kết quả |
+|-----|----------|---------|---------|---------|
+| 12 | AB | Chạy lại app **không** nhân bản dữ liệu | Log chỉ có **14 dòng**; đếm `INSERT INTO` = **0**; chỉ có **1** lệnh `SELECT` (kiểm tra `Users.AnyAsync`) | ✅ |
+| 13 | AB | Số bản ghi 9 bảng **giữ nguyên** | Đối chiếu lại: `4/3/10/8/59/20/15/42/6` — y hệt lần 1 | ✅ |
+| 14 | AB | App vẫn chạy bình thường | `Now listening on: http://localhost:5080`, `Application started`, không lỗi | ✅ |
+
+### Kịch bản 3 — Xoá sạch dữ liệu rồi chạy lại (Edge case)
+
+| STT | Kịch bản | Kỳ vọng | Thực tế | Kết quả |
+|-----|----------|---------|---------|---------|
+| 15 | EC | `TRUNCATE` 9 bảng (giữ `__EFMigrationsHistory`) → app seed lại đủ | `20260929144921_InitialCreate` còn nguyên; sau khi chạy lại: `4/3/10/8/59/20/15/42/6` | ✅ |
+| 16 | EC | MySQL **không** báo lỗi CHECK / unique / khoá ngoại | Log 731 dòng, không có `Duplicate entry` / `violates check constraint` / `Exception` | ✅ |
+| 17 | EC | 10 ràng buộc nghiệp vụ trong dữ liệu mẫu — **tất cả 0 vi phạm** | ① chồng lịch phòng 0 · ② số khách > sức chứa 0 · ③ đơn theo giờ < 3h 0 · ④ đánh giá trên đơn chưa `COMPLETED` 0 · ⑤ điểm phong lệch số đánh giá 0 · ⑥ trùng mã đơn 0 · ⑦ trùng phòng + khung giờ 0 · ⑧ đơn không có lịch sử 0 · ⑨ phòng không có ảnh chính 0 · ⑩ phòng không có tiện nghi 0 | ✅ |
+
+**Kết quả: 17/17 đạt.**
+
+---
+
 ## 1. Đăng ký / Đăng nhập (Bước 5)
 
 | # | Loại | Kịch bản | Kỳ vọng | Thực tế | Kết quả |

@@ -13,7 +13,7 @@
 | | 1 | Cài .NET SDK, Docker, Node | — | — | ✅ Xong (29/09) |
 | | 2 | Khung project + git repo | — | — | ✅ Xong (29/09) |
 | | 3 | 9 bảng CSDL + project test | ✅ 6/6 kịch bản SQL | 27 pass | ✅ Xong (29/09) |
-| | 4 | Seed data | ⬜ | — | ⬜ Chưa làm |
+| | 4 | Dữ liệu mẫu (4 tài khoản, 3 địa điểm, 10 phòng, 15 đơn, 6 đánh giá) + 8 ảnh SVG | ✅ 17/17 kịch bản (HP/AB/EC) | 55 pass (thêm 28) | ✅ Xong (29/09) |
 | | 5 | Tài khoản (đăng ký/đăng nhập/hồ sơ) | ⬜ | ⬜ | ⬜ Chưa làm |
 | | 6 | Xem địa điểm | ⬜ | ⬜ | ⬜ Chưa làm |
 | | 7 | Tìm kiếm & lọc phòng | ⬜ | ⬜ | ⬜ Chưa làm |
@@ -47,7 +47,7 @@
 
 | Tuần | Nội dung | Tình trạng |
 |------|----------|-----------|
-| Tuần 1 (29/09–05/10) | Môi trường, CSDL, seed, tài khoản | ⬜ |
+| Tuần 1 (29/09–05/10) | Môi trường, CSDL, seed, tài khoản | 🟨 4/5 xong (Bước 5 tiếp theo) |
 | Tuần 2 (06/10–12/10) | Tìm kiếm, chi tiết phòng, đặt phòng, đơn của tôi | ⬜ |
 | Tuần 3 (13/10–19/10) | Admin, thống kê, đánh giá, kiểm thử, Chương 4 | ⬜ |
 | Tuần 4 (20/10) | Bảo vệ | ⬜ |

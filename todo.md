@@ -106,11 +106,32 @@ dotnet run            Now listening on: http://localhost:5080  (không có fail/
 > **Hai file dùng lại cho mọi test sau:** `Helpers/TestDbContextFactory.cs` + `Common/TestDataBuilder.cs`.
 > Dữ liệu test trong MySQL đã dọn sạch sau khi kiểm thử (3 bảng đếm 0).
 
-### [ ] BƯỚC 4 — Seed data
+### [x] BƯỚC 4 — Seed data
 - **Mục tiêu đo được:** seed thành công 4 user · 3 location · 10 room · 8 amenity · 15 booking (đủ 6 trạng thái, rải nhiều tháng) · 6 review. Đăng nhập được `admin@stayeasy.vn` / `123456`
-- **Ghi chú thực hiện:**
+- **Kế hoạch thực hiện (ghi trước khi code):**
+  1. **Thêm package `BCrypt.Net-Next` 4.2.1** — bắt buộc, vì `AGENTS.md` mục 6.6 bắt buộc mật khẩu lưu dạng BCrypt hash, seed phải tạo ra hash thật chứ không phải chuỗi giả. Bản 5.0.0 chỉ là prerelease → không dùng.
+  2. **Tạo 8 ảnh SVG** trong `client/public/images/` (4 loại phòng + 3 địa điểm + 1 ảnh nội thất chung) vì máy không có sẵn ảnh phòng thật. SVG sinh bằng code ⇒ không tốn dung lượng, không lẫn file nhị phân vào git.
+  3. Viết `Data/Seed/SeedData.cs` với **2 hàm độc lập**: `SeedAsync` (tạo dữ liệu) và `KiemTraDaCoDuLieu` (đã có dữ liệu chưa) — tách để test được riêng.
+  4. **Seed phải idempotent**: kiểm tra `Users.AnyAsync()` rồi mới ghi. Chạy lại app không nhân bản dữ liệu.
+  5. Gọi seed trong `Program.cs` bằng `CreateScope()` — tránh singleton giữ DbContext.
+  6. Mốc thời gian `CreatedAt` của booking **phải rải nhiều tháng** (từ 08/2026 tới 09/2026) để biểu đồ doanh thu ở Bước 15 có dữ liệu thật, không phải 1 cột.
 - **Kết quả:**
+  1. `DuLieuMau.cs` (507 dòng) chứa toàn bộ dữ liệu mẫu dạng hàm thuần — trả về `List<T>`, **không** chạm database ⇒ test được không cần MySQL.
+  2. `SeedData.SeedAsync` tự kiểm idempotent **bên trong** hàm, gắn hết vào DbContext rồi `SaveChanges` **một lần** để EF tự chèn theo đúng thứ tự khoá ngoại.
+  3. **Tách 2 file ra khỏi seed** để tái dùng cho Bước 9/10: `Services/Booking/BookingRules.cs` (hằng số: tối thiểu 3 giờ, báo trước 2 giờ, dọn phòng 2 giờ, giờ nhận/trả 14h/12h) + `BookingCalculator.cs` (hàm thuần tính tiền theo giờ/ngày).
+  4. `Program.cs` gọi seed trong block `CreateAsyncScope` — dùng scope thay vì singleton để không giữ `DbContext` sống quá lâu.
+  5. 8 ảnh SVG sinh bằng code, UTF-8 có dấu, đặt đúng chỗ: `client/public/images/rooms/` (5 ảnh) + `locations/` (3 ảnh).
+  6. Dữ liệu: 4 user (1 ADMIN + 3 CUSTOMER, trong đó 1 tài khoản `LOCKED`) · 3 địa điểm · 8 tiện nghi · 10 phòng (đủ 4 loại + đủ 5 trạng thái) · 59 liên kết tiện nghi · 20 ảnh phòng · 15 đơn (đủ 6 trạng thái) · 42 dòng lịch sử trạng thái · 6 đánh giá (1 đánh giá bị ẩn) · điểm phòng tính lại từ đánh giá chưa ẩn.
+  7. Ngày tháng **tương đối so với `DateTime.Now`** thay vì ghi cứng ⇒ dữ liệu demo luôn "sống" dù GVHD chạy demo vào ngày nào.
+  8. Tài khoản demo: `admin@stayeasy.vn` · `khach1@gmail.com` · `khach2@gmail.com` · `khach3@gmail.com` — mật khẩu đều `123456`.
 - **Bằng chứng:**
+  | Loại | Kết quả |
+  |------|---------|
+  | Build | `dotnet build` — **0 error, 0 warning** |
+  | Unit test | `dotnet test` — **55/55 PASS** (27 cũ + 7 `BookingCalculatorTests` + 21 `SeedDataTests`), 17 giây |
+  | Test tay | `docs/KIEM_THU_TAY.md` mục **0b** — **17/17 đạt** (11 kịch bản HP lần 1, 3 kịch bản AB lần 2, 3 kịch bản EC lần 3) |
+  | Log sạch | Log lần 1 & lần 3: 731 dòng, chỉ có `Now listening` / `Application started` — không `fail:`, không `Exception`. Log lần 2: **14 dòng, 0 lệnh `INSERT INTO`**, chỉ 1 lệnh `SELECT` kiểm tra `Users.AnyAsync` |
+  | MySQL thật | Đếm bản ghi 9 bảng khớp: `4/3/10/8/59/20/15/42/6`; 4 hash BCrypt khác nhau (`$2a$11$`, 60 ký tự); 10 truy vấn kiểm tra ràng buộc nghiệp vụ đều trả **0 vi phạm** |
 
 ---
 

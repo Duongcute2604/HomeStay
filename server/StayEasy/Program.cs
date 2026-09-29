@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using StayEasy.Data;
+using StayEasy.Data.Seed;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,6 +24,18 @@ builder.Services.AddDbContext<StayEasyDbContext>(options =>
 });
 
 var app = builder.Build();
+
+// Nạp dữ liệu mẫu ở lần chạy đầu tiên để dự án luôn có sẵn dữ liệu trình diễn,
+// khỏi phải import thủ công mỗi lần xoá bảng. Hàm tự kiểm tra dữ liệu đã có chưa nên
+// chạy lại bao nhiêu lần cũng không nhân bản.
+// Dùng CreateAsyncScope vì DbContext đăng ký theo kiểu Scoped — lấy trực tiếp từ
+// app.Services sẽ ném lỗi "Cannot resolve scoped service".
+await using (AsyncServiceScope scope = app.Services.CreateAsyncScope())
+{
+    StayEasyDbContext db = scope.ServiceProvider.GetRequiredService<StayEasyDbContext>();
+
+    await SeedData.SeedAsync(db, CancellationToken.None);
+}
 
 if (app.Environment.IsDevelopment())
 {

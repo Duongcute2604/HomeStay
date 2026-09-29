@@ -333,6 +333,45 @@ Cách này kiểm chứng đúng thứ cần biết: **MySQL sẽ lưu cột nà
 
 ---
 
+## 18. Log `dotnet run` bị khoá khi pipe qua `Select-String`
+
+**Ngày:** 29/09/2026
+**Sai ở đâu:** Chạy app nền với `dotnet run ... | Select-String -Pattern "..."` để lọc log, rồi định `ReadAllText` đọc file log để kiểm tra. Đọc được: *"The process cannot access the file ... because it is being used by another process"*.
+
+**Vì sao:** `Select-String` giữ file `.out` mở ở chế độ chia sẻ đọc, chặn mọi thao tác ghi/xoá trên file ⇒ đọc bằng `ReadAllText`/`Get-Content` là hỏng. Rõ hơn: **lọc ngay trong lệnh cũng làm mất bằng chứng** — log 731 dòng thành 3 dòng, không còn biết seed có thực sự `INSERT` hay không.
+
+**Đã sửa — ghi log đầy đủ ra file, lọc *sau*:**
+```powershell
+dotnet run --project server\StayEasy\StayEasy.csproj *>&1 | Out-File -FilePath $log -Encoding UTF8
+# đợi app lên rồi đọc:
+$n = Get-Content $log -Encoding UTF8
+($n | Select-String 'INSERT INTO').Count     # kịch bản 2 phải ra 0
+```
+Kết quả: lần chạy thứ 2 có **14 dòng / 0 lệnh `INSERT`** — đây mới là bằng chứng cứng cho idempotent, chứ không phải suy đoán "số bản ghi không tăng".
+
+**Lần sau tránh gì:**
+> Log nền luôn ghi **nguyên văn** ra file, **lọc ở bước đọc**. Lọc ngay trong lệnh chạy = tự xoá bằng chứng + khoá file không đọc được.
+
+---
+
+## 19. Dữ liệu mẫu ghi cứng ngày tháng sẽ "già" theo thời gian
+
+**Ngày:** 29/09/2026
+**Sai ở đâu:** Định viết `new DateTime(2026, 6, 2, 14, 0, 0)` cho `CheckIn` của 15 đơn mẫu.
+
+**Vì sao:** Ngày cứng nghĩa là demo chỉ đẹp đúng vào tháng 9/2026. Sang tháng 11 bảo vệ thì toàn bộ đơn `PENDING`/`CONFIRMED` nằm quá khứ, biểu đồ doanh thu (Bước 15) trống mất phần "tương lai", GVHD hỏi "sao đơn nào toàn trong quá khứ" thì không trả lời được.
+
+**Đã sửa:** `DuLieuMau.TaoDon(..., DateTime now)` — mọi mốc thời gian tính **tương đối** với `DateTime.Now`:
+```csharp
+CheckIn = now.AddDays(1).Date.AddHours(14)   // ngày mai 14:00
+```
+Chạy demo ngày nào thì dữ liệu "sống" đúng ngày đó.
+
+**Lần sau tránh gì:**
+> Dữ liệu mẫu dùng để **demo** thì không bao giờ ghi cứng ngày tháng. Chỉ ghi cứng thứ **không đổi theo thời gian** (tên phòng, giá, mô tả). Với ngày tháng thì luôn tính từ `DateTime.Now`.
+
+---
+
 # MẪU GHI BÀI HỌC (copy để dùng)
 
 ```markdown
@@ -358,3 +397,5 @@ Cách này kiểm chứng đúng thứ cần biết: **MySQL sẽ lưu cột nà
 | Báo "xong" khi mới build được | Không chạy thử tay, không test | "Xong" = test pass + log sạch + kiểm chứng thật (`AGENTS.md` mục 0.1) |
 | Sửa 1 chỗ thành 5 chỗ | Không nghĩ tới nguyên lý "Vô hình" | Sửa xong chạy lại **test của phần đang chạy tốt** xem có hỏng không |
 | Để TODO/FIXME bỏ lại | Cố làm nhanh cho kịp hạn | Cấm tuyệt đối TODO trong code (AGENTS.md mục 3.4) |
+| Ghi cứng ngày tháng cho dữ liệu mẫu | Xét lẻ "cho dễ đọc" mà không nghĩ tới ngày GVHD chạy demo | Mốc thời gian mẫu luôn tính từ `DateTime.Now` |
+| Lọc log ngay trong lệnh `dotnet run` nền | Muốn xem "chỗ nào lỗi" cho nhanh | Ghi log **nguyên văn** ra file, lọc ở bước đọc — vừa không khoá file vừa giữ nguyên bằng chứng |
