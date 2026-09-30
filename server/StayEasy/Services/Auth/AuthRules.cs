@@ -38,10 +38,4 @@ public static class AuthRules
 
     /// <summary>Độ dài tối đa địa chỉ, khớp với cột Address trong CSDL.</summary>
     public const int MaxAddressLength = 255;
-
-    /// <summary>
-    /// Cột lưu hash của refresh token dài tối đa bao nhiêu. BCrypt sinh ra 60 ký tự,
-    /// để dư 100 cho chắc nếu sau này đổi thuật toán.
-    /// </summary>
-    public const int RefreshTokenHashLength = 100;
 }

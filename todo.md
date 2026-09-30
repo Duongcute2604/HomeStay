@@ -358,7 +358,8 @@ khoảng trống đó.
 | `npm test` | `Test Files 5 passed (5)` · `Tests 60 passed (60)` · 5,58 s |
 | `npm run build` | `✓ 167 modules transformed` — 0 lỗi TypeScript (kể cả trong file test) |
 | `npm run lint` | sạch |
-| `dotnet test` | 147/147 — không hỏng gì |
+| `dotnet test` (lúc cài vitest) | 147/147 — không hỏng gì |
+| `dotnet test` (sau quét code đợt 1) | **163/163** — thêm 3 Service (thông báo quá dài) + 13 DTO validation. Chi tiết: `docs/BAO_CAO_QUET_CODE.md` |
 | Test tay trình duyệt | 3/3 kịch bản sau khi tách schema: HP (đăng nhập) · EC (mật khẩu 5 ký tự + xác nhận không khớp) · AB (email trùng → 409 hiện đúng) |
 | Ca H2 của kiểm thử tay | **Đã đóng** bằng 13 unit test — xem `docs/KIEM_THU_TAY.md` mục 1B |
 

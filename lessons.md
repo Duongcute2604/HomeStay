@@ -917,3 +917,194 @@ Người dùng bị **kẹt ở một trang không dùng được mà không hi�
 >    trạng thái đó trong 5 dòng.
 > 4. Đây là ca thứ hai cho thấy **kiểm thử tay không thay thế được unit test**:
 >    lần trước là `bocDuLieu`, lần này là `lamMoiToken`.
+## 34. Unit test ở SAI TẦNG cho xanh giả — bài học đắt nhất của đợt quét code
+
+**Bối cảnh:** quét code tìm thấy lỗi này trong `AuthService.cs`:
+
+```csharp
+if (matKhau.Length > AuthRules.MaxPasswordLength)
+{
+    throw new AppException(HttpStatusCode.BadRequest, ErrorMessages.MatKhauQuaNgan);
+    //                                                     ^^^^^^^^^^^^^^
+    //  "Mật khẩu phải có ít nhất 6 ký tự" — báo cho người dùng nhập 150 ký tự
+}
+```
+
+Người dùng nhập mật khẩu 150 ký tự sẽ đọc "Mật khẩu phải có ít nhất 6 ký tự", rút
+xuống 6 ký tự, rồi lại thấy vẫn lỗi. Rõ ràng là sai.
+
+**Cách sửa — và cách sửa sai:**
+
+1. **Sửa trong Service** (đúng một phần): tách thông báo "quá ngắn" và "quá dài".
+2. **Viết unit test gọi thẳng Service** → **3/3 test xanh**.
+3. **Gọi API thật** → **vẫn trả thông báo CŨ**.
+
+**Vì sao?** Với `[ApiController]`, ASP.NET Core kiểm tra ModelState **trước khi** gọi
+tầng Service:
+
+```
+Request → ModelBinding + DataAnnotations → [ApiController] chặn 400 → Controller → Service
+                                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                                              LỖI NẰM Ở ĐÂY
+```
+
+DTO khai:
+
+```csharp
+[StringLength(100, MinimumLength = 6, ErrorMessage = "Mật khẩu phải có ít nhất 6 ký tự")]
+```
+
+`StringLength` mang **một** thông báo cho **cả hai** ràng buộc. Mật khẩu 150 ký tự vi
+phạm ràng buộc dài → framework in ra đúng thông báo "ít nhất 6 ký tự". Code trong
+Service **không bao giờ chạy**, nên sửa ở đó vô hiệu.
+
+**Đã sửa thật** — tách hai attribute, mỗi ràng buộc một thông báo:
+
+```csharp
+[MinLength(AuthRules.MinPasswordLength, ErrorMessage = "Mật khẩu phải có ít nhất 6 ký tự")]
+[StringLength(AuthRules.MaxPasswordLength, ErrorMessage = "Mật khẩu không được vượt quá 100 ký tự")]
+```
+
+`MinLength` chỉ fail khi ngắn, `StringLength` chỉ fail khi dài → mỗi nhánh báo đúng
+thông báo của nó.
+
+**Và thêm test ở đúng tầng** — gọi đúng thứ framework gọi:
+
+```csharp
+ValidationContext context = new(duLieu);
+List<ValidationResult> ketQua = new();
+Validator.TryValidateObject(duLieu, context, ketQua, validateAllProperties: true);
+```
+
+**Bài học:**
+
+> 1. **Test xanh KHÔNG chứng minh là đúng — phải hỏi "test này gọi tới tầng nào".**
+>    Test gọi Service thì không đụng tới ModelState. Test cả hai thì mới phủ hết.
+> 2. **Mỗi tầng có bộ quy tắc riêng. Sửa một tầng mà tầng trên chặn trước thì sửa
+>    vô hiệu.** Trước khi sửa, hỏi: "request này có tới được chỗ tôi sửa không?"
+> 3. **Luôn kiểm chứng lại bằng cách gọi thật sau khi unit test xanh.** Ở đây chính
+>    việc gọi API mới phát hiện ra test xanh giả. Nếu tin test là đủ thì lỗi này sẽ
+>    lên tới bảo vệ.
+> 4. **`[StringLength(n, MinimumLength = m, ErrorMessage = "...")]` là cái bẫy**:
+>    một thông báo cho hai ràng buộc trái chiều. Tách `[MinLength]` và `[StringLength]`
+>    khi hai ràng buộc cần hai thông báo khác nhau.
+> 5. **Test mới phải trả lời được "nó bắt được lỗi gì"**. `AuthDtoValidationTests`
+>    có ca tên rõ ràng: `RegisterRequest_MatKhauQuaDai_BaoDungThongBaoQuaDai`.
+
+## 35. `TokenValidationParameters` viết lặp 2 nơi — lỗi âm thầm đắt nhất
+
+**Biểu hiện:** khối cấu hình kiểm token (8 thuộc tính) bị viết giống nhau ở hai chỗ:
+
+- `Program.cs` — cho `AddJwtBearer`, dùng khi **kiểm** token đến
+- `JwtTokenService.TaoThamSoKiemTra()` — dùng khi **tự đọc** token
+
+**Vì sao nguy hiểm:** không phải vì dài, mà vì hai chỗ phải khớp nhau **luôn**. Khi token
+được ký bằng cấu hình mới (đổi khoá, đổi issuer) mà chỗ kiểm vẫn dùng cấu hình cũ
+thì **mọi token đều bị từ chối**, log chỉ hiện "token không hợp lệ", không ai đoán ra
+lý do. Sửa một chỗ mà quên chỗ kia là kiểu lỗi dễ gây nhất.
+
+Ngoài ra `ClockSkew = TimeSpan.FromSeconds(30)` còn là magic number lặp 2 nơi.
+
+**Đã sửa:** tách `TokenValidationFactory.Tao(JwtOptions)` — một chỗ duy nhất, kèm
+hằng số `DoLechPhepTinhGiay = 30`. Cả hai nơi gọi chung.
+
+**Bài học:**
+
+> 1. **Cấu hình kiểm chữ ký phải có MỘT nguồn.** Hai chỗ dùng chung một bản sao là
+>    chờ một lần sai.
+> 2. **Khi gặp khối cấu hình bị lặp, hỏi "có chỗ nào phải LUÔN khớp với nó không?"**
+>    Nếu có → tìm nơi sinh nó thay vì chép lại. Nếu không → có thể để riêng.
+> 3. **Magic number lặp 2 nơi cũng nên gộp**, kể cả khi giá trị hiện tại vô hại.
+>    "Vô hại lúc này" là lý do của hầu hết lỗi tương lai.
+
+## 36. Cột CSDL và claim "ghi mà không ai đọc" — đừng vội xoá, cũng đừng để gây hiểu nhầm
+
+Khi quét code, phát hiện:
+
+| Phát hiện | Xử lý đúng |
+|-----------|-------------|
+| `User.RefreshTokenExpiresAt` — ghi 3 chỗ, **đọc 0 chỗ** (hết hạn thật do claim `exp` trong JWT quyết định) | **Giữ**, nhưng sửa comment. Cột này hữu ích khi cần tra cứu mà không muốn giải mã token. Comment cũ ghi *"Thời điểm refresh token hiện hành hết hạn"* khiến người đọc tưởng sửa ở đây là sửa được luật hết hạn → ghi rõ "không tham gia quyết định" |
+| `JwtTokenService.RoleClaimType` — ký claim quyền vào access token, **chưa nơi nào đọc** | **Giữ**. Sẽ dùng cho `[Authorize(Roles = ...)]` ở Bước 14. Xoá bây giờ thì Bước 14 phải làm lại |
+| `BookingRules.CleaningHoursAfterCheckout` — khai báo, **không ai dùng, kể cả test** | **Xoá**. `AGENTS.md` 3.4 cấm code thừa cho tương lai. Ghi chú trong file rằng sẽ thêm lại ở Bước 10 kèm unit test |
+| `AuthRules.RefreshTokenHashLength` — khai báo, **không ai dùng** (`StayEasyDbContext` viết thẳng `100`) | **Xoá** |
+| `Common/ErrorCodes.cs` — 30 dòng, **0 tham chiếu** | **Xoá cả file**. Quy tắc 400 vs 409 mà nó ghi lại đã nằm ở `AGENTS.md` mục 6.5 — giữ hai bản sao là tự tạo nguồn sự thật thứ hai |
+
+**Bài học — phân biệt ba loại "không ai dùng":**
+
+> 1. **Chết vì quên** → xoá (`ErrorCodes`, `CleaningHoursAfterCheckout`,
+>    `RefreshTokenHashLength`).
+> 2. **Chết vì chưa tới lúc** → giữ, ghi chú lý do (`RoleClaimType` chờ Bước 14).
+> 3. **Không dùng để quyết định, nhưng hữu ích khi tra cứu** → giữ, **sửa comment cho
+>    đúng** (`RefreshTokenExpiresAt`).
+>
+> Xoá nhầm loại 2 là mất công làm lại; xoá nhầm loại 3 là mất một cột tra cứu. Cả hai
+> đều tệ hơn việc comment nói rõ. Xoá cả loại 1 mới là đúng, và phải xoá kèm cập
+> nhật tài liệu có nhắc tới nó (`todo.md` có dòng liệt kê `ErrorCodes.cs`).
+
+## 37. Bốn lần lặp `if (user is null) throw NotFound` — gộp thành 2 hàm
+
+**Biểu hiện:** trong `AuthService` có 4 chỗ:
+
+```csharp
+User? user = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId, ct);
+
+if (user is null)
+{
+    throw new AppException(HttpStatusCode.NotFound, ErrorMessages.KhongTimThayNguoiDung);
+}
+```
+
+Khác biệt duy nhất là 3 chỗ dùng truy vấn có theo dõi thay đổi (để rồi sửa) và 1 chỗ
+dùng `AsNoTracking()` (chỉ đọc).
+
+**Đã sửa:** 2 hàm riêng tư, tên nói rõ dùng để làm gì:
+
+```csharp
+private async Task<User> TaiTaiKhoanDeGhiAsync(int userId, CancellationToken ct)   // có theo dõi
+private async Task<User> TaiTaiKhoanDeDocAsync(int userId, CancellationToken ct)  // AsNoTracking
+private static void VoHieuHoaPhien(User user)                                   // xoá 2 trường token
+```
+
+Gọi còn một dòng: `User user = await TaiTaiKhoanDeGhiAsync(userId, ct);`
+
+**Bài học:**
+
+> 1. **Sau khi gộp 4 chỗ thành 1 dòng, mỗi hàm nghiệp vụ ngắn hơn vàng** — `DangKyAsync`
+>    vốn đã sát ngưỡng 40 dòng của `AGENTS.md` 3.1.
+> 2. **Đặt tên hai bản sao cho khác nhau** (`DeGhi` / `DeDoc`) để người đọc biết chỗ
+>    nào được sửa, chỗ nào không. Đây là lý do không gộp thành một hàm có tham số
+>    `bool theoDoi` — tham số bool làm mất thông tin quan trọng ngay tại chỗ gọi.
+> 3. **`?? throw` rút gọn 4 dòng thành 1**, nhưng dùng khi **loại trả về đã biết là
+>    non-null sau khi kiểm** — đừng dùng để bịt lỗi null ở nơi chưa kiểm tra.
+
+## 38. Access token không đổi sau khi làm mới — đặc tính chuẩn của JWT, KHÔNG phải lỗi
+
+**Phát hiện khi kiểm chứng:** làm mới phiên ngay sau đăng nhập thì access token **giống
+hệt** token cũ, và token cũ vẫn dùng được sau khi đăng xuất.
+
+**Điều tra:**
+
+- Refresh token **có** claim `jti` (`Guid.NewGuid()`) → mỗi lần phát hành đều khác nhau,
+  nên làm mới phiên luôn đổi được refresh token. Đây là chủ ý, xem `lessons.md` mục 21.
+- Access token **không có** `jti`; nội dung nó chỉ gồm `(userId, email, role, exp)`, mà
+  `exp` tính theo **giây**. Hai lần phát hành trong cùng một giây cho ra hai chuỗi
+  **giống hệt nhau**.
+
+**Kết luận: đây là đặc tính của JWT, không phải lỗi.** Thêm `jti` vào access token
+cũng không giúp ích về mặt thu hồi, vì không có danh sách chặn để đối chiếu — token bị
+đánh cắp vẫn dùng được tới hết hạn dù có `jti` hay không.
+
+Điểm cần nói rõ khi bảo vệ: **đăng xuất thu hồi được refresh token, không thu hồi được
+access token đang cầm trong tay** (tối đa 1 giờ). Đây là đánh đổi tiêu chuẩn của token
+tự chứa, đã ghi ở mục giới hạn trong báo cáo. Muốn thu hồi được thì phải lưu token vào
+CSDL và kiểm tra mỗi request — tốn một truy vấn cho mọi API, quá đắt ở phạm vi đồ án.
+
+**Bài học:**
+
+> 1. **Khi kiểm chứng ra kết quả lạ, dừng lại điều tra trước khi kết luận là lỗi.**
+>    Hai dòng script kiểm thử báo "SAI" nhưng cả hai đều là **tiêu chí của script viết
+>    sai**, không phải hành vi sai của ứng dụng.
+> 2. **Cần phân biệt "kết quả lạ" với "lỗi".** Lạ = chưa giải thích được. Lỗi = đã
+>    giải thích và trách nhiệm rõ ràng. Sửa nhầm chỗ không lỗi là gây hại lớn nhất.
+> 3. **Tiêu chí kiểm thử phải viết ra lý do.** Script của tôi giả định "token phải đổi"
+>    mà không ghi lý do — nên khi đọc lại thấy "SAI" mà tưởng code hỏng.

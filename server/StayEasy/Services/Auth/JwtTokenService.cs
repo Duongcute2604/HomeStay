@@ -117,23 +117,9 @@ public class JwtTokenService : IJwtTokenService
 
     private TokenValidationParameters TaoThamSoKiemTra()
     {
-        return new TokenValidationParameters
-        {
-            ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_options.Secret)),
-
-            ValidateIssuer = true,
-            ValidIssuer = _options.Issuer,
-
-            ValidateAudience = true,
-            ValidAudience = _options.Audience,
-
-            ValidateLifetime = true,
-
-            // Cho phép sai lệch 30 giây giữa máy chủ khởi động và client.
-            // Không có khoảng này thì người dùng phải đăng nhập lại chỉ vì đồng hồ lệch vài giây.
-            ClockSkew = TimeSpan.FromSeconds(30)
-        };
+        // Dùng chung cấu hình với JwtBearer ở `Program.cs` — xem lý do trong
+        // `TokenValidationFactory`.
+        return TokenValidationFactory.Tao(_options);
     }
 
     private string KyToken(List<Claim> claims, DateTime hetHan)

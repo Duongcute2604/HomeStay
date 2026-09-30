@@ -595,6 +595,63 @@ public class AuthServiceTests
             service.DoiMatKhauAsync(user.Id, TaoChangePasswordRequest("matkhau123", "12345"), CancellationToken.None));
 
         Assert.Equal(HttpStatusCode.BadRequest, loi.StatusCode);
+        // Kiểm cả NỘI DUNG thông báo: 147 test trước đó chỉ kiểm mã lỗi nên bỏ lọt
+        // một lỗi là hai nhánh "quá ngắn" và "quá dài" cùng ném một thông báo.
+        Assert.Equal(ErrorMessages.MatKhauMoiQuaNgan, loi.Message);
+    }
+
+    // ---------------- Thông báo mật khẩu: phải đúng NỘI DUNG, không chỉ đúng mã ----------------
+
+    [Fact]
+    public async Task DangKyAsync_MatKhauQuaDai_ThongBaoQuaDai_KhongPhaiQuaNgan()
+    {
+        AuthService service = TaoService();
+        string matKhauQuaDai = new('a', AuthRules.MaxPasswordLength + 1);
+
+        RegisterRequest request = TaoRegisterRequest(email: "khachmoi@gmail.com", matKhau: matKhauQuaDai);
+
+        AppException loi = await Assert.ThrowsAsync<AppException>(() =>
+            service.DangKyAsync(request, CancellationToken.None));
+
+        Assert.Equal(HttpStatusCode.BadRequest, loi.StatusCode);
+        // Nếu ở đây mà ra "Mật khẩu phải có ít nhất 6 ký tự" thì người dùng sẽ
+        // rút ngắn mật khẩu xuống 6 ký tự rồi lại thấy vẫn lỗi — rất khó chịu.
+        Assert.Equal(ErrorMessages.MatKhauQuaDai, loi.Message);
+        Assert.NotEqual(ErrorMessages.MatKhauQuaNgan, loi.Message);
+    }
+
+    [Fact]
+    public async Task DoiMatKhauAsync_MatKhauMoiQuaDai_ThongBaoQuaDai_KhongPhaiQuaNgan()
+    {
+        AuthService service = TaoService();
+        User user = await TaoTaiKhoan("khachmoi@gmail.com");
+        string matKhauQuaDai = new('a', AuthRules.MaxPasswordLength + 1);
+
+        AppException loi = await Assert.ThrowsAsync<AppException>(() =>
+            service.DoiMatKhauAsync(
+                user.Id,
+                TaoChangePasswordRequest("matkhau123", matKhauQuaDai),
+                CancellationToken.None));
+
+        Assert.Equal(HttpStatusCode.BadRequest, loi.StatusCode);
+        // Luồng đổi mật khẩu nói "mật khẩu MỚI" cho đúng ngữ cảnh.
+        Assert.Equal(ErrorMessages.MatKhauMoiQuaDai, loi.Message);
+        Assert.NotEqual(ErrorMessages.MatKhauMoiQuaNgan, loi.Message);
+    }
+
+    [Fact]
+    public async Task DangKyAsync_MatKhauDungBangGioiHan_ThanhCong()
+    {
+        // Biên: đúng bằng `MaxPasswordLength` thì phải qua, chỉ vượt 1 ký tự mới báo lỗi.
+        // Test này chặn lỗi "sửa thành `>=`" khi ai đó sửa phép so sánh cho hợp lý hơn.
+        AuthService service = TaoService();
+        string matKhauDungBien = new('a', AuthRules.MaxPasswordLength);
+
+        RegisterRequest request = TaoRegisterRequest(email: "khachmoi@gmail.com", matKhau: matKhauDungBien);
+
+        AuthResponse ketQua = await service.DangKyAsync(request, CancellationToken.None);
+
+        Assert.Equal("khachmoi@gmail.com", ketQua.User.Email);
     }
 
     // ---------------- Hàm dựng dữ liệu ----------------

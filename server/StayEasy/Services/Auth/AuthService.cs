@@ -47,7 +47,11 @@ public class AuthService : IAuthService
         // (AGENTS.md mục 5.2) — mà chỗ nào không test được thì cũng chính là chỗ dễ sai.
         KiemTraHoTen(request.FullName);
         KiemTraEmailHopLe(request.Email);
-        KiemTraMatKhau(request.Password, request.ConfirmPassword);
+        KiemTraMatKhau(
+            request.Password,
+            request.ConfirmPassword,
+            ErrorMessages.MatKhauQuaNgan,
+            ErrorMessages.MatKhauQuaDai);
         KiemTraSoDienThoai(request.PhoneNumber);
         KiemTraDoDaiDiaChi(request.Address);
 
@@ -151,17 +155,9 @@ public class AuthService : IAuthService
     /// <inheritdoc />
     public async Task<bool> DangXuatAsync(int userId, CancellationToken ct)
     {
-        User? user = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId, ct);
+        User user = await TaiTaiKhoanDeGhiAsync(userId, ct);
 
-        if (user is null)
-        {
-            throw new AppException(HttpStatusCode.NotFound, ErrorMessages.KhongTimThayNguoiDung);
-        }
-
-        // Xoá hash là cách vô hiệu hoá: refresh token cũ từ đây không còn khớp hash nào
-        // nên bị từ chối. Không cần bảng riêng lưu danh sách token đã thu hồi.
-        user.RefreshTokenHash = null;
-        user.RefreshTokenExpiresAt = null;
+        VoHieuHoaPhien(user);
 
         await _db.SaveChangesAsync(ct);
         return true;
@@ -170,14 +166,7 @@ public class AuthService : IAuthService
     /// <inheritdoc />
     public async Task<UserProfileDto> LayHoSoAsync(int userId, CancellationToken ct)
     {
-        User? user = await _db.Users
-            .AsNoTracking()
-            .FirstOrDefaultAsync(u => u.Id == userId, ct);
-
-        if (user is null)
-        {
-            throw new AppException(HttpStatusCode.NotFound, ErrorMessages.KhongTimThayNguoiDung);
-        }
+        User user = await TaiTaiKhoanDeDocAsync(userId, ct);
 
         return ThanhHoSo(user);
     }
@@ -189,12 +178,7 @@ public class AuthService : IAuthService
         KiemTraSoDienThoai(request.PhoneNumber);
         KiemTraDoDaiDiaChi(request.Address);
 
-        User? user = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId, ct);
-
-        if (user is null)
-        {
-            throw new AppException(HttpStatusCode.NotFound, ErrorMessages.KhongTimThayNguoiDung);
-        }
+        User user = await TaiTaiKhoanDeGhiAsync(userId, ct);
 
         // Chỉ gán đúng ba trường cho phép sửa. Không bao giờ gán Email, Role hay Status
         // từ dữ liệu client — đó là đường để tự nâng quyền hoặc tự gỡ lệnh khoá.
@@ -210,14 +194,13 @@ public class AuthService : IAuthService
     /// <inheritdoc />
     public async Task<bool> DoiMatKhauAsync(int userId, ChangePasswordRequest request, CancellationToken ct)
     {
-        KiemTraMatKhau(request.NewPassword, request.ConfirmNewPassword);
+        KiemTraMatKhau(
+            request.NewPassword,
+            request.ConfirmNewPassword,
+            ErrorMessages.MatKhauMoiQuaNgan,
+            ErrorMessages.MatKhauMoiQuaDai);
 
-        User? user = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId, ct);
-
-        if (user is null)
-        {
-            throw new AppException(HttpStatusCode.NotFound, ErrorMessages.KhongTimThayNguoiDung);
-        }
+        User user = await TaiTaiKhoanDeGhiAsync(userId, ct);
 
         if (!_hasher.Verify(request.CurrentPassword, user.PasswordHash))
         {
@@ -233,14 +216,48 @@ public class AuthService : IAuthService
 
         // Đổi mật khẩu phải buộc đăng xuất mọi phiên đang mở, tránh kẻ đánh cắp phiên
         // cũ vẫn dùng được sau khi chủ tài khoản đổi mật khẩu.
-        user.RefreshTokenHash = null;
-        user.RefreshTokenExpiresAt = null;
+        VoHieuHoaPhien(user);
 
         await _db.SaveChangesAsync(ct);
         return true;
     }
 
     // ---------------- Hàm riêng tư ----------------
+
+    /// <summary>
+    /// Tải tài khoản để <b>ghi</b> thay đổi, hoặc báo 404.
+    /// </summary>
+    /// <remarks>
+    /// Không dùng <c>AsNoTracking</c> vì thao tác này sẽ sửa bản ghi rồi
+    /// <c>SaveChangesAsync</c> — không theo dõi thì thay đổi không được ghi.
+    /// </remarks>
+    private async Task<User> TaiTaiKhoanDeGhiAsync(int userId, CancellationToken ct)
+    {
+        User? user = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId, ct);
+        return user ?? throw new AppException(HttpStatusCode.NotFound, ErrorMessages.KhongTimThayNguoiDung);
+    }
+
+    /// <summary>
+    /// Tải tài khoản để <b>đọc</b>, không theo dõi thay đổi, hoặc báo 404.
+    /// </summary>
+    private async Task<User> TaiTaiKhoanDeDocAsync(int userId, CancellationToken ct)
+    {
+        User? user = await _db.Users
+            .AsNoTracking()
+            .FirstOrDefaultAsync(u => u.Id == userId, ct);
+        return user ?? throw new AppException(HttpStatusCode.NotFound, ErrorMessages.KhongTimThayNguoiDung);
+    }
+
+    /// <summary>
+    /// Xoá dấu vết refresh token — đây là cách vô hiệu hoá phiên: refresh token cũ
+    /// từ đây không còn khớp hash nào nên bị từ chối. Không cần bảng riêng lưu danh
+    /// sách token đã thu hồi.
+    /// </summary>
+    private static void VoHieuHoaPhien(User user)
+    {
+        user.RefreshTokenHash = null;
+        user.RefreshTokenExpiresAt = null;
+    }
 
     private async Task<AuthResponse> CapTokenCho(User user, CancellationToken ct)
     {
@@ -291,16 +308,31 @@ public class AuthService : IAuthService
         }
     }
 
-    private static void KiemTraMatKhau(string matKhau, string? xacNhan)
+    /// <summary>
+    /// Kiểm tra mật khẩu mới, dùng chung cho đăng ký và đổi mật khẩu.
+    /// </summary>
+    /// <param name="thongBaoQuaNgan">Thông báo khi mật khẩu quá ngắn — hai luồng nói khác nhau.</param>
+    /// <param name="thongBaoQuaDai">Thông báo khi mật khẩu quá dài — hai luồng nói khác nhau.</param>
+    /// <remarks>
+    /// Trước đây cả hai nhánh "quá ngắn" và "quá dài" đều ném
+    /// <see cref="ErrorMessages.MatKhauQuaNgan"/>, nên người dùng nhập mật khẩu 150 ký
+    /// tự sẽ đọc "Mật khẩu phải có ít nhất 6 ký tự" — thông báo sai hoàn toàn, họ sẽ
+    /// rút ngắn xuống 6 ký tự rồi lại thấy vẫn lỗi.
+    /// </remarks>
+    private static void KiemTraMatKhau(
+        string matKhau,
+        string? xacNhan,
+        string thongBaoQuaNgan,
+        string thongBaoQuaDai)
     {
         if (string.IsNullOrWhiteSpace(matKhau) || matKhau.Length < AuthRules.MinPasswordLength)
         {
-            throw new AppException(HttpStatusCode.BadRequest, ErrorMessages.MatKhauQuaNgan);
+            throw new AppException(HttpStatusCode.BadRequest, thongBaoQuaNgan);
         }
 
         if (matKhau.Length > AuthRules.MaxPasswordLength)
         {
-            throw new AppException(HttpStatusCode.BadRequest, ErrorMessages.MatKhauQuaNgan);
+            throw new AppException(HttpStatusCode.BadRequest, thongBaoQuaDai);
         }
 
         if (matKhau != xacNhan)

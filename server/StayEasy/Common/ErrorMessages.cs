@@ -14,6 +14,11 @@ public static class ErrorMessages
     public const string EmailDaTonTai = "Email này đã được đăng ký. Vui lòng đăng nhập hoặc dùng email khác";
     public const string MatKhauQuaNgan = "Mật khẩu phải có ít nhất 6 ký tự";
     public const string MatKhauKhongKhop = "Mật khẩu xác nhận không khớp";
+
+    // Số 6 và 100 trong các thông báo phải khớp `AuthRules.MinPasswordLength` và
+    // `AuthRules.MaxPasswordLength`. Không nối trực tiếp vì `ErrorMessages` nằm ở
+    // tầng Common, không được phụ thuộc ngược lại tầng Services.
+    public const string MatKhauQuaDai = "Mật khẩu không được vượt quá 100 ký tự";
     public const string HoTenRong = "Vui lòng nhập họ và tên";
     public const string HoTenQuaDai = "Họ và tên không được vượt quá 100 ký tự";
     public const string SoDienThoaiKhongHopLe = "Số điện thoại chỉ được gồm 9 đến 11 chữ số";
@@ -47,6 +52,7 @@ public static class ErrorMessages
     public const string MatKhauCuSai = "Mật khẩu hiện tại không đúng";
     public const string MatKhauMoiTrungMatKhauCu = "Mật khẩu mới không được trùng với mật khẩu hiện tại";
     public const string MatKhauMoiQuaNgan = "Mật khẩu mới phải có ít nhất 6 ký tự";
+    public const string MatKhauMoiQuaDai = "Mật khẩu mới không được vượt quá 100 ký tự";
     public const string KhongTimThayNguoiDung = "Không tìm thấy thông tin tài khoản";
     public const string LoiHeThong = "Đã xảy ra lỗi. Vui lòng thử lại sau";
 }

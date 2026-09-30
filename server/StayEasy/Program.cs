@@ -123,17 +123,9 @@ builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtConfig.Secret)),
-            ValidateIssuer = true,
-            ValidIssuer = jwtConfig.Issuer,
-            ValidateAudience = true,
-            ValidAudience = jwtConfig.Audience,
-            ValidateLifetime = true,
-            ClockSkew = TimeSpan.FromSeconds(30)
-        };
+        // Cấu hình kiểm token lấy từ một chỗ duy nhất — xem `TokenValidationFactory`.
+        // Viết riêng ở đây sẽ dễ lệch với cấu hình mà `JwtTokenService` dùng.
+        options.TokenValidationParameters = TokenValidationFactory.Tao(jwtConfig);
     });
 
 builder.Services.AddAuthorization();

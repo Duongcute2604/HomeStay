@@ -1,5 +1,8 @@
 using System.ComponentModel.DataAnnotations;
 using StayEasy.Enums;
+// Tham chiếu hằng số quy tắc để độ dài ở attribute và ở tầng Service không trôi lệch
+// nhau. Đây chỉ là lớp hằng số thuần, không kéo theo phụ thuộc tầng nào.
+using StayEasy.Services.Auth;
 
 namespace StayEasy.DTOs;
 
@@ -8,7 +11,7 @@ public class RegisterRequest
 {
     /// <summary>Họ và tên hiển thị. Bắt buộc.</summary>
     [Required(ErrorMessage = "Vui lòng nhập họ và tên")]
-    [StringLength(100, ErrorMessage = "Họ và tên không được vượt quá 100 ký tự")]
+    [StringLength(AuthRules.MaxFullNameLength, ErrorMessage = "Họ và tên không được vượt quá 100 ký tự")]
     public string FullName { get; set; } = string.Empty;
 
     /// <summary>
@@ -18,12 +21,23 @@ public class RegisterRequest
     /// định dạng do EmailValidator trong tầng Service đảm nhiệm.
     /// </summary>
     [Required(ErrorMessage = "Vui lòng nhập email")]
-    [StringLength(150, ErrorMessage = "Email không được vượt quá 150 ký tự")]
+    [StringLength(AuthRules.MaxEmailLength, ErrorMessage = "Email không được vượt quá 150 ký tự")]
     public string Email { get; set; } = string.Empty;
 
-    /// <summary>Mật khẩu. Tối thiểu 6 ký tự, không có giới hạn ký tự đặc biệt.</summary>
+    /// <summary>
+    /// Mật khẩu. Tối thiểu 6 ký tự, tối đa 100, không có giới hạn ký tự đặc biệt.
+    /// </summary>
+    /// <remarks>
+    /// Tách `MinLength` và `StringLength` thành hai attribute là **bắt buộc**, không
+    /// phải làm rối thêm cho vui. `StringLength(100, MinimumLength = 6, msg)` chỉ
+    /// mang **một** thông báo cho **cả hai** ràng buộc, nên nhập mật khẩu 101 ký tự
+    /// cũng hiện "Mật khẩu phải có ít nhất 6 ký tự" — người dùng rút ngắn xuống 6
+    /// ký tự rồi lại thấy vẫn lỗi. Hai attribute tách rời thì mỗi ràng buộc báo
+    /// đúng thông báo của nó.
+    /// </remarks>
     [Required(ErrorMessage = "Vui lòng nhập mật khẩu")]
-    [StringLength(100, MinimumLength = 6, ErrorMessage = "Mật khẩu phải có ít nhất 6 ký tự")]
+    [MinLength(AuthRules.MinPasswordLength, ErrorMessage = "Mật khẩu phải có ít nhất 6 ký tự")]
+    [StringLength(AuthRules.MaxPasswordLength, ErrorMessage = "Mật khẩu không được vượt quá 100 ký tự")]
     public string Password { get; set; } = string.Empty;
 
     /// <summary>Nhập lại mật khẩu để chống gõ nhầm.</summary>
@@ -31,11 +45,11 @@ public class RegisterRequest
     public string ConfirmPassword { get; set; } = string.Empty;
 
     /// <summary>Số điện thoại, không bắt buộc.</summary>
-    [StringLength(15, ErrorMessage = "Số điện thoại không được vượt quá 15 ký tự")]
+    [StringLength(AuthRules.MaxPhoneLength, ErrorMessage = "Số điện thoại không được vượt quá 15 ký tự")]
     public string? PhoneNumber { get; set; }
 
     /// <summary>Địa chỉ, không bắt buộc.</summary>
-    [StringLength(255, ErrorMessage = "Địa chỉ không được vượt quá 255 ký tự")]
+    [StringLength(AuthRules.MaxAddressLength, ErrorMessage = "Địa chỉ không được vượt quá 255 ký tự")]
     public string? Address { get; set; }
 }
 
@@ -66,9 +80,11 @@ public class ChangePasswordRequest
     [Required(ErrorMessage = "Vui lòng nhập mật khẩu hiện tại")]
     public string CurrentPassword { get; set; } = string.Empty;
 
-    /// <summary>Mật khẩu mới, tối thiểu 6 ký tự.</summary>
+    /// <summary>Mật khẩu mới, tối thiểu 6 và tối đa 100 ký tự.</summary>
+    /// <remarks>Tách `MinLength` và `StringLength` — xem giải thích ở `RegisterRequest.Password`.</remarks>
     [Required(ErrorMessage = "Vui lòng nhập mật khẩu mới")]
-    [StringLength(100, MinimumLength = 6, ErrorMessage = "Mật khẩu mới phải có ít nhất 6 ký tự")]
+    [MinLength(AuthRules.MinPasswordLength, ErrorMessage = "Mật khẩu mới phải có ít nhất 6 ký tự")]
+    [StringLength(AuthRules.MaxPasswordLength, ErrorMessage = "Mật khẩu mới không được vượt quá 100 ký tự")]
     public string NewPassword { get; set; } = string.Empty;
 
     /// <summary>Nhập lại mật khẩu mới.</summary>
@@ -81,15 +97,15 @@ public class UpdateProfileRequest
 {
     /// <summary>Họ và tên mới. Bắt buộc không được rỗng.</summary>
     [Required(ErrorMessage = "Vui lòng nhập họ và tên")]
-    [StringLength(100, ErrorMessage = "Họ và tên không được vượt quá 100 ký tự")]
+    [StringLength(AuthRules.MaxFullNameLength, ErrorMessage = "Họ và tên không được vượt quá 100 ký tự")]
     public string FullName { get; set; } = string.Empty;
 
     /// <summary>Số điện thoại mới, không bắt buộc.</summary>
-    [StringLength(15, ErrorMessage = "Số điện thoại không được vượt quá 15 ký tự")]
+    [StringLength(AuthRules.MaxPhoneLength, ErrorMessage = "Số điện thoại không được vượt quá 15 ký tự")]
     public string? PhoneNumber { get; set; }
 
     /// <summary>Địa chỉ mới, không bắt buộc.</summary>
-    [StringLength(255, ErrorMessage = "Địa chỉ không được vượt quá 255 ký tự")]
+    [StringLength(AuthRules.MaxAddressLength, ErrorMessage = "Địa chỉ không được vượt quá 255 ký tự")]
     public string? Address { get; set; }
 }
 

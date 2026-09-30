@@ -44,7 +44,17 @@ public class User
     /// </summary>
     public string? RefreshTokenHash { get; set; }
 
-    /// <summary>Thời điểm refresh token hiện hành hết hạn.</summary>
+    /// <summary>
+    /// Thời điểm refresh token hiện hành hết hạn.
+    /// </summary>
+    /// <remarks>
+    /// Cột này **không tham gia quyết định** token còn hạn hay không — việc đó do
+    /// claim `exp` trong chính JWT đảm nhiệm, kiểm lúc `ValidateToken`. Cột giữ
+    /// lại chỉ để tra cứu khi cần, ví dụ khi muốn biết phiên nào sắp hết hạn mà
+    /// không phải giải mã token.
+    ///
+    /// Nói rõ để không ai tưởng sửa ở đây là sửa được luật hết hạn.
+    /// </remarks>
     public DateTime? RefreshTokenExpiresAt { get; set; }
 
     /// <summary>Thời điểm tạo tài khoản.</summary>
