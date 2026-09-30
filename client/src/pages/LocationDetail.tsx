@@ -95,7 +95,11 @@ export default function LocationDetail(): JSX.Element {
       ) : (
         <div className="mt-3 grid gap-4 sm:grid-cols-2">
           {diaDiem.rooms.map((phong, chiSoPhong) => (
-            <div key={chiSoPhong} className="card overflow-hidden">
+            <Link
+              key={chiSoPhong}
+              to={`/locations/${soChiSo}/rooms/${chiSoPhong}`}
+              className="card overflow-hidden transition hover:shadow-md"
+            >
               {phong.thumbnailUrl ? (
                 <img
                   src={phong.thumbnailUrl}
@@ -140,7 +144,7 @@ export default function LocationDetail(): JSX.Element {
                   </span>
                 </div>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       )}

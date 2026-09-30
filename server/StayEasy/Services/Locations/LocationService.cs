@@ -35,7 +35,7 @@ public class LocationService : ILocationService
                 ImageUrl = diaDiem.ImageUrl,
                 Rooms = diaDiem.Rooms
                     .OrderBy(phong => phong.Id)
-                    .Select(phong => new RoomSummaryDto
+                    .Select(phong => new RoomDetailDto
                     {
                         Name = phong.Name,
                         RoomNumber = phong.RoomNumber,
@@ -46,6 +46,7 @@ public class LocationService : ILocationService
                         RatingAvg = phong.RatingAvg,
                         RatingCount = phong.RatingCount,
                         Status = phong.Status,
+                        Description = phong.Description,
                         // Ảnh chính: ưu tiên `IsPrimary`, không có thì `SortOrder`
                         // nhỏ nhất, không có ảnh nào thì null.
                         // Viết thẳng vào đây thay vì gọi hàm riêng: EF Core chỉ
@@ -57,6 +58,26 @@ public class LocationService : ILocationService
                             .ThenBy(anh => anh.SortOrder)
                             .Select(anh => anh.ImageUrl)
                             .FirstOrDefault(),
+                        Images = phong.Images
+                            .OrderBy(anh => anh.SortOrder)
+                            .Select(anh => anh.ImageUrl)
+                            .ToList(),
+                        Amenities = phong.AmenityLinks
+                            .Select(lienKet => lienKet.Amenity.Name)
+                            .ToList(),
+                        // Chỉ đánh giá KHÔNG bị ẩn, mới nhất trước, tối đa 5.
+                        Reviews = phong.Reviews
+                            .Where(danhGia => !danhGia.IsHidden)
+                            .OrderByDescending(danhGia => danhGia.CreatedAt)
+                            .Take(5)
+                            .Select(danhGia => new RoomReviewDto
+                            {
+                                ReviewerName = danhGia.User.FullName,
+                                Rating = danhGia.Rating,
+                                Comment = danhGia.Comment,
+                                CreatedAt = danhGia.CreatedAt,
+                            })
+                            .ToList(),
                     })
                     .ToList(),
             })

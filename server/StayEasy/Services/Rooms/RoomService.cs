@@ -39,23 +39,21 @@ public class RoomService : IRoomService
 
         // 2. Lọc theo địa điểm bằng CHỈ SỐ (response không có `Id`).
         // Cùng thứ tự `OrderBy Id` với `GET /api/locations` để chỉ số khớp nhau.
+        // Bảng chỉ số dùng chung cho cả lọc và đánh số kết quả.
+        Dictionary<int, int> chiSoDiaDiem = await LayChiSoDiaDiemAsync(ct);
+
         if (request.LocationIndex.HasValue)
         {
-            List<int> danhSachId = await _db.Locations
-                .AsNoTracking()
-                .Where(diaDiem => diaDiem.IsActive)
-                .OrderBy(diaDiem => diaDiem.Id)
-                .Select(diaDiem => diaDiem.Id)
-                .ToListAsync(ct);
-
             // Vượt phạm vi là "không có kết quả", không phải lỗi — giao diện hiện
             // Empty state thay vì báo lỗi.
-            if (request.LocationIndex.Value >= danhSachId.Count)
+            // Không dùng `FirstOrDefault` ở đây: nó trả về struct nên không bao giờ
+            // null, phân biệt "không thấy" với "thấy" phải so sánh thủ công.
+            if (!chiSoDiaDiem.Values.Contains(request.LocationIndex.Value))
             {
                 return TrangRong(request);
             }
 
-            int locationId = danhSachId[request.LocationIndex.Value];
+            int locationId = chiSoDiaDiem.First(x => x.Value == request.LocationIndex.Value).Key;
             query = query.Where(phong => phong.LocationId == locationId);
         }
 
@@ -93,12 +91,20 @@ public class RoomService : IRoomService
 
         int tongSo = await query.CountAsync(ct);
 
-        List<RoomSearchItemDto> items = await query
+        // Chỉ số phòng tính trên TOÀN BỘ phòng (không phải trang hiện tại) và KHÔNG
+        // phụ thuộc sắp xếp/lọc. Dữ liệu nhỏ nên truy vấn phụ này nhẹ.
+        Dictionary<(int LocationId, int RoomId), int> chiSoPhong =
+            await LayChiSoPhongAsync(ct);
+
+        var hang = await query
             .Skip((request.Page - 1) * request.PageSize)
             .Take(request.PageSize)
-            // `Select` thẳng ra DTO: không lộ `Id`, không lấy thừa cột (AGENTS.md 6.4).
-            .Select(phong => new RoomSearchItemDto
+            // `Select` ra kiểu nặc danh giữ `LocationId`/`RoomId` để đánh chỉ số
+            // ở bộ nhớ — DTO trả về không lộ `Id`, không lấy thừa cột (AGENTS.md 6.4).
+            .Select(phong => new
             {
+                LocationId = phong.LocationId,
+                RoomId = phong.Id,
                 Name = phong.Name,
                 RoomNumber = phong.RoomNumber,
                 RoomType = phong.RoomType,
@@ -117,6 +123,25 @@ public class RoomService : IRoomService
             })
             .ToListAsync(ct);
 
+        List<RoomSearchItemDto> items = hang
+            .Select(h => new RoomSearchItemDto
+            {
+                Name = h.Name,
+                RoomNumber = h.RoomNumber,
+                RoomType = h.RoomType,
+                Capacity = h.Capacity,
+                PricePerHour = h.PricePerHour,
+                PricePerDay = h.PricePerDay,
+                RatingAvg = h.RatingAvg,
+                RatingCount = h.RatingCount,
+                Status = h.Status,
+                ThumbnailUrl = h.ThumbnailUrl,
+                LocationName = h.LocationName,
+                LocationIndex = chiSoDiaDiem[h.LocationId],
+                RoomIndex = chiSoPhong[(h.LocationId, h.RoomId)],
+            })
+            .ToList();
+
         return new PagedResultDto<RoomSearchItemDto>
         {
             Items = items,
@@ -125,6 +150,41 @@ public class RoomService : IRoomService
             TotalItems = tongSo,
             TotalPages = tongSo == 0 ? 0 : (int)Math.Ceiling(tongSo / (double)request.PageSize),
         };
+    }
+
+    /// <summary>
+    /// Vị trí của từng địa điểm đang hoạt động trong thứ tự `OrderBy Id` —
+    /// cùng thứ tự với `GET /api/locations` để chỉ số khớp nhau.
+    /// </summary>
+    private async Task<Dictionary<int, int>> LayChiSoDiaDiemAsync(CancellationToken ct)
+    {
+        List<int> danhSachId = await _db.Locations
+            .AsNoTracking()
+            .Where(diaDiem => diaDiem.IsActive)
+            .OrderBy(diaDiem => diaDiem.Id)
+            .Select(diaDiem => diaDiem.Id)
+            .ToListAsync(ct);
+
+        return danhSachId
+            .Select((id, chiSo) => (id, chiSo))
+            .ToDictionary(x => x.id, x => x.chiSo);
+    }
+
+    /// <summary>Vị trí của từng phòng trong địa điểm của nó (sắp theo `Id`).</summary>
+    private async Task<Dictionary<(int LocationId, int RoomId), int>> LayChiSoPhongAsync(CancellationToken ct)
+    {
+        var danhSach = await _db.Rooms
+            .AsNoTracking()
+            .Where(phong => phong.Location.IsActive)
+            .OrderBy(phong => phong.LocationId)
+            .ThenBy(phong => phong.Id)
+            .Select(phong => new { phong.LocationId, RoomId = phong.Id })
+            .ToListAsync(ct);
+
+        return danhSach
+            .GroupBy(x => x.LocationId)
+            .SelectMany(nhom => nhom.Select((x, chiSo) => (x.LocationId, x.RoomId, chiSo)))
+            .ToDictionary(x => (x.LocationId, x.RoomId), x => x.chiSo);
     }
 
     /// <summary>

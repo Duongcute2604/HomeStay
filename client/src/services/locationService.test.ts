@@ -42,6 +42,10 @@ const diaDiemMau: Location = {
       ratingCount: 3,
       status: RoomStatus.AVAILABLE,
       thumbnailUrl: '/images/rooms/phong-tieu-chuan.svg',
+      description: null,
+      images: ['/images/rooms/phong-tieu-chuan.svg'],
+      amenities: ['WiFi miễn phí'],
+      reviews: [],
     },
   ],
 }

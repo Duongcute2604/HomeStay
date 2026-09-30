@@ -51,9 +51,31 @@ export const LOC_MAC_DINH: SearchFilters = {
   pageSize: 6,
 }
 
-/** Một phòng trong kết quả — thêm tên địa điểm so với `RoomSummary`. */
+/** Một phòng trong kết quả — thêm tên địa điểm và chỉ số để link tới chi tiết. */
 export interface RoomSearchItem extends RoomSummary {
   locationName: string
+  /**
+   * Chỉ số địa điểm và phòng theo thứ tự `GET /api/locations` — để link
+   * `/locations/{locationIndex}/rooms/{roomIndex}` mà không cần `Id`.
+   */
+  locationIndex: number
+  roomIndex: number
+}
+
+/** Một đánh giá trong trang chi tiết phòng. Không hiện đánh giá bị ẩn. */
+export interface RoomReview {
+  reviewerName: string
+  rating: number
+  comment: string | null
+  createdAt: string
+}
+
+/** Chi tiết một phòng: tóm tắt + mô tả + ảnh + tiện nghi + đánh giá. */
+export interface RoomDetail extends RoomSummary {
+  description: string | null
+  images: string[]
+  amenities: string[]
+  reviews: RoomReview[]
 }
 
 /** Kết quả phân trang từ API. */

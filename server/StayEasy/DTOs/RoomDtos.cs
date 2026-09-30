@@ -115,6 +115,15 @@ public class RoomSearchItemDto
 
     /// <summary>Tên địa điểm chứa phòng — để khách biết phòng ở đâu mà không cần `Id`.</summary>
     public string LocationName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Chỉ số địa điểm theo thứ tự của `GET /api/locations` — để trang tìm kiếm
+    /// link tới chi tiết mà không cần `Id` (tên phòng có thể trùng giữa các nơi).
+    /// </summary>
+    public int LocationIndex { get; set; }
+
+    /// <summary>Chỉ số phòng trong địa điểm đó (cùng thứ tự `OrderBy Id`).</summary>
+    public int RoomIndex { get; set; }
 }
 
 /// <summary>Kết quả phân trang dùng chung.</summary>

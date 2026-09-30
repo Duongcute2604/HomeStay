@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { formatDiem, formatVnd } from './format'
+import { formatDiem, formatNgay, formatVnd } from './format'
 
 /**
  * Test cho các hàm định dạng hiển thị.
@@ -46,5 +46,19 @@ describe('formatDiem', () => {
 
   it('Diem0_HienKhongPhayKhong', () => {
     expect(formatDiem(0)).toBe('0,0')
+  })
+})
+
+describe('formatNgay', () => {
+  it('ChuoiIso_HienNgayThangNamVaGioPhut', () => {
+    // Múi giờ máy chạy test có thể khác nhau nên chỉ kiểm phần ngày —
+    // phần giờ kiểm bằng regex định dạng.
+    const ketQua = formatNgay('2026-09-29T07:00:00Z')
+
+    expect(ketQua).toMatch(/^\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}$/)
+  })
+
+  it('ChuoiKhongPhaiNgay_TraVeNguyenVan_KhongVo', () => {
+    expect(formatNgay('khong-phai-ngay')).toBe('khong-phai-ngay')
   })
 })

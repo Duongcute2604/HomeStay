@@ -1209,3 +1209,38 @@ z.preprocess(
 > 2. Khi test assert trên `mock.calls[N]` mà ra giá trị lạ, kiểm tra đầu tiên là
 >    "đây có phải cuộc gọi của test này không" — in `mock.calls.length` ra là
 >    thấy ngay.
+## 43. Mở rộng response có sẵn thay vì thêm endpoint mới
+
+**Bài toán:** trang chi tiết phòng cần mô tả + ảnh + tiện nghi + đánh giá, nhưng
+`AGENTS.md` cấm `Id` trong response nên không gọi `/rooms/{id}` được.
+
+**Đã chọn:** thêm 4 trường vào `RoomDetailDto` trong response `GET /api/locations`
+đang có, thay vì tạo endpoint mới. Ba lý do:
+
+1. Dữ liệu nhỏ (10 phòng) — response to thêm vài KB, không đáng kể.
+2. Không endpoint chết: trang chi tiết đọc từ cache của list (YAGNI).
+3. Không phá quy tắc `Id`: `RoomReviewDto` chỉ có tên người viết, quét JSON sạch
+   cả `userId`/`bookingId`.
+
+**Điều kiện để cách này đúng** (ghi để bước sau không áp dụng mù): dữ liệu phải
+NHỎ và đọc KÉM thay đổi. Khi nào danh sách lớn hoặc chi tiết đắt (video, lịch sử
+dài) thì phải tách endpoint riêng có phân trang.
+
+## 44. Khung chọn ngày tách riêng để Bước 10 dùng lại, chưa có nút đặt
+
+**Bài toán:** kế hoạch Bước 8 ghi "khung chọn ngày" nhưng nút "Đặt phòng" thuộc
+Bước 10. Ba phương án:
+
+| Phương án | Vì sao loại / chọn |
+|-----------|-------------------|
+| Làm luôn nút đặt gọi API tạm | API chưa có — nút gọi vào khoảng trống |
+| Nút mờ ghi "sắp có" | UI chết nhưng có lý do — vẫn là UI chết |
+| **Khung chỉ chọn + ước tính, không nút** | **Chọn.** Tách `RoomDateFrame.tsx` để Bước 10 import lại. Không có gì thừa, không có gì chết |
+
+**Bài học:**
+
+> 1. **Ranh giới bước phải cắt ở chỗ không để lại UI chết.** Khung chọn ngày là
+>    phần dùng chung được — tách component từ bây giờ, Bước 10 chỉ việc thêm nút.
+> 2. **Giá tạm tính ghi rõ "tạm tính".** Công thức sao đúng `BookingCalculator`
+>    (có test hai bên), nhưng số cuối cùng do backend tính khi tạo đơn — nói rõ
+>    để người dùng không kiện khi hai số lệch nhau vì quy tắc đổi sau này.

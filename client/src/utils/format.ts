@@ -26,3 +26,26 @@ export function formatVnd(value: number): string {
 export function formatDiem(value: number): string {
   return value.toLocaleString('vi-VN', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
 }
+
+/**
+ * Định dạng ngày giờ ISO từ API: `"2026-09-29T..."` → `"29/09/2026 14:30"`.
+ *
+ * Dùng `Intl` của trình duyệt để đúng múi giờ máy khách — server trả UTC,
+ * hiện nguyên chuỗi UTC thì giờ lệch với giờ người dùng đang sống.
+ */
+export function formatNgay(value: string): string {
+  const ngay = new Date(value)
+
+  if (Number.isNaN(ngay.getTime())) {
+    return value
+  }
+
+  const ngayThang = ngay.toLocaleDateString('vi-VN', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  })
+  const gioPhut = ngay.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+
+  return `${ngayThang} ${gioPhut}`
+}

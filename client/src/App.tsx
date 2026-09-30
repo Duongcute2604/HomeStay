@@ -9,6 +9,7 @@ import Login from './pages/Login'
 import NotFound from './pages/NotFound'
 import Profile from './pages/Profile'
 import Register from './pages/Register'
+import RoomDetail from './pages/RoomDetail'
 import Rooms from './pages/Rooms'
 
 /**
@@ -32,6 +33,10 @@ export default function App(): JSX.Element {
 
         <Route path="/locations" element={<Locations />} />
         <Route path="/locations/:chiSo" element={<LocationDetail />} />
+        <Route
+          path="/locations/:chiSoDiaDiem/rooms/:chiSoPhong"
+          element={<RoomDetail />}
+        />
         <Route path="/rooms" element={<Rooms />} />
 
         <Route

@@ -2,6 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
+import { Link } from 'react-router-dom'
 
 import { layThongBaoLoi } from '../api/client'
 import Button from '../components/common/Button'
@@ -229,7 +230,11 @@ export default function Rooms(): JSX.Element {
                 const stt = (trangHienTai - 1) * kichThuocTrang + chiSo + 1
 
                 return (
-                  <div key={`${trangHienTai}-${chiSo}`} className="card overflow-hidden">
+                  <Link
+                    key={`${trangHienTai}-${chiSo}`}
+                    to={`/locations/${phong.locationIndex}/rooms/${phong.roomIndex}`}
+                    className="card overflow-hidden transition hover:shadow-md"
+                  >
                     {phong.thumbnailUrl ? (
                       <img
                         src={phong.thumbnailUrl}
@@ -277,7 +282,7 @@ export default function Rooms(): JSX.Element {
                         </span>
                       </div>
                     </div>
-                  </div>
+                  </Link>
                 )
               })}
             </div>

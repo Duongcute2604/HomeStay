@@ -40,6 +40,8 @@ function phongMau(ten: string): RoomSearchItem {
     status: RoomStatus.AVAILABLE,
     thumbnailUrl: null,
     locationName: 'Hưng Yên Ven Biển',
+    locationIndex: 0,
+    roomIndex: 0,
   }
 }
 

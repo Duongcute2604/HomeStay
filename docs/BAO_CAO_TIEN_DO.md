@@ -97,3 +97,4 @@
 | 30/09 | Backend 147 -> 163 test (them 3 Service + 13 DTO validation). Frontend 60/60 giu nguyen | Build 0 warning 0 error. Da xac minh lai tren API that (thong bao + token) va CSDL demo sach | Tiep theo: Buoc 6 Xem dia diem |
 | 30/09 | 6 | Xem dia diem: GET /api/locations (khong Id, kem phong tom tat) + trang /locations va /locations/:chiSo | 9/9 ca (HP/EC/AB), console sach, mobile 390px | Backend 10/10, frontend 87/87 (them 27) | Xong (30/09) |
 | 30/09 | 7 | Tim kiem phong: GET /api/rooms/search (9 tham so) + trang /rooms (loc, sap xep, phan trang, STT lien tuc) | 11/11 ca, console sach, mobile 390px | Backend 15/15, frontend 111/111 (them 24) | Xong (30/09) |
+| 30/09 | 8 | Chi tiet phong: mo rong response locations + route /locations/:csDiaDiem/rooms/:csPhong (anh lon, tien nghi, danh gia, khung chon ngay + gia tam tinh) | 8/8 ca, console sach, mobile 390px | Backend 32/32 (them 7), frontend 135/135 (them 24) | Xong (30/09) |

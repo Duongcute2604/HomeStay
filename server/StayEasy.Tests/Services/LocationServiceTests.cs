@@ -206,6 +206,82 @@ public class LocationServiceTests
             phong => Assert.IsType<RoomStatus>(phong.Status));
     }
 
+    // ---------------- Chi tiết phòng (Bước 8) ----------------
+
+    [Fact]
+    public async Task LayDanhSachAsync_PhongCoMoTaDayDu()
+    {
+        await using StayEasyDbContext db = await TaoDbDaSeedAsync();
+        LocationService service = TaoService(db);
+
+        List<LocationListItemDto> result = await service.LayDanhSachAsync(CancellationToken.None);
+
+        Assert.All(
+            result.SelectMany(diaDiem => diaDiem.Rooms),
+            phong => Assert.False(string.IsNullOrWhiteSpace(phong.Description)));
+    }
+
+    [Fact]
+    public async Task LayDanhSachAsync_MoiPhongCo2Anh_AnhChinhDauTien()
+    {
+        await using StayEasyDbContext db = await TaoDbDaSeedAsync();
+        LocationService service = TaoService(db);
+
+        List<LocationListItemDto> result = await service.LayDanhSachAsync(CancellationToken.None);
+
+        foreach (RoomDetailDto phong in result.SelectMany(diaDiem => diaDiem.Rooms))
+        {
+            Assert.Equal(2, phong.Images.Count);
+            Assert.Equal(phong.ThumbnailUrl, phong.Images[0]);
+        }
+    }
+
+    [Fact]
+    public async Task LayDanhSachAsync_PhongCoTienNghi()
+    {
+        await using StayEasyDbContext db = await TaoDbDaSeedAsync();
+        LocationService service = TaoService(db);
+
+        List<LocationListItemDto> result = await service.LayDanhSachAsync(CancellationToken.None);
+
+        Assert.All(
+            result.SelectMany(diaDiem => diaDiem.Rooms),
+            phong => Assert.NotEmpty(phong.Amenities));
+    }
+
+    [Fact]
+    public async Task LayDanhSachAsync_DanhGiaBiAn_KhongHien()
+    {
+        await using StayEasyDbContext db = await TaoDbDaSeedAsync();
+        LocationService service = TaoService(db);
+
+        List<RoomDetailDto> tatCaPhong = (await service.LayDanhSachAsync(CancellationToken.None))
+            .SelectMany(diaDiem => diaDiem.Rooms)
+            .ToList();
+
+        // Seed có 6 đánh giá, 1 bị ẩn — chỉ 5 được hiện.
+        Assert.Equal(5, tatCaPhong.SelectMany(phong => phong.Reviews).Count());
+        Assert.DoesNotContain(
+            tatCaPhong.SelectMany(phong => phong.Reviews),
+            danhGia => danhGia.Comment != null && danhGia.Comment.Contains("bẩn"));
+    }
+
+    [Fact]
+    public async Task LayDanhSachAsync_DanhGiaCoTenNguoiViet()
+    {
+        await using StayEasyDbContext db = await TaoDbDaSeedAsync();
+        LocationService service = TaoService(db);
+
+        List<RoomReviewDto> danhGia = (await service.LayDanhSachAsync(CancellationToken.None))
+            .SelectMany(diaDiem => diaDiem.Rooms)
+            .SelectMany(phong => phong.Reviews)
+            .ToList();
+
+        Assert.NotEmpty(danhGia);
+        Assert.All(danhGia, d => Assert.False(string.IsNullOrWhiteSpace(d.ReviewerName)));
+        Assert.All(danhGia, d => Assert.InRange(d.Rating, 1, 5));
+    }
+
     [Fact]
     public async Task LayDanhSachAsync_DtoKhongChuaId()
     {

@@ -60,6 +60,8 @@ export interface RoomSummary {
   thumbnailUrl: string | null
 }
 
+import type { RoomDetail } from './room'
+
 /** Một địa điểm trong danh sách. Không có `Id`. */
 export interface Location {
   name: string
@@ -68,5 +70,5 @@ export interface Location {
   address: string
   description: string | null
   imageUrl: string | null
-  rooms: RoomSummary[]
+  rooms: RoomDetail[]
 }

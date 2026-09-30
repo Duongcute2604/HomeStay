@@ -279,4 +279,47 @@ public class RoomSearchTests
         Assert.Null(typeof(RoomSearchItemDto).GetProperty("RoomId"));
         Assert.Null(typeof(RoomSearchItemDto).GetProperty("LocationId"));
     }
+
+    // ---------------- Chỉ số ổn định để link tới chi tiết ----------------
+
+    [Fact]
+    public async Task SearchAsync_TraVeChiSoDiaDiemVaPhong_DungThuTuLocations()
+    {
+        await using StayEasyDbContext db = await TaoDbDaSeedAsync();
+        RoomService service = TaoService(db);
+
+        RoomSearchRequest request = TaoYeuCau();
+        request.Sort = RoomSortOptions.PriceAsc;
+
+        List<RoomSearchItemDto> items = (await service.SearchAsync(request, CancellationToken.None)).Items;
+
+        // Dù sắp theo giá, chỉ số vẫn neo theo thứ tự OrderBy Id của locations:
+        // Hưng Yên = 0 (4 phòng, roomIndex 0–3), Đà Lạt = 1, Hội An = 2.
+        var hungYen = items.Where(p => p.LocationName == "Hưng Yên Ven Biển").ToList();
+        Assert.Equal(4, hungYen.Count);
+        Assert.All(hungYen, p => Assert.Equal(0, p.LocationIndex));
+        Assert.Equal(new[] { 0, 1, 2, 3 }, hungYen.Select(p => p.RoomIndex).OrderBy(i => i).ToArray());
+    }
+
+    [Fact]
+    public async Task SearchAsync_ChiSoKhopVoiDanhSachDiaDiem()
+    {
+        // Trang tìm kiếm link `/locations/{locationIndex}/rooms/{roomIndex}` —
+        // test này chứng minh chỉ số trỏ đúng phòng (không đoán bằng tên).
+        await using StayEasyDbContext db = await TaoDbDaSeedAsync();
+        RoomService roomService = TaoService(db);
+        StayEasy.Services.Locations.LocationService locationService = new(db);
+
+        RoomSearchRequest request = TaoYeuCau();
+        request.Keyword = "chèo xe";
+
+        RoomSearchItemDto phong = Assert.Single(
+            (await roomService.SearchAsync(request, CancellationToken.None)).Items);
+
+        List<LocationListItemDto> diaDiem =
+            await locationService.LayDanhSachAsync(CancellationToken.None);
+
+        Assert.Equal("Hội An Phố Cổ", diaDiem[phong.LocationIndex].Name);
+        Assert.Equal(phong.Name, diaDiem[phong.LocationIndex].Rooms[phong.RoomIndex].Name);
+    }
 }

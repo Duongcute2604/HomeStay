@@ -295,7 +295,40 @@
 > Console 0 warning 0 error. Mobile 390px: form 1 cột, ô rộng 309px, không tràn.
 > Response quét sạch `Id`. CSDL sau test: 4 users, 3 locations, 10 rooms.
 
-## 4. Kiểm tra phòng trống (Bước 9)
+## 4. Chi tiết phòng (Bước 8)
+
+> Ngày chạy: 30/09/2026. Dữ liệu từ `GET /api/locations` (đã mở rộng) + trình duyệt
+> thật trên `http://localhost:5174/locations/0/rooms/0`.
+> **Kết quả: 8/8 ca đạt.**
+
+**Kịch bản 1 — Happy path**
+
+| # | Kịch bản | Kỳ vọng | Thực tế | Kết quả |
+|---|----------|---------|---------|---------|
+| 1.1 | Mở `/locations/0/rooms/0` | Đủ breadcrumb, ảnh, mô tả, giá, tiện nghi, đánh giá, khung ngày | Đủ: "Phòng Hạnh Phúc", 5 tiện nghi, 1 đánh giá 5 sao + ngày, "90.000 ₫/giờ / 550.000 ₫/ngày" | ✅ |
+| 1.2 | Bấm thumbnail 2 rồi bấm ảnh chính | Đổi ảnh chính, mở lớp phủ xem lớn, bấm Đóng thì đóng | Ảnh chính đổi, lớp phủ mở, nút Đóng hoạt động | ✅ |
+| 1.3 | Chọn nhận 05/10 14:00, trả 07/10 12:00 (theo ngày) | Tạm tính đúng công thức backend | "Tạm tính: 2 ngày × 1.100.000 ₫" (46 giờ → 2 ngày) | ✅ |
+| 1.4 | Bấm thẻ phòng từ trang `/rooms` | Sang đúng chi tiết phòng đó | Sang `/locations/0/rooms/0` | ✅ |
+
+**Kịch bản 2 — Edge case**
+
+| # | Kịch bản | Kỳ vọng | Thực tế | Kết quả |
+|---|----------|---------|---------|---------|
+| 2.1 | Gõ `/locations/0/rooms/99` | Báo không tìm thấy, có đường về | "Không tìm thấy phòng" + nút "Về trang tìm kiếm" | ✅ |
+| 2.2 | Mobile 390px | Không tràn ngang | Thẻ 343px, form 1 cột, nút vừa màn hình | ✅ |
+
+**Kịch bản 3 — Bất thường**
+
+| # | Kịch bản | Kỳ vọng | Thực tế | Kết quả |
+|---|----------|---------|---------|---------|
+| 3.1 | Đánh giá bị Admin ẩn | Không hiện ở bất kỳ đâu | Seed có 1 đánh giá ẩn ("...bẩn..."); API chỉ trả 5 hiện; unit test khẳng định | ✅ |
+| 3.2 | Quét `Id` trong response mở rộng | Không lộ `id/locationId/roomId/userId/bookingId` | Quét JSON sạch — reviewer chỉ có tên, không có `userId` | ✅ |
+
+> Console 0 warning 0 error. Khung ngày chưa có nút đặt — nút thuộc Bước 10,
+> làm trước là UI chết (quyết định #4 trong `todo.md`).
+> CSDL sau test: 4 users, 3 locations, 10 rooms, `RefreshTokenHash` treo = 0.
+
+## 5. Kiểm tra phòng trống (Bước 9)
 
 | # | Loại | Kịch bản | Kỳ vọng | Thực tế | Kết quả |
 |---|------|----------|---------|---------|---------|
@@ -311,7 +344,7 @@
 
 ---
 
-## 5. Đặt phòng (Bước 10) ⭐
+## 6. Đặt phòng (Bước 10) ⭐
 
 | # | Loại | Kịch bản | Kỳ vọng | Thực tế | Kết quả |
 |---|------|----------|---------|---------|---------|
@@ -326,7 +359,7 @@
 
 ---
 
-## 6. Quản lý đơn của tôi (Bước 11)
+## 7. Quản lý đơn của tôi (Bước 11)
 
 | # | Loại | Kịch bản | Kỳ vọng | Thực tế | Kết quả |
 |---|------|----------|---------|---------|---------|
@@ -339,7 +372,7 @@
 
 ---
 
-## 7. Admin — quản lý danh mục (Bước 12)
+## 8. Admin — quản lý danh mục (Bước 12)
 
 | # | Loại | Kịch bản | Kỳ vọng | Thực tế | Kết quả |
 |---|------|----------|---------|---------|---------|
@@ -355,7 +388,7 @@
 
 ---
 
-## 8. Admin — vòng đời đơn & phòng (Bước 13) ⭐
+## 9. Admin — vòng đời đơn & phòng (Bước 13) ⭐
 
 > Chạy trọn vẹn 1 vòng đời, quan sát từng bước:
 
@@ -375,7 +408,7 @@
 
 ---
 
-## 9. Dashboard & đánh giá (Bước 15, 16)
+## 10. Dashboard & đánh giá (Bước 15, 16)
 
 | # | Loại | Kịch bản | Kỳ vọng | Thực tế | Kết quả |
 |---|------|----------|---------|---------|---------|
@@ -389,7 +422,7 @@
 
 ---
 
-## 10. Giao diện & trải nghiệm (Bước 17)
+## 11. Giao diện & trải nghiệm (Bước 17)
 
 | # | Kịch bản | Kỳ vọng | Thực tế | Kết quả |
 |---|----------|---------|---------|---------|
@@ -403,7 +436,7 @@
 
 ---
 
-## 11. Tổng kết
+## 12. Tổng kết
 
 | Nhóm chức năng | Số test | Đạt | Không đạt |
 |----------------|---------|-----|-----------|

@@ -505,10 +505,28 @@ từ query string) nên không có cách kích hoạt. Vẫn cần nói rõ vớ
 | 2 | **EC** | Giá 0–1.000 → từ khoá không có kết quả → `locationIndex=99` gõ tay → mobile 390px | Empty state "Không tìm thấy" · tương tự · tương tự · không tràn ngang |
 | 3 | **AB** | `minPrice > maxPrice` → tắt server → kiểm KHÔNG lộ `Id` | 400 kèm thông báo · lỗi + nút thử lại · JSON và màn hình sạch `Id` |
 
-### [ ] BƯỚC 8 — Chi tiết phòng
-- **Mục tiêu đo được:** trang chi tiết hiện đủ ảnh (bấm xem ảnh lớn) · tiện nghi · giá giờ/ngày · mô tả · đánh giá · khung chọn ngày
+### [x] BƯỚC 8 — Chi tiết phòng · **XONG 30/09/2026**
+- **Mục tiêu đo được:** route `/locations/:chiSoDiaDiem/rooms/:chiSoPhong` hiện đủ ảnh (bấm xem lớn) · tiện nghi · giá · mô tả · đánh giá · khung chọn ngày kèm giá tạm tính · 3/3 test tay · **≥ 6 unit test backend** + **≥ 12 unit test frontend**
+- **Kết quả đo được:**
+  - API: `GET /api/locations` đã kèm `description/images/amenities/reviews` (review ẩn bị loại, đủ 5 hiện); quét sạch `Id` kể cả `userId/bookingId`
+  - Test tay: **8/8 ca đạt** (HP 4 · EC 2 · AB 2) — chi tiết đầy đủ, bấm thumbnail + mở ảnh lớn, khung ngày tính "2 ngày × 1.100.000 ₫", link từ tìm kiếm đúng, chỉ số sai báo không tìm thấy, mobile 390px
+  - Unit test backend: `dotnet test --filter "LocationService|RoomSearch"` → **32/32** (+7: 5 chi tiết + 2 chỉ số)
+  - Unit test frontend: `npm test` → **135/135** (+24: pricing 9 · formatNgay 2 · RoomDateFrame 4 · RoomDetail 9)
+  - `dotnet build --no-incremental` → **0 error 0 warning** · `npm run build` sạch · `npm run lint` sạch
+  - Console 0 warning 0 error · CSDL nguyên vẹn
 - **Bằng chứng:**
 - **Ảnh chụp:**
+
+#### Quyết định đã chốt (trước khi code)
+
+| # | Vấn đề | Chốt | Lý do |
+|---|--------|------|-------|
+| 1 | Lấy chi tiết từ đâu? | **Mở rộng response `GET /api/locations`** — thêm `description`, `images`, `amenities`, `reviews` vào phòng. KHÔNG endpoint mới | Dữ liệu nhỏ. Đúng mẫu Bước 6/7: không `Id`, không endpoint chết, chi tiết đọc từ cache. Route `/locations/:chiSoDiaDiem/rooms/:chiSoPhong` |
+| 2 | Trang tìm kiếm link tới chi tiết bằng gì? | Thêm `locationIndex` + `roomIndex` vào `RoomSearchItemDto` | Server biết thứ tự nên đánh số luôn; giao diện khỏi đoán bằng tên (tên phòng có thể trùng giữa các địa điểm) |
+| 3 | Đánh giá hiện gì? | Tối đa **5 mới nhất**, **trừ `IsHidden`**, kèm tên người viết + sao + nhận xét + ngày | Seed có 6 đánh giá (5 hiện + 1 ẩn) — đúng ca kiểm "ẩn là mất" |
+| 4 | Khung chọn ngày gồm gì? | Chọn loại (giờ/ngày) + giờ nhận/trả + **giá tạm tính trực tiếp** + lỗi khi trả ≤ nhận | Tách `components/RoomDateFrame.tsx` để **Bước 10 dùng lại**. Chưa có nút đặt — nút thuộc Bước 10, làm trước là UI chết |
+| 5 | Giá tạm tính tính ở đâu? | `utils/pricing.ts` sao đúng công thức `BookingCalculator` (làm tròn lên × đơn giá) | Quy tắc đơn giản (2 dòng). Ghi rõ "tạm tính"; số cuối cùng do backend tính ở Bước 10 |
+| 6 | Ảnh lớn | Bấm thumbnail đổi ảnh chính; bấm ảnh chính mở lớp phủ toàn màn hình | Không thêm thư viện gallery — 2 ảnh/phòng, tự viết ~20 dòng đủ dùng (KISS) |
 
 ---
 
@@ -578,7 +596,7 @@ từ query string) nên không có cách kích hoạt. Vẫn cần nói rõ vớ
 ## Giai đoạn 7 — Hoàn thiện & kiểm thử
 
 ### [ ] BƯỚC 17 — Responsive + Loading/Error/Empty + Toast
-- **Mục tiêu đo được:** mọi trang dùng được ở 375px · mọi danh sách có đủ 3 trạng thái · 7/7 test tay mục 10 của `docs/KIEM_THU_TAY.md`
+- **Mục tiêu đo được:** mọi trang dùng được ở 375px · mọi danh sách có đủ 3 trạng thái · 7/7 test tay mục 11 của `docs/KIEM_THU_TAY.md`
 - **Bằng chứng:** ảnh chụp 2 trang ở khung 375px
 
 ### [ ] BƯỚC 18 — 18 test case tích hợp (Postman)
