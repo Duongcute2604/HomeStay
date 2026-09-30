@@ -1,5 +1,7 @@
+import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 
+import { roomService } from '../services/roomService'
 import { formatVnd } from '../utils/format'
 import { BookingType, kiemKhoangThoiGian, NHAN_CACH_THUE, tinhSoDonVi, uocTinhTien } from '../utils/pricing'
 
@@ -8,19 +10,29 @@ interface Props {
   giaTheoGio: number
   /** Giá 1 ngày (VNĐ) của phòng đang xem. */
   giaTheoNgay: number
+  /** Chỉ số địa điểm — để hỏi API phòng nào (response không có `Id`). */
+  locationIndex: number
+  /** Chỉ số phòng trong địa điểm đó. */
+  roomIndex: number
 }
 
 /**
- * Khung chọn ngày thuê: loại (giờ/ngày) + giờ nhận/trả + giá tạm tính.
+ * Khung chọn ngày thuê: loại (giờ/ngày) + giờ nhận/trả + giá tạm tính +
+ * trạng thái trống/bận trực tiếp từ API.
  *
  * Tách thành component riêng để **Bước 10 dùng lại** trong trang đặt phòng —
  * viết lại ở trang đặt thì hai nơi tính hai kiểu (DRY). Ở bước này khung chỉ
- * chọn và ước tính, CHƯA có nút đặt (nút thuộc về Bước 10, làm trước là UI chết).
+ * chọn, ước tính và kiểm trống; CHƯA có nút đặt (nút thuộc về Bước 10).
  *
- * Quy tắc tối thiểu 3 giờ / đặt trước 2 giờ KHÔNG kiểm ở đây: chúng cần giờ
- * hiện tại của server, không tin giờ máy khách — backend Bước 10 sẽ chặn.
+ * Quy tắc tối thiểu 3 giờ / đặt trước 2 giờ do BACKEND kiểm (cần giờ server,
+ * không tin giờ máy khách) — khung chỉ hiện thông báo backend trả về.
  */
-export default function RoomDateFrame({ giaTheoGio, giaTheoNgay }: Props): JSX.Element {
+export default function RoomDateFrame({
+  giaTheoGio,
+  giaTheoNgay,
+  locationIndex,
+  roomIndex,
+}: Props): JSX.Element {
   const [loai, setLoai] = useState<BookingType>(BookingType.DAY)
   const [gioNhan, setGioNhan] = useState('')
   const [gioTra, setGioTra] = useState('')
@@ -29,9 +41,26 @@ export default function RoomDateFrame({ giaTheoGio, giaTheoNgay }: Props): JSX.E
   const checkOut = gioTra === '' ? null : new Date(gioTra)
   const loi = kiemKhoangThoiGian(checkIn, checkOut)
 
-  const donVi = loi === null && checkIn && checkOut ? tinhSoDonVi(loai, checkIn, checkOut) : 0
+  const ngayHopLe = loi === null && checkIn !== null && checkOut !== null
+
+  // Chỉ hỏi API khi ngày đã hợp lệ — ngày sai thì backend cũng chỉ báo lỗi
+  // hình thức, gọi là thừa một request.
+  const {
+    data: tinhTrang,
+    isPending: dangKiem,
+    isError: loiKiem,
+  } = useQuery({
+    queryKey: ['rooms', 'availability', locationIndex, roomIndex, loai, gioNhan, gioTra],
+    queryFn: () => roomService.kiemTraTrong(locationIndex, roomIndex, loai, checkIn as Date, checkOut as Date),
+    enabled: ngayHopLe,
+    // Kết quả trống/bận thay đổi theo thời gian (người khác có thể đặt xen vào)
+    // nên không giữ lâu — qua lại là kiểm lại.
+    staleTime: 30 * 1000,
+  })
+
+  const donVi = ngayHopLe && checkIn && checkOut ? tinhSoDonVi(loai, checkIn, checkOut) : 0
   const tamTinh =
-    loi === null && checkIn && checkOut
+    ngayHopLe && checkIn && checkOut
       ? uocTinhTien(loai, giaTheoGio, giaTheoNgay, checkIn, checkOut)
       : 0
 
@@ -88,10 +117,34 @@ export default function RoomDateFrame({ giaTheoGio, giaTheoNgay }: Props): JSX.E
       {loi ? (
         <p className="mt-3 text-sm text-gray-500">{loi}</p>
       ) : (
-        <p className="number-vn mt-3 text-right text-sm text-gray-700">
-          Tạm tính: {donVi} {loai === BookingType.HOUR ? 'giờ' : 'ngày'} ×{' '}
-          <span className="font-semibold text-brand-700">{formatVnd(tamTinh)}</span>
-        </p>
+        <>
+          <p className="number-vn mt-3 text-right text-sm text-gray-700">
+            Tạm tính: {donVi} {loai === BookingType.HOUR ? 'giờ' : 'ngày'} ×{' '}
+            <span className="font-semibold text-brand-700">{formatVnd(tamTinh)}</span>
+          </p>
+
+          {dangKiem ? (
+            <p className="mt-2 text-right text-sm text-gray-500">Đang kiểm phòng trống...</p>
+          ) : loiKiem ? (
+            <p className="mt-2 text-right text-sm text-red-600">
+              Không kiểm được phòng trống. Hãy thử lại sau.
+            </p>
+          ) : (
+            tinhTrang && (
+              <p
+                className={
+                  tinhTrang.isAvailable
+                    ? 'mt-2 text-right text-sm font-medium text-green-700'
+                    : 'mt-2 text-right text-sm font-medium text-red-600'
+                }
+              >
+                {tinhTrang.isAvailable
+                  ? 'Phòng còn trống trong khoảng đã chọn'
+                  : (tinhTrang.reason ?? 'Phòng đã có người đặt trong khoảng đã chọn')}
+              </p>
+            )
+          )}
+        </>
       )}
 
       <p className="mt-2 text-left text-xs text-gray-400">

@@ -36,4 +36,19 @@ public class RoomsController : ControllerBase
 
         return Ok(ApiResponse<PagedResultDto<RoomSearchItemDto>>.SuccessResponse("Tìm kiếm phòng thành công", result));
     }
+
+    /// <summary>
+    /// Kiểm tra phòng có đặt được trong khoảng đã chọn không.
+    /// Phòng bận vẫn trả 200 với `isAvailable: false` — chỉ tham số sai mới 4xx.
+    /// </summary>
+    [HttpGet("availability")]
+    [ProducesResponseType(typeof(ApiResponse<AvailabilityResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> KiemTraTrong([FromQuery] AvailabilityRequest request, CancellationToken ct)
+    {
+        AvailabilityResponse result = await _roomService.KiemTraTrongAsync(request, ct);
+
+        return Ok(ApiResponse<AvailabilityResponse>.SuccessResponse("Kiểm tra phòng trống thành công", result));
+    }
 }

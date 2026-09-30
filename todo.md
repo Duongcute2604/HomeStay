@@ -532,10 +532,30 @@ từ query string) nên không có cách kích hoạt. Vẫn cần nói rõ vớ
 
 ## Giai đoạn 4 — Nghiệp vụ cốt lõi ⭐
 
-### [ ] BƯỚC 9 — Kiểm tra phòng trống
-- **Mục tiêu đo được:** `/api/rooms/{id}/availability` trả `isAvailable` + `reason` · kiểm tra đủ 6 quy tắc nghiệp vụ · **≥ 10 unit test** (trong đó bắt buộc có 3 test chồng lấn khoảng thời gian: chồng lấn, chạm biên, không chạm) · 3/3 test tay
-- **Bằng chứng:** `dotnet test --filter "Availability"` → `Passed! 10/10`
-- **Ghi chú:**
+### [x] BƯỚC 9 — Kiểm tra phòng trống · **XONG 30/09/2026**
+- **Mục tiêu đo được:** `GET /api/rooms/availability` trả `isAvailable` + `reason` · đủ 6 quy tắc · **≥ 12 unit test** (bắt buộc 3 test chồng lấn: chồng lấn, chạm biên, không chạm) · khung ngày ở trang chi tiết báo trống/bận trực tiếp · 3/3 test tay
+- **Kết quả đo được:**
+  - API: khoảng trống 200+true · trùng CONFIRMED 200+false · chạm biên true · trả trước nhận 400 · đặt gấp 400 · theo giờ 2h 400 · chỉ số sai 404 · bảo trì 200+false
+  - Test tay: **8/8 ca đạt** (HP 3 · EC 3 · AB 2) — khung ngày báo "đã có người đặt" rồi "còn trống" trực tiếp, mobile 390px
+  - Unit test backend: `dotnet test --filter "Availability"` → **17/17** (3 chồng lấn + 3 trạng thái đơn + 6 thời gian + 3 phòng + 2 happy)
+  - Unit test frontend: `npm test` → **143/143** (+8: roomService.kiemTraTrong 4 · RoomDateFrame kiểm trống 4)
+  - `dotnet build --no-incremental` → **0 error 0 warning** · `npm run build` sạch · `npm run lint` sạch
+  - Console 0 warning 0 error · CSDL nguyên vẹn (4 users, 15 bookings)
+- **Bằng chứng:** `dotnet test --filter "Availability"` → `Passed! 17/17`
+- **Ghi chú:** URL dùng query thay vì `/api/rooms/{id}/availability` như nháp vì response không có `Id` — đã ghi ở bảng quyết định
+
+#### Quyết định đã chốt (trước khi code)
+
+| # | Vấn đề | Chốt | Lý do |
+|---|--------|------|-------|
+| 1 | URL kiểu gì? Kế hoạch nháp ghi `/api/rooms/{id}/availability` | Dùng query `GET /api/rooms/availability?locationIndex&roomIndex&type&checkIn&checkOut` | Response không có `Id` nên giao diện không biết `{id}` là gì. Chỉ số nhất quán với Bước 6/7/8. **Lệch kế hoạch nháp có ghi rõ ở đây** |
+| 2 | 6 quy tắc là gì? | (1) trả > nhận · (2) đặt trước ≥ 2 giờ · (3) theo giờ tối thiểu 3 giờ · (4) phòng MAINTENANCE → bận · (5) trùng đơn còn hiệu lực → bận · (6) chạm biên không tính trùng | (2)(3) từ `BookingRules`; (6) là quy tắc biên kinh điển |
+| 3 | Mã lỗi | Vi phạm quy tắc (1)(2)(3) → **400**; phòng không tồn tại → **404**; còn lại (kể cả trùng) → **200 + `isAvailable:false`** | Endpoint là truy vấn, không phải lệnh — "bận" là kết quả hợp lệ, không phải lỗi. Trùng khi TẠO đơn (Bước 10) mới 409 |
+| 4 | Đơn nào tính là "đang giữ phòng"? | `PENDING, CONFIRMED, CHECKED_IN` | `CANCELLED/REJECTED` đã huỷ; `COMPLETED` đã trả — không giữ nữa |
+| 5 | Công thức trùng | `tonTai.CheckIn < checkOut && tonTai.CheckOut > checkIn` | Chạm biên (`==`) không trùng: trả 12:00, nhận 12:00 vẫn được |
+| 6 | Có cần đăng nhập? | **Không** — public như tìm kiếm | Khách kiểm trống trước khi đăng nhập mới đúng luồng |
+| 7 | Giao diện | Nối vào `RoomDateFrame`: chọn ngày hợp lệ → tự gọi API → hiện "Còn trống" / "Đã có người đặt" | Khung đã tách sẵn ở Bước 8 để dùng lại; Bước 9 làm nó "sống" |
+| 8 | Giờ máy khách sai? | Backend tự tính "hiện tại" bằng `DateTime.Now` của server | Không tin giờ máy khách cho quy tắc (2) |
 
 ### [ ] BƯỚC 10 — Đặt phòng theo giờ / ngày ⭐
 - **Mục tiêu đo được:**

@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import RoomDetail from './RoomDetail'
 import { locationService } from '../services/locationService'
+import { roomService } from '../services/roomService'
 import { RoomStatus, RoomType } from '../types/location'
 import type { Location } from '../types/location'
 
@@ -17,6 +18,11 @@ import type { Location } from '../types/location'
 
 vi.mock('../services/locationService', () => ({
   locationService: { layDanhSach: vi.fn() },
+}))
+
+// Khung chọn ngày gọi API kiểm trống — mock để không gọi mạng thật.
+vi.mock('../services/roomService', () => ({
+  roomService: { timKiem: vi.fn(), kiemTraTrong: vi.fn() },
 }))
 
 const layDanhSachMock = vi.mocked(locationService.layDanhSach)
@@ -70,7 +76,7 @@ function dungTrangTai(url: string) {
 
   return render(
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter initialEntries={[url]}>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }} initialEntries={[url]}>
         <Routes>
           <Route path="/locations/:chiSoDiaDiem/rooms/:chiSoPhong" element={<RoomDetail />} />
         </Routes>
@@ -81,6 +87,8 @@ function dungTrangTai(url: string) {
 
 beforeEach(() => {
   layDanhSachMock.mockReset()
+  vi.mocked(roomService.kiemTraTrong).mockReset()
+  vi.mocked(roomService.kiemTraTrong).mockResolvedValue({ isAvailable: true, reason: null })
 })
 
 describe('RoomDetail - hien thi', () => {

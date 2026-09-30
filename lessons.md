@@ -1244,3 +1244,43 @@ Bước 10. Ba phương án:
 > 2. **Giá tạm tính ghi rõ "tạm tính".** Công thức sao đúng `BookingCalculator`
 >    (có test hai bên), nhưng số cuối cùng do backend tính khi tạo đơn — nói rõ
 >    để người dùng không kiện khi hai số lệch nhau vì quy tắc đổi sau này.
+## 45. Thứ tự kiểm tra: lỗi hình thức trước, 404 sau
+
+**Biểu hiện:** 2 test đỏ — `DatGapDuoi2Gio` và `TheoGioDuoi3Gio` đều kỳ vọng 400
+nhưng nhận 404. Test dựng DB rỗng (không có phòng nào) rồi gọi với ngày sai.
+
+**Nguyên nhân:** service tìm phòng TRƯỚC khi kiểm ngày. DB rỗng → 404 phủ mất lỗi
+ngày mà test muốn kiểm.
+
+**Đã sửa:** chuyển kiểm hình thức (thiếu ngày, trả ≤ nhận, đặt gấp, dưới 3 giờ)
+lên trước, tìm phòng sau. Quy tắc: **lỗi hình thức của request báo trước, lỗi
+tài nguyên (404) báo sau** — request sai hình thức thì phòng nào cũng sai, không
+cần tốn truy vấn tìm phòng.
+
+**Bài học:**
+
+> 1. **Thứ tự kiểm tra trong service là một quyết định, không phải ngẫu nhiên.**
+>    Hình thức → tồn tại → nghiệp vụ → xung đột. Viết thứ tự này vào comment để
+>    người sau không đảo lại.
+> 2. **Test đỏ không phải lúc nào cũng sai test.** Ở đây test đúng (ngày sai phải
+>    400 dù phòng có tồn tại hay không), code sai thứ tự. Đọc kỹ trước khi sửa
+>    bên nào — ngược với mục 40.
+
+## 46. "Bận" là kết quả, không phải lỗi — endpoint truy vấn trả 200 + cờ
+
+**Bài toán:** phòng trùng đơn thì API trả gì — 409 như khi tạo đơn, hay 200 kèm
+`isAvailable: false`?
+
+**Đã chọn 200 + cờ.** Vì đây là TRUY VẤN (hỏi), không phải LỆNH (làm). "Bận" là
+câu trả lời hợp lệ, giống "còn 0 phòng". Chỉ tham số sai hình thức (400) và
+phòng không tồn tại (404) mới là lỗi. Khi TẠO đơn trùng ở Bước 10 thì mới 409 —
+đó mới là xung đột nghiệp vụ thật (AGENTS.md 6.5).
+
+**Bài học:**
+
+> 1. **Phân biệt truy vấn và lệnh khi chọn mã lỗi.** GET mà trả 4xx cho kết quả
+>    "không" thì client phải `try/catch` để đọc một câu trả lời bình thường —
+>    sai ngữ nghĩa HTTP.
+> 2. Quyết định này phải ghi vào `todo.md` TRƯỚC khi code (bảng quyết định #3),
+>    vì người đọc code sẽ thắc mắc "sao trùng mà không 409" — câu trả lời nằm ở
+>    kế hoạch, không nằm trong code.

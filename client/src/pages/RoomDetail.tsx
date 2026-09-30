@@ -201,7 +201,12 @@ export default function RoomDetail(): JSX.Element {
         )}
       </section>
 
-      <RoomDateFrame giaTheoGio={phong.pricePerHour} giaTheoNgay={phong.pricePerDay} />
+      <RoomDateFrame
+        giaTheoGio={phong.pricePerHour}
+        giaTheoNgay={phong.pricePerDay}
+        locationIndex={soDiaDiem}
+        roomIndex={soPhong}
+      />
 
       {moAnhLon && anhChinh && (
         <div

@@ -126,6 +126,47 @@ public class RoomSearchItemDto
     public int RoomIndex { get; set; }
 }
 
+/// <summary>
+/// Tham số kiểm tra phòng trống, nhận qua query string của
+/// `GET /api/rooms/availability`.
+/// </summary>
+/// <remarks>
+/// Định danh phòng bằng cặp chỉ số (cùng thứ tự với `GET /api/locations`)
+/// thay vì `Id` — response các endpoint khác không lộ `Id` (AGENTS.md 6.3).
+/// </remarks>
+public class AvailabilityRequest
+{
+    /// <summary>Chỉ số địa điểm (0, 1, 2...).</summary>
+    [Range(0, int.MaxValue, ErrorMessage = "Chỉ số địa điểm không được âm")]
+    public int LocationIndex { get; set; }
+
+    /// <summary>Chỉ số phòng trong địa điểm đó.</summary>
+    [Range(0, int.MaxValue, ErrorMessage = "Chỉ số phòng không được âm")]
+    public int RoomIndex { get; set; }
+
+    /// <summary>Cách thuê: 0 = theo giờ, 1 = theo ngày. Ngoài khoảng → 400.</summary>
+    public int Type { get; set; } = (int)StayEasy.Enums.BookingType.DAY;
+
+    /// <summary>Thời điểm dự kiến nhận phòng.</summary>
+    public DateTime? CheckIn { get; set; }
+
+    /// <summary>Thời điểm dự kiến trả phòng.</summary>
+    public DateTime? CheckOut { get; set; }
+}
+
+/// <summary>Kết quả kiểm tra phòng trống.</summary>
+public class AvailabilityResponse
+{
+    /// <summary>Phòng có đặt được trong khoảng đã chọn không.</summary>
+    public bool IsAvailable { get; set; }
+
+    /// <summary>
+    /// Lý do không đặt được (tiếng Việt), null khi còn trống.
+    /// "Bận" là kết quả hợp lệ nên vẫn trả 200 — chỉ tham số sai mới 4xx.
+    /// </summary>
+    public string? Reason { get; set; }
+}
+
 /// <summary>Kết quả phân trang dùng chung.</summary>
 /// <typeparam name="T">Kiểu phần tử trong trang.</typeparam>
 public class PagedResultDto<T>

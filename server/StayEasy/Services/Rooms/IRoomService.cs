@@ -18,4 +18,14 @@ public interface IRoomService
     /// 400 khi `minPrice &gt; maxPrice`, `roomType` ngoài 0–3, hoặc `sort` không hợp lệ.
     /// </exception>
     Task<PagedResultDto<RoomSearchItemDto>> SearchAsync(RoomSearchRequest request, CancellationToken ct);
+
+    /// <summary>
+    /// Kiểm tra phòng có đặt được trong khoảng đã chọn không.
+    /// </summary>
+    /// <exception cref="StayEasy.Common.AppException">
+    /// 400 khi thiếu ngày, trả trước nhận, đặt gấp (dưới 2 giờ), theo giờ dưới
+    /// 3 giờ, hoặc cách thuê không hợp lệ. 404 khi chỉ số trỏ sai phòng.
+    /// Phòng bận (bảo trì, trùng đơn) trả 200 với `isAvailable: false`.
+    /// </exception>
+    Task<AvailabilityResponse> KiemTraTrongAsync(AvailabilityRequest request, CancellationToken ct);
 }

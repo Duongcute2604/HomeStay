@@ -75,7 +75,7 @@ function dungTrangTai(url: string) {
 
   return render(
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter initialEntries={[url]}>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }} initialEntries={[url]}>
         <Routes>
           <Route path="/locations/:chiSo" element={<LocationDetail />} />
         </Routes>

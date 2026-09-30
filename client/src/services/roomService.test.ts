@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { roomService } from './roomService'
 import { RoomType } from '../types/location'
 import { LOC_MAC_DINH, SortOption } from '../types/room'
+import { BookingType } from '../utils/pricing'
 
 /**
  * Test cho tầng gọi API tìm kiếm phòng.
@@ -31,12 +32,15 @@ const ketQuaMau = {
   totalPages: 0,
 }
 
+// Reset ở cấp file (ngoài mọi `describe`): `beforeEach` nằm trong một `describe`
+// thì describe khác không được hưởng — đúng lỗi vừa mắc khi thêm nhóm test mới.
+beforeEach(() => {
+  // Không reset thì `mock.calls[0]` của test sau là cuộc gọi của test trước
+  // (đúng lỗi đã gặp ở `ProtectedRoute.test.tsx`).
+  mockGet.mockReset()
+})
+
 describe('roomService.timKiem', () => {
-  beforeEach(() => {
-    // Không reset thì `mock.calls[0]` của test sau là cuộc gọi của test trước
-    // (đúng lỗi đã gặp ở `ProtectedRoute.test.tsx`).
-    mockGet.mockReset()
-  })
 
   it('KhongLoc_ChiGuiSortPagePageSize', async () => {
     mockGet.mockResolvedValue({ data: { success: true, message: 'OK', data: ketQuaMau } })
@@ -100,6 +104,55 @@ describe('roomService.timKiem', () => {
 
     await expect(roomService.timKiem(LOC_MAC_DINH)).rejects.toThrow(
       'Giá thấp nhất không được lớn hơn giá cao nhất',
+    )
+  })
+})
+
+describe('roomService.kiemTraTrong', () => {
+  const nhan = new Date('2026-10-05T14:00:00')
+  const tra = new Date('2026-10-07T12:00:00')
+
+  it('GuiDungThamSo_TypeChuyenThanhSo', async () => {
+    mockGet.mockResolvedValue({ data: { success: true, message: 'OK', data: { isAvailable: true, reason: null } } })
+
+    await roomService.kiemTraTrong(0, 2, BookingType.DAY, nhan, tra)
+
+    const url: string = mockGet.mock.calls[0][0]
+    const thamSo = new URLSearchParams(url.split('?')[1])
+    expect(thamSo.get('locationIndex')).toBe('0')
+    expect(thamSo.get('roomIndex')).toBe('2')
+    expect(thamSo.get('type')).toBe('1')
+    expect(thamSo.get('checkIn')).toBe(nhan.toISOString())
+    expect(thamSo.get('checkOut')).toBe(tra.toISOString())
+  })
+
+  it('TheoGio_TypeBang0', async () => {
+    mockGet.mockResolvedValue({ data: { success: true, message: 'OK', data: { isAvailable: true, reason: null } } })
+
+    await roomService.kiemTraTrong(1, 0, BookingType.HOUR, nhan, tra)
+
+    const url: string = mockGet.mock.calls[0][0]
+    expect(new URLSearchParams(url.split('?')[1]).get('type')).toBe('0')
+  })
+
+  it('PhongBan_TraVeLyDo', async () => {
+    mockGet.mockResolvedValue({
+      data: { success: true, message: 'OK', data: { isAvailable: false, reason: 'Phòng đã có người đặt trong khoảng thời gian này' } },
+    })
+
+    const ketQua = await roomService.kiemTraTrong(0, 0, BookingType.DAY, nhan, tra)
+
+    expect(ketQua.isAvailable).toBe(false)
+    expect(ketQua.reason).toBe('Phòng đã có người đặt trong khoảng thời gian này')
+  })
+
+  it('ThamSoSai_NemLoi', async () => {
+    mockGet.mockResolvedValue({
+      data: { success: false, message: 'Phải đặt trước ít nhất 2 giờ', data: null },
+    })
+
+    await expect(roomService.kiemTraTrong(0, 0, BookingType.DAY, nhan, tra)).rejects.toThrow(
+      'Phải đặt trước ít nhất 2 giờ',
     )
   })
 })

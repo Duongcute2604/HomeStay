@@ -1,6 +1,13 @@
 import { apiClient, bocDuLieu } from '../api/client'
 import type { ApiResponse } from '../types/auth'
+import { BookingType } from '../utils/pricing'
 import type { PagedResult, RoomSearchItem, SearchFilters } from '../types/room'
+
+/** Kết quả kiểm tra phòng trống từ API. */
+export interface Availability {
+  isAvailable: boolean
+  reason: string | null
+}
 
 /**
  * Các lời gọi phần tìm kiếm phòng.
@@ -40,6 +47,33 @@ export const roomService = {
 
     const response = await apiClient.get<ApiResponse<PagedResult<RoomSearchItem>>>(
       `/rooms/search?${thamSo.toString()}`,
+    )
+    return bocDuLieu(response.data)
+  },
+
+  /**
+   * Kiểm tra phòng có đặt được trong khoảng đã chọn không.
+   *
+   * Phòng bận vẫn trả 200 với `isAvailable: false` — chỉ tham số sai mới ném lỗi.
+   */
+  async kiemTraTrong(
+    locationIndex: number,
+    roomIndex: number,
+    loai: BookingType,
+    checkIn: Date,
+    checkOut: Date,
+  ): Promise<Availability> {
+    const thamSo = new URLSearchParams({
+      locationIndex: String(locationIndex),
+      roomIndex: String(roomIndex),
+      // API nhận số (0 = giờ, 1 = ngày), giao diện dùng chuỗi.
+      type: loai === BookingType.HOUR ? '0' : '1',
+      checkIn: checkIn.toISOString(),
+      checkOut: checkOut.toISOString(),
+    })
+
+    const response = await apiClient.get<ApiResponse<Availability>>(
+      `/rooms/availability?${thamSo.toString()}`,
     )
     return bocDuLieu(response.data)
   },

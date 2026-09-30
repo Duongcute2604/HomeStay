@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using StayEasy.Common;
 using StayEasy.Data;
 using StayEasy.DTOs;
+using StayEasy.Enums;
+using StayEasy.Services.Booking;
 
 namespace StayEasy.Services.Rooms;
 
@@ -150,6 +152,100 @@ public class RoomService : IRoomService
             TotalItems = tongSo,
             TotalPages = tongSo == 0 ? 0 : (int)Math.Ceiling(tongSo / (double)request.PageSize),
         };
+    }
+
+    /// <inheritdoc />
+    public async Task<AvailabilityResponse> KiemTraTrongAsync(AvailabilityRequest request, CancellationToken ct)
+    {
+        // 1. Cách thuê phải hợp lệ trước nhất — các kiểm tra sau đều cần nó.
+        if (!Enum.IsDefined(typeof(BookingType), request.Type))
+        {
+            throw new AppException(HttpStatusCode.BadRequest, ErrorMessages.LoaiThueKhongHopLe);
+        }
+
+        // 2. Phải có đủ hai mốc thời gian.
+        if (!request.CheckIn.HasValue || !request.CheckOut.HasValue)
+        {
+            throw new AppException(HttpStatusCode.BadRequest, ErrorMessages.DuLieuKhongHopLe);
+        }
+
+        DateTime checkIn = request.CheckIn.Value;
+        DateTime checkOut = request.CheckOut.Value;
+
+        // 3. Trả phải sau nhận.
+        if (checkOut <= checkIn)
+        {
+            throw new AppException(HttpStatusCode.BadRequest, ErrorMessages.GioTraPhaiSauGioNhan);
+        }
+
+        // 4. Phải đặt trước ít nhất 2 giờ — tính bằng giờ server, không tin giờ máy khách.
+        // Kiểm trước khi tìm phòng: lỗi hình thức báo trước, 404 báo sau.
+        if (checkIn < DateTime.Now.AddHours(BookingRules.MinHoursAdvanceNotice))
+        {
+            throw new AppException(HttpStatusCode.BadRequest, ErrorMessages.DatTruocItNhat2Gio);
+        }
+
+        // 5. Theo giờ tối thiểu 3 giờ.
+        if ((BookingType)request.Type == BookingType.HOUR
+            && (checkOut - checkIn).TotalHours < BookingRules.MinHoursForHourlyBooking)
+        {
+            throw new AppException(HttpStatusCode.BadRequest, ErrorMessages.TheoGioToiThieu3Gio);
+        }
+
+        // 6. Chỉ số phải trỏ đúng một phòng đang hiện cho khách.
+        Dictionary<int, int> chiSoDiaDiem = await LayChiSoDiaDiemAsync(ct);
+        Dictionary<(int LocationId, int RoomId), int> chiSoPhong = await LayChiSoPhongAsync(ct);
+
+        int? locationId = chiSoDiaDiem
+            .Where(x => x.Value == request.LocationIndex)
+            .Select(x => (int?)x.Key)
+            .FirstOrDefault();
+
+        int? roomId = null;
+        if (locationId.HasValue)
+        {
+            roomId = chiSoPhong
+                .Where(x => x.Key.LocationId == locationId.Value && x.Value == request.RoomIndex)
+                .Select(x => (int?)x.Key.RoomId)
+                .FirstOrDefault();
+        }
+
+        if (roomId is null)
+        {
+            throw new AppException(HttpStatusCode.NotFound, ErrorMessages.KhongTimThayPhong);
+        }
+
+        // 7. Phòng bảo trì thì không nhận đặt dù ngày còn trống.
+        RoomStatus trangThai = await _db.Rooms
+            .AsNoTracking()
+            .Where(phong => phong.Id == roomId.Value)
+            .Select(phong => phong.Status)
+            .FirstAsync(ct);
+
+        if (trangThai == RoomStatus.MAINTENANCE)
+        {
+            return new AvailabilityResponse { IsAvailable = false, Reason = ErrorMessages.PhongBaoTri };
+        }
+
+        // 8. Trùng với đơn còn hiệu lực thì bận. Chạm biên không tính trùng:
+        // trả 12:00, khách mới nhận 12:00 vẫn được.
+        // Chỉ PENDING/CONFIRMED/CHECKED_IN giữ phòng — huỷ/từ chối/trả rồi thì thôi.
+        bool biTrung = await _db.Bookings
+            .AsNoTracking()
+            .Where(don => don.RoomId == roomId.Value
+                && (don.Status == BookingStatus.PENDING
+                    || don.Status == BookingStatus.CONFIRMED
+                    || don.Status == BookingStatus.CHECKED_IN)
+                && don.CheckIn < checkOut
+                && don.CheckOut > checkIn)
+            .AnyAsync(ct);
+
+        if (biTrung)
+        {
+            return new AvailabilityResponse { IsAvailable = false, Reason = ErrorMessages.PhongDaCoDon };
+        }
+
+        return new AvailabilityResponse { IsAvailable = true, Reason = null };
     }
 
     /// <summary>

@@ -9,6 +9,14 @@ import { afterEach } from 'vitest'
  * được đặt. Nếu sau này có một quy tắc "trước mỗi test phải xoá gì đó" thì
  * mới thêm vào đây, còn không thì giữ file tối giản.
  */
+/*
+ * jsdom không cài `window.scrollTo` (hàm ném lỗi "Not implemented" mỗi khi
+ * component gọi, ví dụ khi chuyển trang tìm kiếm). Định nghĩa sẵn hàm rỗng ở
+ * đây để output test không bị nhiễu — test nào cần kiểm tra cuộn trang thì tự
+ * mock riêng trong file đó.
+ */
+window.scrollTo = () => {}
+
 afterEach(() => {
   /*
    * Dọn DOM sau mỗi test. Không có bước này thì các test render cùng một

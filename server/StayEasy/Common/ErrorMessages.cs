@@ -47,6 +47,16 @@ public static class ErrorMessages
     public const string KhongTimThayDuLieu = "Không tìm thấy dữ liệu yêu cầu";
     public const string DinhDangKhongHoTro = "Định dạng dữ liệu gửi lên không được hỗ trợ";
 
+    // ----- Đặt phòng -----
+
+    public const string GioTraPhaiSauGioNhan = "Giờ trả phòng phải sau giờ nhận phòng";
+    public const string DatTruocItNhat2Gio = "Phải đặt trước ít nhất 2 giờ";
+    public const string TheoGioToiThieu3Gio = "Đặt theo giờ tối thiểu 3 giờ";
+    public const string LoaiThueKhongHopLe = "Cách thuê không hợp lệ";
+    public const string KhongTimThayPhong = "Không tìm thấy phòng";
+    public const string PhongBaoTri = "Phòng đang bảo trì, không nhận đặt";
+    public const string PhongDaCoDon = "Phòng đã có người đặt trong khoảng thời gian này";
+
     // ----- Mật khẩu & hồ sơ -----
 
     public const string MatKhauCuSai = "Mật khẩu hiện tại không đúng";

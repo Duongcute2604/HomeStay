@@ -330,19 +330,36 @@
 
 ## 5. Kiểm tra phòng trống (Bước 9)
 
-| # | Loại | Kịch bản | Kỳ vọng | Thực tế | Kết quả |
-|---|------|----------|---------|---------|---------|
-| 1 | HP | Chọn khoảng thời gian không có đơn nào | Báo còn trống | | |
-| 2 | AB | Chọn đúng khoảng có đơn CONFIRMED trong seed | Báo "phòng đã có đơn trong khung giờ này" | | |
-| 3 | EC | Đặt trùng biên: trả phòng 12:00, khách mới nhận 12:00 | Báo **CÒN TRỐNG** (không tính là trùng) | | |
-| 4 | EC | Trả phòng 12:01, khách mới nhận 12:00 | Báo **ĐÃ CÓ ĐƠN** | | |
-| 5 | AB | Đặt cách hiện tại 1 giờ | Báo lỗi "đặt trước ít nhất 2 giờ" | | |
-| 6 | AB | Giờ trả trước giờ nhận | Báo lỗi | | |
-| 7 | AB | Đặt theo giờ 2 tiếng | Báo lỗi "tối thiểu 3 giờ" | | |
-| 8 | EC | Đặt theo giờ đúng 3 giờ | Chấp nhận | | |
-| 9 | AB | Số khách vượt sức chứa phòng | Báo lỗi "chỉ chứa tối đa N người" | | |
+> Ngày chạy: 30/09/2026. API `GET /api/rooms/availability` (public) + khung chọn
+> ngày ở `http://localhost:5174/locations/1/rooms/0`.
+> **Kết quả: 8/8 ca đạt.**
 
----
+**Kịch bản 1 — Happy path**
+
+| # | Kịch bản | Kỳ vọng | Thực tế | Kết quả |
+|---|----------|---------|---------|---------|
+| 1.1 | Khoảng xa đơn nào (+30 ngày) | 200 + `isAvailable: true` | Đúng | ✅ |
+| 1.2 | Khoảng trùng đơn CONFIRMED (B101 Đà Lạt) | 200 + `isAvailable: false` + lý do | "Phòng đã có người đặt trong khoảng thời gian này" | ✅ |
+| 1.3 | Chọn ngày trùng trên khung ở trang chi tiết | Hiện đỏ "đã có người đặt" + vẫn hiện giá tạm tính | Đúng cả hai | ✅ |
+
+**Kịch bản 2 — Edge case**
+
+| # | Kịch bản | Kỳ vọng | Thực tế | Kết quả |
+|---|----------|---------|---------|---------|
+| 2.1 | Nhận đúng giờ đơn cũ trả (chạm biên) | `true` — chạm biên không tính trùng | `true` | ✅ |
+| 2.2 | Chọn khoảng trống trên khung | Hiện xanh "còn trống" | "Phòng còn trống trong khoảng đã chọn" + "2 ngày × 1.900.000 ₫" | ✅ |
+| 2.3 | Mobile 390px trang chi tiết | Không tràn ngang | Ô ngày 309px, nút vừa màn hình | ✅ |
+
+**Kịch bản 3 — Bất thường**
+
+| # | Kịch bản | Kỳ vọng | Thực tế | Kết quả |
+|---|----------|---------|---------|---------|
+| 3.1 | Trả trước nhận / đặt gấp / theo giờ 2h | 400 kèm thông báo đúng | "Giờ trả phòng phải sau giờ nhận phòng" / "Phải đặt trước ít nhất 2 giờ" / "Đặt theo giờ tối thiểu 3 giờ" | ✅ |
+| 3.2 | Chỉ số sai / phòng bảo trì | 404 / 200+bận | 404 "Không tìm thấy phòng" / 200 + "Phòng đang bảo trì, không nhận đặt" | ✅ |
+
+> Console 0 warning 0 error. CSDL sau test: 4 users, 15 bookings
+> (không tạo đơn mới — endpoint chỉ đọc), `RefreshTokenHash` treo = 0.
+
 
 ## 6. Đặt phòng (Bước 10) ⭐
 
