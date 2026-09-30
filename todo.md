@@ -802,10 +802,49 @@ Toast **không có `role`** → trình đọc màn hình im lặng. Toast tự h
 - Kịch bản 5 và 6 (toast xanh/đỏ) kiểm bằng **unit test** với đồng hồ giả, không bấm tay. Bằng chứng này chắc hơn bấm tay vì toast tự tắt sau 3 giây — bấm chậm một chút là bỏ lỡ mà không biết là do tool hay do code.
 - Khi viết test trong jsdom, Tailwind không được áp nên phần tử có lớp `hidden` **vẫn xuất hiện** trong DOM. Với menu 2 bản phải dùng `getAllByRole` và đếm số phần tử — đó mới phản ánh đúng hành vi thật (mở menu là **thêm** một bản, không phải thay thế).
 
-### [ ] BƯỚC 18 — 18 test case tích hợp (Postman)
+### [x] BƯỚC 18 — 18 test case tích hợp (Postman) · **XONG 01/10/2026**
 - **Mục tiêu đo được:** `docs/api/postman_collection.json` có **≥ 18 request** · chạy lại được, **≥ 17/18 đạt** · đặc biệt 3 test chứng minh chống đặt trùng · có ảnh kết quả cho báo cáo
-- **Bằng chứng:** ảnh Postman + bảng kết quả
+- **Bằng chứng:** **41 request / 7 nhóm** · **41/41 request đạt** · **115/115 kiểm chứng** · **12/12 lần chạy liên tiếp** trong hết · 3 test chống đặt trùng **3/3**
+- **Bằng chứng lưu file:** `docs/api/ket-qua-chay-lan-1.txt` (209 dòng) · `docs/api/ket-qua-chay-lien-tiep.txt`
+- **Ảnh chụp:** ✅ `.openchamber/screenshots/b18-swagger-ok-*.jpg` (trang Swagger sau khi sửa)
+- **Chi tiết:** `docs/KIEM_THU_TAY.md` mục 14
 
+#### Quyết định đã chốt (trước khi code)
+
+| # | Vấn đề | Chốt | Lý do |
+|---|--------|------|-------|
+| 1 | Cài Newman hay tự viết runner? | **Tự viết** `docs/api/run-postman.mjs` | Newman là gói thêm chỉ để chạy test (AGENTS 0.3: cấm thêm package không có lý do rõ). Một file Node không thêm dependency nào, **và in bảng kết quả** để chụp vào báo cáo |
+| 2 | Cần cân đối bao nhiêu kịch bản? | **Cân đối** (HP + EC + AB trong từng nhóm) | Yêu cầu là ≥ 18 nhưng 18 request trải 38 endpoint thì mỏng. 41 request phủ hết 7 nhóm chức năng, vẫn dễ đọc |
+| 3 | Collection có làm hỏng dữ liệu mẫu không? | **Không được** — phải tự dọn | Bản đầu tiên **hỏng ngay ở lần chạy thứ 2**: xác nhận đơn làm phòng → `BOOKED`, check-out làm phòng → `CLEANING` 2 giờ ⇒ chạy ~30 lần thì hết sạch phòng trống |
+| 4 | Ngày thuê đặt thế nào cho chạy lại được? | **Tự sinh trong script tiền xử lý**, mỗi nhóm một dải riêng | Ngày viết cứng sẽ đụng dữ liệu cũ ngay lần đầu. Dải riêng rộng 1500 ngày, cách nhau 2000 ngày ⇒ lần chạy sau không bao giờ đụng lần chạy trước |
+| 5 | Đơn do test T3 tạo ra thì sao? | **Huỷ luôn** (nhóm "Dọn dẹp") | Nếu không, mỗi lần chạy để lại 1 đơn `PENDING`, tích luỹ rồi chặn lần chạy sau ⇒ T3 nhận `[409, 409]` thay vì `[201, 409]` |
+| 6 | Nhóm chạy trước cần dữ liệu sẵn? | Có nhóm **"Chuẩn bị dữ liệu"** đặt lại 4 phòng về `AVAILABLE` | Đây là dữ liệu mẫu, thao tác sửa có chủ đích và được ghi rõ trong mô tả nhóm |
+
+#### Lỗi hệ thống phát hiện (đã sửa)
+
+**Đặt trùng song song trả `500` thay vì `409`.** Test T3 làm 2 request cùng đặt 1 phòng 1 khung giờ; log server cho thấy InnoDB báo `Deadlock found when trying to get lock` (1213) ngay lúc `INSERT`, lỗi bị `catch { await Rollback(); throw; }` ném lên thành 500. Người dùng thấy *"Đã xảy ra lỗi, vui lòng thử lại"* thay vì *"Phòng đã có người đặt"* — không biết phải đổi phòng.
+
+Sửa 5 điểm trong `BookingService.TaoDonAsync`: dò **cả chuỗi exception** · đọc `MySqlException.Number` (**không** đọc `DbException.ErrorCode` — cái đó trả về HResult `0x80004005` nên bản sửa đầu tiên không có tác dụng) · `RollbackAnToanAsync` nuốt lỗi rollback · bỏ `await using` vì `DisposeAsync` chạy **sau** dòng `throw 409` và thay thế nó · chỉ chuyển **3 mã lỗi tranh chấp** sang 409, lỗi khác vẫn 500.
+
+Unit test: `RaceConditionTests.cs` — 11 test, gồm một test khoá lại để không ai vô tình quay về dùng `ErrorCode`.
+
+#### Lỗi phát hiện thêm: trang `/swagger` không hiển thị
+
+Trang báo *"Unable to render this definition"* dù `swagger.json` hợp lệ. Nguyên nhân gốc: csproj tham chiếu `Microsoft.AspNetCore.OpenApi 8.0.31` — gói **không được dùng** (không gọi `AddOpenApi`/`MapOpenApi`) nhưng kéo `Microsoft.OpenApi ≥ 1.6.30` phát `"openapi": "3.0.4"`, còn swagger-ui của Swashbuckle 6.9.0 không nhận dạng đó.
+
+**Đã bỏ gói thừa** (không nâng Swashbuckle theo AGENTS 1.2) ⇒ tài liệu phát `3.0.1` ⇒ trang hiện đủ 38 endpoint, 60+ schema, nút Authorize.
+
+#### Dữ liệu rác đã dọn
+
+**319/337** đơn là dữ liệu test của Bước 18 (nhận dạn qua `Note`: `Kiem thu…`, `TRUNG…`, `Don rieng…`, năm 2027–2044). Đã xoá **có chọn lọc** kèm lịch sử và đánh giá, **không** `TRUNCATE`. Còn lại **18** đơn seed.
+
+| Hạng mục | Kết quả |
+|----------|---------|
+| Backend | **380/380** (thêm 11) · build 0 error 0 warning |
+| Frontend | **264/264** · `npm run build` sạch |
+| Kiểm thử tích hợp | **41/41** request · **115/115** kiểm chứng · **12/12** lần chạy liên tiếp |
+
+> **Bài học 75–77:** đọc `DbException.ErrorCode` cho lỗi MySQL là luôn sai (phải đọc `MySqlException.Number`) · package không dùng có thể phá chức năng của package khác · bộ test tích hợp tự làm bẩn dữ liệu thì không phải bộ test, chỉ chạy được đúng một lần.
 ### [ ] BƯỚC 19 — 22 hình cho Chương 3 của báo cáo
 - **Mục tiêu đo được:** chèn đủ 22 hình (3.1–3.22), **không còn dòng "Hình 3.x" nào trống** · ảnh chụp phải là của hệ thống đang chạy
 - **Tiến độ:** ____ / 22 hình

@@ -7,9 +7,22 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- Cho phép test gọi hàm `internal`, ví dụ hàm dò mã lỗi CSDL mà không cần
+         MySQL thật. Không mở `public` chỉ để test — vừa nới rộng API vừa mất ý nghĩa. -->
+    <InternalsVisibleTo Include="HomeStay.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="BCrypt.Net-Next" Version="4.2.1" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.10" />
-    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.31" />
+    <!-- Cố ý KHÔNG tham chiếu Microsoft.AspNetCore.OpenApi.
+         Gói đó kéo Microsoft.OpenApi >= 1.6.30, bản phát tài liệu
+         "openapi": "3.0.4", trong khi swagger-ui đi kèm Swashbuckle 6.9.0
+         chỉ nhận 3.0.n ⇒ trang /swagger báo "does not specify a valid version
+         field". Gói này cũng **không được dùng**: dự án không gọi AddOpenApi
+         hay MapOpenApi, tài liệu do Swashbuckle sinh. Bỏ đi thì Swashbuckle dùng
+         đúng phiên bản Microsoft.OpenApi tương thích, phát "3.0.1", trang hiển
+         thị bình thường. -->
     <!-- 8.0.2 để khớp Pomelo 8.0.2. Lệch phiên bản (8.0.10) sẽ sinh warning MSB3277 xung đột EFCore.Relational. -->
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.2">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

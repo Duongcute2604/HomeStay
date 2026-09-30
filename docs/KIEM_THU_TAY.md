@@ -744,7 +744,135 @@ URL thì ra trang 404, cũng không tràn ngang.
 
 ---
 
-## 14. Tổng kết
+## 14. Kiểm thử tích hợp bằng Postman (Bước 18)
+
+> Bộ test: `docs/api/postman_collection.json` — **41 request** trong 7 nhóm.
+> Chạy: `node docs/api/run-postman.mjs` (runner tự viết, không cần cài Newman).
+> Import vào Postman cũng chạy được: Import → chọn file → Run collection.
+>
+> **Kết quả: 41/41 request đạt · 115/115 kiểm chứng đạt · 12/12 lần chạy liên tiếp trong hết.**
+
+### 3 test chống đặt trùng (yêu cầu bắt buộc của bước này)
+
+| Test | Cách phát hiện trùng | Kỳ vọng | Thực tế | Kết quả |
+|------|----------------------|---------|---------|---------|
+| **T1** | Cùng khách đặt lại đúng khung giờ | 409 | HTTP 409 *"Phòng đã có người đặt trong khoảng thời gian này"* | **PASS** |
+| **T2** | **Khách khác** đặt khung giờ đang có đơn | 409 | HTTP 409 | **PASS** |
+| **T3** | **2 request gửi SONG SONG** cùng phòng + cùng khung giờ | đúng 1 đơn tạo (201), đúng 1 bị chặn (409) | `ketQuaRace = [201, 409]` | **PASS** *(sau khi sửa)* |
+
+T3 là kiểm tra **race condition** — kiểm tầng transaction + unique index, không phải kiểm tra
+`if` trong code. Hai request `T3a`/`T3b` được gắn cùng nhóm `race-trung`; runner gửi chúng
+đồng thời bằng `Promise.all`. Chạy tay trên Postman thì mở **2 tab** và bấm Send gần như
+cùng lúc.
+
+### ⚠️ Lỗi thật do T3 phát hiện: đặt trùng song song trả **500** thay vì 409
+
+Lần chạy đầu tiên T3 trả về **`[500, 201]`**. Đọc log server:
+
+```
+System.InvalidOperationException: ...transient failure...
+ ---> Microsoft.EntityFrameworkCore.DbUpdateException
+  ---> MySqlConnector.MySqlException: Deadlock found when trying to get lock
+```
+
+Hai request cùng đặt 1 phòng 1 khung giờ thì InnoDB báo **DEADLOCK (1213)** ngay lúc
+`INSERT INTO Bookings`. Lỗi đó bị `catch { await Rollback(); throw; }` ném lên thành **500** —
+người dùng thấy *"Đã xảy ra lỗi, vui lòng thử lại"* thay vì *"Phòng đã có người đặt"*, tức
+không biết phải đổi phòng.
+
+**Đã sửa** trong `BookingService.TaoDonAsync`:
+
+| Việc | Vì sao |
+|------|--------|
+| Dò **cả chuỗi exception** tìm mã lỗi 1213 / 1205 / 1062 | Pomelo bọc lỗi gốc thành `InvalidOperationException` → `DbUpdateException` → `MySqlException`. Bắt tầng ngoài không thấy mã lỗi |
+| Đọc `MySqlException.Number`, **không** đọc `DbException.ErrorCode` | `ErrorCode` của MySqlConnector trả về **HResult** (`0x80004005`) chứ không phải mã lỗi ⇒ bản sửa đầu tiên của tôi **không có tác dụng** |
+| `RollbackAnToanAsync` — nuốt lỗi rollback | InnoDB đã tự hủy transaction; gọi `RollbackAsync` lần nữa có thể ném lỗi và **thay thế** lỗi 409 |
+| Bỏ `await using`, tự giải phóng trong `finally` | `await using` gọi `DisposeAsync` **sau** dòng `throw new AppException(409)`, lỗi nó ném sẽ thay thế 409 |
+| Chỉ chuyển **3 mã lỗi tranh chấp** thành 409, còn lại vẫn 500 | Lỗi khác (sai cấu hình, hết kết nối) phải hiện 500 — biến mọi lỗi thành 409 khiến Admin tưởng phòng đã kín trong khi hệ thống đang hỏng |
+
+Bằng chứng: `RaceConditionTests.cs` — 11 test cho hàm dò mã lỗi, gồm một test **khoá lại**
+để không ai vô tình quay về dùng `ErrorCode`:
+`LaMaLoiTranhChung_KhongNham_HResult_CuaMySqlConnector`.
+
+### 7 nhóm test
+
+| Nhóm | Số request | Nội dung |
+|------|-------------|----------|
+| 01 · Xác thực | 4 | Đăng nhập khách / khách thứ hai / Admin · **sai mật khẩu → 401** |
+| 02 · Chuẩn bị dữ liệu | 5 | Đặt lại trạng thái 4 phòng về `AVAILABLE` (xem "Chạy lại được" bên dưới) |
+| 03 · Tra cứu công khai | 4 | Địa điểm · tìm phòng · `soNgay=9999` · thiếu tham số → 400 |
+| 04 · Chống đặt trùng | 8 | Tạo đơn · **T1, T2, T3a, T3b** · vượt sức chứa → 400 · dọn dẹp |
+| 05 · Đơn của tôi | 7 | Danh sách · **lọc theo trạng thái** · `status` ngoài enum · chi tiết + lịch sử · đơn người khác → 404 · hủy · hủy lần 2 → 409 |
+| 06 · Vòng đời đơn (Admin) | 8 | Tạo → xác nhận → xác nhận lại → 409 · check-in · hủy khi đang ở → 409 · check-out · **lịch sử 4 bước** · danh sách Admin |
+| 07 · Phân quyền, thống kê, đánh giá | 5 | Khách gọi API Admin → 403 · không token → 401 · Dashboard · đánh giá → 201 · đánh giá lần 2 → 409 |
+
+### Kết quả chạy
+
+| Lần chạy | Kết quả |
+|----------|---------|
+| Lần đầu | 26/33 — **3 lỗi của collection, 1 lỗi thật của hệ thống** |
+| Sau khi sửa test sai + sửa lỗi race | 34/34, 97/99 |
+| Sau khi thêm dọn dẹp + tách dải ngày | 41/41, **115/115** |
+| **10 lần liên tiếp** | **10/10 trong hết** |
+| **12 lần liên tiếp** (lần cuối) | **12/12 trong hết** |
+
+Bằng chứng lưu tại `docs/api/ket-qua-chay-lan-1.txt` (209 dòng, kết quả từng request) và
+`docs/api/ket-qua-chay-lien-tiep.txt`.
+
+### Ba lỗi của **collection** phải sửa (không phải của hệ thống)
+
+| Lỗi | Nguyên nhân |
+|-----|-----------|
+| `role = undefined` | Role nằm ở `data.user.role`, không phải `data.role` |
+| *"Thông báo không nói về đăng nhập"* | Thông báo thật là *"Email hoặc mật khẩu không đúng"* — hoàn toàn thân thiện, chỉ là tôi đoán chữ |
+| `totalItems = 26 nhưng items = 20` | Quên có **phân trang**: `totalItems` vốn có thể lớn hơn số dòng trả về |
+| Đặt vượt sức chứa ra **409** | Dùng chung ngày với đơn đã đặt nên bị chặn trùng lịch **trước**, chưa tới bước kiểm sức chứa |
+
+### ⚠️ "Chạy lại được" là yêu cầu khó nhất — và nó đã hỏng 3 lần
+
+Bộ test ban đầu **hỏng ngay ở lần chạy thứ hai**. Nguyên nhân nằm ở chính bộ test:
+
+1. Mỗi lần chạy xác nhận 1 đơn ⇒ phòng → `BOOKED`, rồi check-out ⇒ phòng → `CLEANING` **2 giờ**.
+   Chạy ~30 lần thì **hết sạch** phòng `AVAILABLE` ⇒ các test đặt phòng hỏng vì lý do
+   không liên quan tới chúng.
+2. Mỗi lần chạy để lại 1 đơn `PENDING` (đơn thắng cuộc đua của T3). Tích luỹ trong dải ngày
+   ⇒ sau đủ lần chạy thì chặn lần chạy sau ⇒ T3 nhận `[409, 409]` thay vì `[201, 409]`.
+3. Còn lại đơn `PENDING` từ các lần chạy **hỏng giữa chừng** (không kịp huỷ).
+
+Đã sửa bằng ba việc:
+
+| Cách sửa | Tác dụng |
+|----------|----------|
+| Nhóm **02 · Chuẩn bị dữ liệu**: đặt lại 4 phòng về `AVAILABLE` | Luôn có chỗ trống để đặt |
+| Nhóm **04 · Dọn dẹp**: huỷ chính đơn do T3 tạo ra | Mỗi lần chạy trong vằn không để lại `PENDING` nào |
+| **Tách dải ngày**: mỗi nhóm một dải riêng rộng 1500 ngày, cách nhau 2000 ngày | Lần chạy sau không bao giờ đụng lần chạy trước |
+
+Dữ liệu rác đã dọn **có chọn lọc** (theo `Note` của riêng test), không `TRUNCATE`:
+**319/337** đơn là dữ liệu test của Bước 18 (ghi chú `Kiem thu…`, `TRUNG…`, `Don rieng…`,
+năm 2027–2044). Đã xoá kèm lịch sử và đánh giá, còn lại **18** đơn seed.
+
+Sau 12 lần chạy còn lại **54** đơn, trong đó chỉ **1** đang `PENDING`; các đơn còn lại ở
+trạng thái kết thúc (`CANCELLED`/`COMPLETED`) nên **không chặn** ngày mới — vì kiểm tra trùng
+lịch chỉ xét `PENDING`/`CONFIRMED`/`CHECKED_IN`.
+
+### Bonus: phát hiện và sửa lỗi trang `/swagger`
+
+Trang Swagger báo *"Unable to render this definition / does not specify a valid version
+field"* dù `swagger.json` hợp lệ. Nguyên nhân gốc: csproj tham chiếu
+`Microsoft.AspNetCore.OpenApi 8.0.31` — gói **không được dùng** (dự án không gọi
+`AddOpenApi`/`MapOpenApi`) nhưng kéo `Microsoft.OpenApi ≥ 1.6.30`, bản phát `"openapi": "3.0.4"`
+mà swagger-ui của Swashbuckle 6.9.0 không nhận.
+
+**Đã bỏ gói thừa** (không nâng Swashbuckle theo AGENTS 1.2) ⇒ tài liệu phát `3.0.1` ⇒
+trang hiển thị đủ 38 endpoint, 60+ schema và nút Authorize. Ảnh: `.openchamber/screenshots/b18-swagger-ok-*.jpg`.
+
+> Đếm từ chính các bảng trong tài liệu này: mỗi dòng bắt đầu bằng số thứ tự ở cột `#` là **một kịch bản**.
+
+---
+
+## 15. Tổng kết
+
+### 15.1 Kiểm thử tay (mục 0 – 13)
 
 > Đếm từ chính các bảng trong tài liệu này: mỗi dòng bắt đầu bằng số thứ tự ở cột `#` là **một kịch bản**.
 > Cột "Đạt" đếm dòng đã đánh dấu ✅ hoặc PASS.
@@ -768,10 +896,29 @@ URL thì ra trang 404, cũng không tràn ngang.
 | 17 | Giao diện & trải nghiệm | 7 | 7 | 0 |
 | **Tổng** | | **267** | **267** | **0** |
 
-**Tỉ lệ đạt: 267/267 = 100%.**
+**Tỉ lệ đạt kiểm thử tay: 267/267 = 100%.**
 
 Dòng chưa đạt đã hết từ 01/10: **"Lọc đơn theo trạng thái"** (mục 7) — lúc đầu phát hiện là tính năng
 chưa tồn tại dù `todo.md` đã đánh dấu Bước 11 là xong. Đã làm xong, nay mục 7 đạt **14/14**. Chi tiết ở mục 7.
+
+### 15.2 Kiểm thử tích hợp bằng Postman (mục 14 — Bước 18)
+
+| Hạng mục | Kết quả |
+|----------|---------|
+| Số request trong collection | **41** trong 7 nhóm |
+| Request đạt | **41/41** |
+| Kiểm chứng (assertion) | **115/115** |
+| Chạy liên tiếp | **12/12 lần** trong hết, không cần dựng lại dữ liệu mẫu |
+| 3 test chống đặt trùng | **3/3** — T1 `[409]` · T2 `[409]` · T3 song song `[201, 409]` |
+| Lỗi hệ thống phát hiện | **1** — đặt trùng song song trả **500** thay vì 409 (đã sửa) |
+
+### 15.3 Tổng hợp cả hai loại
+
+| Loại | Số kịch bản | Đạt | Chưa đạt |
+|------|-------------|-----|----------|
+| Kiểm thử tay (mục 0 – 13) | 267 | 267 | 0 |
+| Kiểm thử tích hợp Postman (mục 14) | 41 request / 115 kiểm chứng | 41 / 115 | 0 |
+| **Tổng** | **267 kịch bản tay + 41 request tích hợp** | **100%** | **0** |
 
 ### Ghi chú về cách đếm
 

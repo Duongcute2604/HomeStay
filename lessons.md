@@ -1905,3 +1905,112 @@ cho một bug người dùng gặp thật.
 >
 > Dấu hiệu test sai: thông báo lỗi là *trùng phần tử*, *mock chưa khớp*, *chưa tìm thấy nhãn* —
 > chứ không phải *giá trị thực tế lệch kỳ vọng*. Xem `lessons.md` mục 40 và 42.
+---
+
+## 75. Đọc `DbException.ErrorCode` cho lỗi MySQL — **luôn luôn sai** (bản sửa không có tác dụng)
+
+Test chống đặt trùng của Bước 18 phát hiện: hai request đặt trùng chạy song song trả về
+**`[500, 201]`** thay vì `[201, 409]`. Log cho biết nguyên nhân:
+
+```
+System.InvalidOperationException: ...transient failure...
+ ---> DbUpdateException
+  ---> MySqlConnector.MySqlException (0x80004005): Deadlock found when trying to get lock
+```
+
+Bản sửa đầu tiên của tôi:
+
+```csharp
+if (hienTai is DbException loiDb && loiDb.ErrorCode is 1213 or 1205 or 1062)
+```
+
+Sửa xong **vẫn 500**. Vì `0x80004005` trong log chính là **HResult**, không phải mã lỗi
+MySQL. `DbException.ErrorCode` với MySqlConnector trả về đúng cái HResult đó ⇒ **không bao
+giờ** bằng 1213.
+
+Đúng phải đọc `MySqlException.Number`:
+
+```csharp
+if (hienTai is MySqlException loiMySql && LaMaLoiTranhChung(loiMySql.Number)) ...
+```
+
+> **Quy tắc:** mã lỗi của một hệ quản trị CSDL cụ thể phải đọc từ **lớp lỗi của hệ đó**,
+> đừng đọc qua `DbException`. `DbException.ErrorCode` là điểm mở rộng của provider — mỗi
+> provider trả một thứ khác nhau, và với MySqlConnector nó là HResult chứ không phải mã lỗi.
+>
+> **Dấu hiệu nhận ra:** so sánh `ErrorCode` với một con số mà tài liệu provider có nói thì
+> **luôn phải khớp** — nếu test thật bảo hiện tại không khớp, hãy nghi ngờ bạn đang đọc
+> sai thuộc tính chứ không phải hệ thống hỏng.
+>
+> Bài học nhỏ hơn, cũng đáng ghi: **đừng sửa theo phỏng đoán rồi tin là xong.** Lần này tôi
+> sửa, build xanh, chạy lại vẫn 500 — phải đọc log mới thấy `0x80004005` là manh mối.
+
+---
+
+## 76. Package **không dùng** có thể phá chức năng của package khác
+
+Trang `/swagger` báo *"Unable to render this definition / does not specify a valid version
+field"*, dù `swagger.json` hợp lệ với `"openapi": "3.0.4"`.
+
+Sau khi loại trừ dần (cache? sai endpoint? đọc nhầm file? swagger-ui quá cũ?), nguyên nhân
+gốc hoá ra nằm ở **csproj**:
+
+```xml
+<PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.31" />
+```
+
+Gói đó kéo theo `Microsoft.OpenApi >= 1.6.30` — bản phát tài liệu `"openapi": "3.0.4"`,
+trong khi swagger-ui đi kèm Swashbuckle 6.9.0 chỉ nhận `3.0.n`. Và gói này **hoàn toàn
+không được dùng**: dự án không gọi `AddOpenApi`/`MapOpenApi`, tài liệu do Swashbuckle sinh.
+Bỏ đi ⇒ Swashbuckle dùng đúng phiên bản tương thích ⇒ phát `3.0.1` ⇒ trang hiển thị bình thường.
+
+Hai bài học:
+
+1. **Một package thừa không chỉ thừa — nó còn kéo phiên bản của package khác**, và phiên bản
+   đó có thể phá chức năng của package mình thật sự dùng. Package không dùng là **rủi ro**, không
+   phải chuyện vô hại.
+2. **Khi sửa lỗi, đừng nâng phiên bản ghim lên** (AGENTS 1.2). Ở đây lời giải đúng là **bỏ
+   package thừa**, không phải nâng Swashbuckle.
+
+Cách rà nhanh, đáng làm mỗi vài bước:
+
+```powershell
+# Package nào không được dùng trong code?
+$csproj = Get-Content server\HomeStay\HomeStay.csproj -Raw
+[regex]::Matches($csproj, 'Include="([\w\.]+)"') | ForEach-Object {
+  $ten = $_.Groups[1].Value.Split('.')[0..2] -join '\.'
+  $ dung = Select-String -Path server\HomeStay\*.cs,server\HomeStay\**\*.cs -Pattern $ten -Quiet
+  if (-not $dung) { "  KHONG DUNG: $ten" }
+}
+```
+
+---
+
+## 77. Bộ test tích hợp mà **tự làm bẩn dữ liệu** thì không phải bộ test, nó là một thứ gây hại
+
+Bộ test Postman của Bước 18 hỏng ngay ở lần chạy thứ hai. Nguyên nhân không nằm ở code:
+
+- Mỗi lần chạy xác nhận 1 đơn ⇒ phòng chuyển `BOOKED`, rồi check-out ⇒ phòng chuyển `CLEANING`
+  trong **2 giờ**. Chạy ~30 lần thì **hết sạch** phòng `AVAILABLE` ⇒ các test đặt phòng sau
+  hỏng vì lý do không liên quan tới chúng.
+- Mỗi lần chạy để lại 1 đơn `PENDING` (đơn thắng cuộc đua của test T3). Các đơn này tích luỹ
+  trong dải ngày, và sau đủ lần chạy thì chặn lần chạy sau ⇒ `[409, 409]` thay vì `[201, 409]`.
+
+Ba việc đã làm, đáng nhớ theo thứ tự:
+
+1. **Nhóm "Chuẩn bị dữ liệu"** đặt lại trạng thái phòng về `AVAILABLE` trước khi chạy tiếp.
+2. **Nhóm "Dọn dẹp"** huỷ chính đơn mà test T3 tạo ra, ngay sau nhóm đó.
+3. **Tách dải ngày**: mỗi nhóm test một dải riêng rộng 1500 ngày, các dải cách nhau 2000 ngày,
+   nên lần chạy sau không bao giờ đụng lần chạy trước.
+
+Kết quả: **12/12 lần chạy liên tiếp đều trong** (trước đó hỏng ở lần thứ 2).
+
+> **Quy tắc:** một bộ kiểm thử tích hợp phải **trả lại dữ liệu về trạng thái ban đầu**, nếu không
+> nó chỉ chạy được đúng một lần — mà một bộ test chỉ chạy được một lần thì vô dụng.
+>
+> Bài học cụ thể hơn: khi bộ test của bạn **làm thay đổi trạng thái nghiệp vụ** (đặt phòng → phòng
+> bận, gửi đơn → hộp thư có đơn), hãy hỏi *"lần chạy thứ 20 thì còn chạy được không?"*. Nếu câu trả
+> lời là không, thì đó không phải bộ test, đó là kịch bản một lần.
+>
+> Và khi dữ liệu đã bị bẩn từ những lần chạy trước, phải **dọn có chọn lọc** (theo `Note`/`Code`
+> của riêng test) chứ đừng `TRUNCATE` — nói thẳng là đã xoá bao nhiêu dòng của cái gì.

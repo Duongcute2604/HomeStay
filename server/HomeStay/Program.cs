@@ -88,6 +88,18 @@ builder.Services
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
+    // Phai khai bao tai lieu tuong minh. Neu khong, Swashbuckle 6.9.0 tu sinh mot tai
+    // lieu du phong theo chuan OpenAPI 3.0.4 (do .NET 8 dat `info` mac dinh), con
+    // swagger-ui di kem chi hieu `swagger: "2.0"` va mot so `openapi: 3.x.y` => trang
+    // /swagger bao "Unable to render this definition". Khai bao ro o day thi
+    // Swashbuckle phat dung `swagger: 2.0` va trang hien thi binh thuong.
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "HomeStay API",
+        Version = "v1",
+        Description = "He thong dat phong & quan ly homestay - Do an 4 (12523W.1)."
+    });
+
     // Khai báo cơ chế bearer một lần: Swagger sinh nút "Authorize" để dán access token.
     // Chỉ những endpoint có [Authorize] mới được OperationFilter gắn biểu tượng khoá vào
     // (nếu áp dụng chung, cả endpoint công khai như đăng ký/đăng nhập cũng hiện khoá,
@@ -189,7 +201,16 @@ await using (AsyncServiceScope seedScope = app.Services.CreateAsyncScope())
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(options =>
+{
+    // Phai chi ro endpoint. Goi `UseSwaggerUI()` khong co option thi Swashbuckle giu
+    // nguyen file `swagger-initializer.js` mac dinh, trong do `url` tro toi
+    // `https://petstore.swagger.io/v2/swagger.json` — tai lieu mau BEN NGOAI.
+    // May khong co Internet thi tai fail, spec rong, va trang bao
+    // "Unable to render this definition / does not specify a valid version field".
+    options.SwaggerEndpoint("/swagger/v1/swagger.json", "HomeStay API v1");
+    options.RoutePrefix = "swagger";
+});
 }
 
 // Đặt ExceptionMiddleware đầu tiên để nó bọc được cả lỗi phát sinh ở các tầng sau,

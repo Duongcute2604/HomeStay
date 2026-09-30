@@ -1,7 +1,10 @@
 using System.Data;
+using System.Data.Common;
 using System.Net;
 using System.Security.Cryptography;
 using Microsoft.EntityFrameworkCore;
+using MySqlConnector;
+using Microsoft.EntityFrameworkCore.Storage;
 using HomeStay.Common;
 using HomeStay.Data;
 using HomeStay.DTOs;
@@ -62,7 +65,13 @@ public class BookingService : IBookingService
         // nhất xong mới đọc, lúc đó đã thấy đơn vừa chèn nên báo trùng.
         // Lưu ý trung thực: provider InMemory của unit test không thực thi khoá
         // thật, nên chống trùng đồng thời chỉ chứng minh được bằng test tay 2 tab.
-        await using var giaoDich = await _db.Database.BeginTransactionAsync(
+        // Vì sao KHÔNG dùng await using: khi InnoDB báo DEADLOCK, nó đã tự hủy
+        // transaction phía server. Khi luồng đi ra khỏi khối try, await using gọi
+        // DisposeAsync rồi RollbackAsync lần nữa; lỗi này THAY THẾ lỗi 409 mà ta
+        // định ném ra và người dùng nhận 500. Đây chính là lỗi mà test chống đặt
+        // trùng của Bước 18 bắt được (mã trả về [500, 201]). Nên ta tự quản lý và
+        // giải phóng trong finally qua hàm nuốt lỗi.
+        IDbContextTransaction giaoDich = await _db.Database.BeginTransactionAsync(
             IsolationLevel.Serializable, ct);
 
         try
@@ -169,13 +178,129 @@ public class BookingService : IBookingService
                 CreatedAt = don.CreatedAt,
             };
         }
+        // Hai request đặt cùng phòng + cùng khung giờ chạy SONG SONG có thể bị
+        // InnoDB báo DEADLOCK (1213) hoặc khoá chờ quá lâu (1205) thay vì chỉ vi
+        // phạm unique index. Cả hai đều nghĩa là chỗ này đã có người trước, nên
+        // trả 409 cho người dùng thay vì 500 (lỗi hệ thống).
+        catch (Exception loi) when (LaTranhChungCungDong(loi))
+        {
+            await RollbackAnToanAsync(giaoDich, ct);
+
+            throw new AppException(HttpStatusCode.Conflict, ErrorMessages.PhongDaCoDon);
+        }
         catch
         {
-            await giaoDich.RollbackAsync(ct);
+            await RollbackAnToanAsync(giaoDich, ct);
             throw;
+        }
+        finally
+        {
+            await GiaiPhongAnToanAsync(giaoDich);
         }
     }
 
+
+    /// <summary>
+    /// Lỗi CSDL này có nghĩa là "chỗ này đã có người trước" không?
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Khi hai request đặt trùng phòng + trùng khung giờ chạy <b>song song</b>, InnoDB có thể báo:
+    /// </para>
+    /// <list type="bullet">
+    /// <item><description>1213 — DEADLOCK: hai transaction đang đợi khoá của nhau.</description></item>
+    /// <item><description>1205 — LOCK WAIT TIMEOUT: chờ khoá quá lâu.</description></item>
+    /// <item><description>1062 — vi phạm UNIQUE INDEX (lớp chống chặn cuối).</description></item>
+    /// </list>
+    /// <para>
+    /// Phải dò <b>cả chuỗi exception</b> chứ không bắt đúng một tầng: Pomelo bọc lỗi gốc
+    /// của MySQL thành <c>InvalidOperationException</c> (execution strategy) rồi
+    /// <c>DbUpdateException</c> rồi mới tới <c>MySqlException</c>. Bắt tầng ngoài cùng
+    /// thì không thấy mã lỗi, nguyên nhân gốc lọt ra thành 500.
+    /// </para>
+    /// </remarks>
+    private static bool LaTranhChungCungDong(Exception loi)
+    {
+        // Phải dò CẢ CHUỖI exception: Pomelo bọc lỗi gốc của MySQL thành
+        // InvalidOperationException (execution strategy) rồi DbUpdateException rồi mới
+        // tới MySqlException. Bắt tầng ngoài cùng thì không thấy mã lỗi.
+        for (Exception? hienTai = loi; hienTai is not null; hienTai = hienTai.InnerException)
+        {
+            // MySQL: đọc `Number`. KHÔNG đọc `DbException.ErrorCode` — với MySqlConnector
+            // nó trả về HResult (0x80004005) chứ không phải mã lỗi 1213, nên so với
+            // 1213 sẽ không bao giờ khớp. Đây là lý do bản sửa đầu tiên không có tác dụng.
+            if (hienTai is MySqlException loiMySql && LaMaLoiTranhChung(loiMySql.Number))
+            {
+                return true;
+            }
+
+            // Dự phòng cho nhà cung cấp CSDL khác (ErrorCode là mã lỗi riêng của chúng).
+            if (hienTai is DbException loiDb && LaMaLoiTranhChung(loiDb.ErrorCode))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Ba mã lỗi MySQL đều có nghĩa giống nhau: chỗ này đã có người trước.</summary>
+    /// <remarks>
+    /// 1213 = DEADLOCK (hai transaction đợi khoá của nhau) · 1205 = LOCK WAIT TIMEOUT ·
+    /// 1062 = vi phạm UNIQUE INDEX.
+    /// <para>
+    /// Tách riêng thành hàm thuần để unit test được — tạo được
+    /// <c>MySqlException</c> trong unit test thì không (constructor của nó là internal),
+    /// còn hàm này chỉ cần một con số.
+    /// </para>
+    /// </remarks>
+    internal static bool LaMaLoiTranhChung(int maLoi) => maLoi is 1213 or 1205 or 1062;
+
+    /// <summary>
+    /// Rollback mà không để lỗi rollback nuốt mất lỗi nghiệp vụ đang cần trả về.
+    /// </summary>
+    /// <remarks>
+    /// Khi InnoDB báo DEADLOCK, nó đã tự hủy transaction phía server. Gọi
+    /// <c>RollbackAsync</c> lần nữa có thể ném lỗi — và lỗi đó sẽ <b>thay thế</b> lỗi
+    /// gốc. Đây đúng là lỗi làm test chống đặt trùng của Bước 18 lộ ra: dòng
+    /// <c>catch { await Rollback(); throw; }</c> — dòng <c>throw</c> không bao giờ
+    /// chạy được vì dòng ngay trên nó đã ném lỗi.
+    /// </remarks>
+    private static async Task RollbackAnToanAsync(IDbContextTransaction giaoDich, CancellationToken ct)
+    {
+        try
+        {
+            await giaoDich.RollbackAsync(ct);
+        }
+        catch
+        {
+            // Transaction đã hỏng nên không rollback được — cũng không sao,
+            // MySQL tự giải phóng khoá khi đóng connection.
+        }
+    }
+
+    /// <summary>
+    /// Giải phóng transaction, nuốt lỗi.
+    /// </summary>
+    /// <remarks>
+    /// Thay cho <c>await using</c>. Nếu dùng <c>await using</c>, khi luồng đi ra khỏi
+    /// khối <c>try</c> thì <c>DisposeAsync</c> chạy <em>sau</em> dòng
+    /// <c>throw new AppException(409)</c> — mà nó thì có thể ném lỗi, lỗi đó sẽ thay
+    /// thế 409 và người dùng nhận 500. Bước 18 đã quan sát đúng hiện tượng này:
+    /// đặt trùng song song trả về mã <c>[500, 201]</c>.
+    /// </remarks>
+    private static async Task GiaiPhongAnToanAsync(IDbContextTransaction giaoDich)
+    {
+        try
+        {
+            await giaoDich.DisposeAsync();
+        }
+        catch
+        {
+            // Xem Ghi chú của RollbackAnToanAsync.
+        }
+    }
     /// <inheritdoc />
     public async Task<PagedResultDto<MyBookingDto>> LayCuaToiAsync(
         int userId, int page, int pageSize, int? status, CancellationToken ct)

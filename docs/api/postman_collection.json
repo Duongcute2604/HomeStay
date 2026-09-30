@@ -1,0 +1,2441 @@
+{
+  "info": {
+    "_postman_id": "6f1c2a40-9b31-4c7d-8e55-homestay-b18",
+    "name": "HomeStay — Kiểm thử tích hợp (Bước 18)",
+    "description": "Bộ test tích hợp cho hệ thống đặt phòng homestay HomeStay.\n\n## Cách chạy\n\n1. Bật backend: `cd server` rồi `dotnet run --project HomeStay --urls \"http://localhost:5080\"`\n2. Bật MySQL (Docker): `docker compose up -d`\n3. Import file này vào Postman (Import → chọn `postman_collection.json`)\n4. Bấm **Run collection**.\n\n## Tự chạy được nhiều lần\n\nCác request đặt phòng **tự sinh ngày** trong script tiền xử lý: lấy ngày hôm nay cộng thêm\n400–520 ngày rồi cộng thêm số ngẫu nhiên. Nhờ vậy mỗi lần chạy đều đặt ở một khoảng thời gian\nmới, không đụng dữ liệu cũ và không đụng nhau giữa hai lần chạy.\n\n## 3 test chống đặt trùng (Bước 9 + Bước 10)\n\n| Test | Cách phát hiện trùng |\n|------|---------------------|\n| **T1** | Cùng khách đặt lại đúng khung giờ đó → **409** |\n| **T2** | Khách **khác** đặt khung giờ đang có đơn → **409** |\n| **T3** | **2 request gửi đồng thời** cho cùng phòng + cùng khung giờ → chỉ **1** đơn được tạo, request còn lại **409** |\n\nT3 là trường hợp **race condition** — kiểm tra tầng transaction + unique index, không phải kiểm tra\n`if` trong code. Hai request `3a` và `3b` được gắn cùng nhóm `race-trung`; khi dùng Newman hoặc\n`node docs/api/run-postman.mjs` chúng được gửi **song song**. Nếu chạy tay trên Postman thì mở\n**2 tab** gửi gần như cùng lúc.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5080",
+      "type": "string"
+    },
+    {
+      "key": "emailKhach",
+      "value": "khach1@gmail.com",
+      "type": "string"
+    },
+    {
+      "key": "emailAdmin",
+      "value": "admin@homestay.vn",
+      "type": "string"
+    },
+    {
+      "key": "matKhau",
+      "value": "123456",
+      "type": "string"
+    },
+    {
+      "key": "tokenKhach",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "tokenKhach2",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "tokenAdmin",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "chiSoDiaDiem",
+      "value": "0",
+      "type": "string"
+    },
+    {
+      "key": "chiSoPhong",
+      "value": "0",
+      "type": "string"
+    },
+    {
+      "key": "sucChuaPhong",
+      "value": "2",
+      "type": "string"
+    },
+    {
+      "key": "ngayNhan",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "ngayTra",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "ngayRace",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "ngayTraRace",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "maDonChinh",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "maDonVongDoi",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "maDonKhac",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "idPhong1",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "idPhong2",
+      "value": "2",
+      "type": "string"
+    },
+    {
+      "key": "idPhong3",
+      "value": "3",
+      "type": "string"
+    },
+    {
+      "key": "idPhong4",
+      "value": "4",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "01 · Xác thực",
+      "description": "Đăng nhập và lấy token. Request 1 và 2 **bắt buộc chạy trước** vì các nhóm sau dùng token lấy từ đây.",
+      "item": [
+        {
+          "name": "Đăng nhập khách hàng (lấy token)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () {",
+                  "  if (pm.response.code !== 200) throw new Error('Expected 200, got ' + pm.response.code);",
+                  "});",
+                  "",
+                  "const duLieu = pm.response.json();",
+                  "pm.test('success = true', function () {",
+                  "  if (duLieu.success !== true) throw new Error('success = ' + duLieu.success);",
+                  "});",
+                  "pm.test('Trả về accessToken', function () {",
+                  "  if (!duLieu.data || !duLieu.data.accessToken) throw new Error('Thiếu accessToken');",
+                  "});",
+                  "pm.test('Quyền là CUSTOMER', function () {",
+                  "  if (duLieu.data.user.role !== 0) throw new Error('role = ' + duLieu.data.user.role + ' (mong đợi 0 = CUSTOMER)');",
+                  "});",
+                  "pm.test('Trả về cả refreshToken', function () {",
+                  "  if (!duLieu.data.refreshToken) throw new Error('Thiếu refreshToken');",
+                  "});",
+                  "pm.test('Không lộ mật khẩu hash', function () {",
+                  "  const ban = JSON.stringify(duLieu.data);",
+                  "  if (ban.toLowerCase().includes('passwordhash') || ban.includes('$2a$')) throw new Error('Response làm lộ hash mật khẩu');",
+                  "});",
+                  "pm.test('Có tên khách để đối chiếu lịch sử', function () {",
+                  "  if (!duLieu.data.user.fullName) throw new Error('Thiếu fullName');",
+                  "});",
+                  "",
+                  "// Chỉ ghi biến khi có data — nếu response lỗi thì bỏ qua, để các request sau báo",
+                  "// lỗi \"biến chưa có giá trị\" thay vì cả lần chạy sập.",
+                  "if (duLieu.data) {",
+                  "  pm.collectionVariables.set('tokenKhach', duLieu.data.accessToken);",
+                  "  pm.collectionVariables.set('tenKhach', duLieu.data.user.fullName);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{emailKhach}}\",\n  \"password\": \"{{matKhau}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Kịch bản HP. Token lưu vào biến `tokenKhach` cho toàn collection."
+          }
+        },
+        {
+          "name": "Đăng nhập khách thứ hai (dùng để test trùng lịch)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () {",
+                  "  if (pm.response.code !== 200) throw new Error('Expected 200, got ' + pm.response.code);",
+                  "});",
+                  "",
+                  "const duLieu = pm.response.json();",
+                  "pm.test('Đã lấy token khách thứ hai', function () {",
+                  "  if (!duLieu.data || !duLieu.data.accessToken) throw new Error('Thiếu accessToken');",
+                  "});",
+                  "",
+                  "if (duLieu.data) {",
+                  "  pm.collectionVariables.set('tokenKhach2', duLieu.data.accessToken);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"khach2@gmail.com\",\n  \"password\": \"{{matKhau}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Khách **khác** khách 1. Dùng cho test T2 — chứng minh chống trùng áp dụng cho mọi khách chứ không chỉ người đã đặt."
+          }
+        },
+        {
+          "name": "Đăng nhập Admin (lấy token)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () {",
+                  "  if (pm.response.code !== 200) throw new Error('Expected 200, got ' + pm.response.code);",
+                  "});",
+                  "",
+                  "const duLieu = pm.response.json();",
+                  "pm.test('Quyền là ADMIN', function () {",
+                  "  if (duLieu.data.user.role !== 1) throw new Error('role = ' + duLieu.data.user.role + ' (mong đợi 1 = ADMIN)');",
+                  "});",
+                  "",
+                  "if (duLieu.data) {",
+                  "  pm.collectionVariables.set('tokenAdmin', duLieu.data.accessToken);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{emailAdmin}}\",\n  \"password\": \"{{matKhau}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Kịch bản HP. Token lưu vào `tokenAdmin` cho nhóm 05 và 06."
+          }
+        },
+        {
+          "name": "AB · Đăng nhập sai mật khẩu → 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 401', function () {",
+                  "  if (pm.response.code !== 401) throw new Error('Expected 401, got ' + pm.response.code);",
+                  "});",
+                  "const duLieu = pm.response.json();",
+                  "pm.test('success = false', function () {",
+                  "  if (duLieu.success !== false) throw new Error('success phải là false');",
+                  "});",
+                  "pm.test('Thông báo thân thiện, không lộ chi tiết kỹ thuật', function () {",
+                  "  const n = duLieu.message || '';",
+                  "  if (!n) throw new Error('Thiếu thông báo lỗi');",
+                  "  // Thông báo phải nói cho khách biết sai ở đâu (email/mật khẩu),",
+                  "  // và không được lộ stack trace hay tên lớp nội bộ.",
+                  "  const thongBaoSai = ['email', 'mật khẩu', 'mat khau'];",
+                  "  if (!thongBaoSai.some(t => n.toLowerCase().includes(t))) throw new Error('Thông báo không nói sai email hay mật khẩu: ' + n);",
+                  "  const kyThuat = ['stack', 'exception', 'at home', 'nullreference', 'trace'];",
+                  "  if (kyThuat.some(t => n.toLowerCase().includes(t))) throw new Error('Thông báo lộ chi tiết kỹ thuật: ' + n);",
+                  "  if (n.length > 160) throw new Error('Thông báo quá dài, có thể chứa chi tiết kỹ thuật: ' + n);",
+                  "});",
+                  "pm.test('Không trả về token', function () {",
+                  "  if (duLieu.data && duLieu.data.accessToken) throw new Error('Sai mật khẩu mà vẫn có token');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{emailKhach}}\",\n  \"password\": \"MatKhauSaiNhe\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Kịch bản **bất thường**. Sai mật khẩu phải bị từ chối và không được lộ stack trace."
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 · Chuẩn bị dữ liệu",
+      "description": "Chạy ngay sau nhóm 01 (đã có `tokenAdmin`).\n\n**Vì sao cần:** bản thân bộ test này làm bẩn dữ liệu — mỗi lần chạy sẽ xác nhận 1 đơn (phòng → `BOOKED`) rồi check-out (phòng → `CLEANING` trong 2 giờ). Chạy liên tiếp nhiều lần thì **hết sạch** phòng `AVAILABLE` và các test đặt phòng sau đó hỏng vì lý do không liên quan tới chúng.\n\nBộ test không tự sửa thì không phải bộ test, nó là một thứ gây hại. Nhóm này đặt lại trạng thái phòng về `AVAILABLE` trước khi chạy tiếp, nhờ vậy collection **chạy lại được nhiều lần** mà không cần dựng lại dữ liệu mẫu.\n\n⚠️ Đây là thao tác sửa dữ liệu có chủ đích, chỉ nên chạy trên dữ liệu mẫu.",
+      "item": [
+        {
+          "name": "Lấy danh sách phòng (lưu 4 id đầu)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () {",
+                  "  if (pm.response.code !== 200) throw new Error('Expected 200, got ' + pm.response.code);",
+                  "});",
+                  "const ds = pm.response.json().data;",
+                  "pm.test('Có ít nhất 4 phòng', function () {",
+                  "  if (!Array.isArray(ds) || ds.length < 4) throw new Error('Chỉ có ' + (ds ? ds.length : 0) + ' phòng');",
+                  "});",
+                  "pm.test('Mỗi phòng có id', function () {",
+                  "  const thieu = ds.filter(p => !p.id);",
+                  "  if (thieu.length > 0) throw new Error(thieu.length + ' phòng thiếu id');",
+                  "});",
+                  "",
+                  "// Lưu 4 id đầu để các request sau đặt lại trạng thái.",
+                  "for (let i = 0; i < 4; i++) {",
+                  "  pm.collectionVariables.set('idPhong' + (i + 1), String(ds[i].id));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/rooms?page=1&pageSize=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "rooms"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Lấy `id` của 4 phòng đầu, lưu vào `idPhong1`…`idPhong4`. Biến này có sẵn giá trị mặc định 1–4 nên collection vẫn chạy được kể cả khi bỏ qua request này."
+          }
+        },
+        {
+          "name": "Đưa phòng {{idPhong1}} về AVAILABLE",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () {",
+                  "  if (pm.response.code !== 200) throw new Error('Expected 200, got ' + pm.response.code + ' — ' + pm.response.text());",
+                  "});",
+                  "const duLieu = pm.response.json();",
+                  "pm.test('Phòng đã về AVAILABLE (0)', function () {",
+                  "  if (duLieu.data.status !== 0) throw new Error('status = ' + duLieu.data.status + ' (mong đợi 0 = AVAILABLE)');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/rooms/{{idPhong1}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "rooms",
+                "{{idPhong1}}",
+                "status"
+              ]
+            }
+          },
+          "description": "Đưa phòng về `AVAILABLE` để các request đặt phòng phía sau có chỗ trống mà đặt."
+        },
+        {
+          "name": "Đưa phòng {{idPhong2}} về AVAILABLE",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () {",
+                  "  if (pm.response.code !== 200) throw new Error('Expected 200, got ' + pm.response.code + ' — ' + pm.response.text());",
+                  "});",
+                  "const duLieu = pm.response.json();",
+                  "pm.test('Phòng đã về AVAILABLE (0)', function () {",
+                  "  if (duLieu.data.status !== 0) throw new Error('status = ' + duLieu.data.status + ' (mong đợi 0 = AVAILABLE)');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/rooms/{{idPhong2}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "rooms",
+                "{{idPhong2}}",
+                "status"
+              ]
+            }
+          },
+          "description": "Đưa phòng về `AVAILABLE` để các request đặt phòng phía sau có chỗ trống mà đặt."
+        },
+        {
+          "name": "Đưa phòng {{idPhong3}} về AVAILABLE",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () {",
+                  "  if (pm.response.code !== 200) throw new Error('Expected 200, got ' + pm.response.code + ' — ' + pm.response.text());",
+                  "});",
+                  "const duLieu = pm.response.json();",
+                  "pm.test('Phòng đã về AVAILABLE (0)', function () {",
+                  "  if (duLieu.data.status !== 0) throw new Error('status = ' + duLieu.data.status + ' (mong đợi 0 = AVAILABLE)');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/rooms/{{idPhong3}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "rooms",
+                "{{idPhong3}}",
+                "status"
+              ]
+            }
+          },
+          "description": "Đưa phòng về `AVAILABLE` để các request đặt phòng phía sau có chỗ trống mà đặt."
+        },
+        {
+          "name": "Đưa phòng {{idPhong4}} về AVAILABLE",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () {",
+                  "  if (pm.response.code !== 200) throw new Error('Expected 200, got ' + pm.response.code + ' — ' + pm.response.text());",
+                  "});",
+                  "const duLieu = pm.response.json();",
+                  "pm.test('Phòng đã về AVAILABLE (0)', function () {",
+                  "  if (duLieu.data.status !== 0) throw new Error('status = ' + duLieu.data.status + ' (mong đợi 0 = AVAILABLE)');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/rooms/{{idPhong4}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "rooms",
+                "{{idPhong4}}",
+                "status"
+              ]
+            }
+          },
+          "description": "Đưa phòng về `AVAILABLE` để các request đặt phòng phía sau có chỗ trống mà đặt."
+        }
+      ]
+    },
+    {
+      "name": "03 · Tra cứu công khai",
+      "description": "Các endpoint không cần token. Request `Tìm phòng` **tự động lưu** chỉ số của một phòng đang trống, các request đặt phòng về sau dùng lại.",
+      "item": [
+        {
+          "name": "HP · Danh sách địa điểm",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () {",
+                  "  if (pm.response.code !== 200) throw new Error('Expected 200, got ' + pm.response.code);",
+                  "});",
+                  "const duLieu = pm.response.json();",
+                  "pm.test('Trả về 3 địa điểm', function () {",
+                  "  if (!duLieu.data || duLieu.data.length !== 3) throw new Error('Số địa điểm = ' + (duLieu.data ? duLieu.data.length : 'null'));",
+                  "});",
+                  "pm.test('Không lộ Id nội bộ trong danh sách công khai', function () {",
+                  "  if ('id' in duLieu.data[0]) throw new Error('Danh sách công khai không được có trường Id');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/locations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "locations"
+              ]
+            },
+            "description": "Kịch bản HP. Quy tắc AGENTS 6.3: danh sách công khai **không** có `Id`."
+          }
+        },
+        {
+          "name": "HP · Tìm phòng (lưu chỉ số phòng đang trống)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () {",
+                  "  if (pm.response.code !== 200) throw new Error('Expected 200, got ' + pm.response.code);",
+                  "});",
+                  "const duLieu = pm.response.json();",
+                  "pm.test('Có kết quả và có phân trang', function () {",
+                  "  if (!duLieu.data || duLieu.data.totalItems < 1) throw new Error('Không có phòng nào');",
+                  "  if (typeof duLieu.data.page !== 'number') throw new Error('Thiếu thông tin phân trang');",
+                  "});",
+                  "",
+                  "const phongTrong = duLieu.data.items.find(p => p.status === 0);",
+                  "pm.test('Tìm được phòng đang AVAILABLE (status = 0)', function () {",
+                  "  if (!phongTrong) throw new Error('Không có phòng nào đang trống');",
+                  "});",
+                  "pm.test('Mọi phòng đều có locationIndex và roomIndex', function () {",
+                  "  const thieu = duLieu.data.items.filter(p => p.locationIndex === undefined || p.roomIndex === undefined);",
+                  "  if (thieu.length > 0) throw new Error(thieu.length + ' phòng thiếu chỉ số');",
+                  "});",
+                  "",
+                  "pm.collectionVariables.set('chiSoDiaDiem', String(phongTrong.locationIndex));",
+                  "pm.collectionVariables.set('chiSoPhong', String(phongTrong.roomIndex));",
+                  "pm.collectionVariables.set('sucChuaPhong', String(phongTrong.capacity));",
+                  "console.log('Đã chọn phòng: ' + phongTrong.roomNumber + ' (địa điểm ' + phongTrong.locationIndex + ', phòng ' + phongTrong.roomIndex + ')');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/rooms/search?page=1&pageSize=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "rooms",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Kịch bản HP. `POST /api/bookings` định danh phòng bằng **chỉ số** (locationIndex, roomIndex), nên request này lưu chỉ số của một phòng đang trống cho các request đặt phòng về sau."
+          }
+        },
+        {
+          "name": "EC · Tìm phòng với soNgay cực lớn → vẫn trả kết quả",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200 — không lỗi 500', function () {",
+                  "  if (pm.response.code !== 200) throw new Error('Expected 200, got ' + pm.response.code);",
+                  "});",
+                  "const duLieu = pm.response.json();",
+                  "pm.test('Tổng số đơn vị hợp lý (đã bị chặn trần)', function () {",
+                  "  if (duLieu.data.totalItems > 300) throw new Error('totalItems = ' + duLieu.data.totalItems + ' — chưa chặn trần soNgay');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/rooms/search?soNgay=9999&page=1&pageSize=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "rooms",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "soNgay",
+                  "value": "9999"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Kịch bản **edge case**. `soNgay=9999` vượt xa giới hạn hợp lý — hệ thống phải chặn tròn thay vì làm hỏng truy vấn hoặc trả 500."
+          }
+        },
+        {
+          "name": "AB · Kiểm tra phòng trống thiếu tham số → 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', function () {",
+                  "  if (pm.response.code !== 400) throw new Error('Expected 400, got ' + pm.response.code);",
+                  "});",
+                  "pm.test('Thông báo có nội dung, không phải rỗng', function () {",
+                  "  const duLieu = pm.response.json();",
+                  "  if (!duLieu.message) throw new Error('Thiếu thông báo lỗi');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/rooms/availability",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "rooms",
+                "availability"
+              ]
+            },
+            "description": "Kịch bản **bất thường**. Thiếu toàn bộ tham số bắt buộc — phải trả 400 kèm thông báo, không phải 500."
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 · Chống đặt trùng (3 test bắt buộc)",
+      "description": "Trọng tâm của bước kiểm thử này. Ba cách phát hiện trùng lịch, từ tuần tự đến gửi đồng thời.",
+      "item": [
+        {
+          "name": "HP · Đặt phòng (tạo đơn PENDING + sinh ngày cho các test sau)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function ngayLech(soNgay) {",
+                  "  const d = new Date();",
+                  "  d.setDate(d.getDate() + soNgay);",
+                  "  return d.toISOString().slice(0, 10);",
+                  "}",
+                  "",
+                  "// Dải ngày cho nhóm chống đặt trùng. Lịch chính và lịch RACE nằm chung dải này,",
+                  "// cách nhau 10 ngày.",
+                  "const lech = 3000 + Math.floor(Math.random() * 1500);",
+                  "pm.collectionVariables.set('ngayNhan', ngayLech(lech));",
+                  "pm.collectionVariables.set('ngayTra', ngayLech(lech + 2));",
+                  "pm.collectionVariables.set('ngayRace', ngayLech(lech + 10));",
+                  "pm.collectionVariables.set('ngayTraRace', ngayLech(lech + 12));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', function () {",
+                  "  if (pm.response.code !== 201) throw new Error('Expected 201, got ' + pm.response.code + ' — ' + pm.response.text());",
+                  "});",
+                  "const duLieu = pm.response.json();",
+                  "pm.test('Trạng thái PENDING (0)', function () {",
+                  "  if (duLieu.data.status !== 0) throw new Error('status = ' + duLieu.data.status);",
+                  "});",
+                  "pm.test('Trả về mã đơn dạng HS-yyMMdd-xxxx', function () {",
+                  "  if (!/^HS-\\d{6}-\\d{4}$/.test(duLieu.data.code)) throw new Error('Mã đơn sai định dạng: ' + duLieu.data.code);",
+                  "});",
+                  "pm.test('Không lộ Id nội bộ', function () {",
+                  "  if ('id' in duLieu.data) throw new Error('Response có trường Id');",
+                  "});",
+                  "pm.test('Tổng tiền > 0', function () {",
+                  "  if (!(duLieu.data.totalAmount > 0)) throw new Error('totalAmount = ' + duLieu.data.totalAmount);",
+                  "});",
+                  "if (duLieu.data) {",
+                  "  ",
+                  "  pm.collectionVariables.set('maDonChinh', duLieu.data.code);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenKhach}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"locationIndex\": {{chiSoDiaDiem}},\n  \"roomIndex\": {{chiSoPhong}},\n  \"type\": 1,\n  \"checkIn\": \"{{ngayNhan}}T14:00:00\",\n  \"checkOut\": \"{{ngayTra}}T12:00:00\",\n  \"guestCount\": 1,\n  \"note\": \"Kiem thu Buoc 18\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/bookings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "bookings"
+              ]
+            },
+            "description": "Kịch bản HP. Mã đơn lưu vào `maDonChinh` cho các request sau. Ngày thuê **tự sinh** trong script tiền xử lý để collection chạy lại được nhiều lần."
+          }
+        },
+        {
+          "name": "TRÙNG T1 · Cùng khách đặt lại khung giờ đó → 409",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 409 Conflict', function () {",
+                  "  if (pm.response.code !== 409) throw new Error('Expected 409, got ' + pm.response.code + ' — hệ thống đã cho đặt trùng!');",
+                  "});",
+                  "const duLieu = pm.response.json();",
+                  "pm.test('success = false', function () {",
+                  "  if (duLieu.success !== false) throw new Error('success phải là false');",
+                  "});",
+                  "pm.test('Thông báo nói rõ phòng đã có đơn', function () {",
+                  "  if (!duLieu.message) throw new Error('Thiếu thông báo');",
+                  "  if (duLieu.message.toLowerCase().includes('đã có người') === false && duLieu.message.toLowerCase().includes('đã có') === false) throw new Error('Thông báo không nói phòng đã có người đặt: ' + duLieu.message);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenKhach}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"locationIndex\": {{chiSoDiaDiem}},\n  \"roomIndex\": {{chiSoPhong}},\n  \"type\": 1,\n  \"checkIn\": \"{{ngayNhan}}T14:00:00\",\n  \"checkOut\": \"{{ngayTra}}T12:00:00\",\n  \"guestCount\": 1,\n  \"note\": \"TRUNG T1 - phai bi tu choi\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/bookings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "bookings"
+              ]
+            },
+            "description": "**Test T1 — chống đặt trùng (tuần tự).** Cùng khách, cùng phòng, đúng khung giờ đã đặt. Phải trả **409** và **không tạo** đơn thứ hai."
+          }
+        },
+        {
+          "name": "TRÙNG T2 · Khách khác đặt khung giờ đang có đơn → 409",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 409 Conflict', function () {",
+                  "  if (pm.response.code !== 409) throw new Error('Expected 409, got ' + pm.response.code + ' — phòng đã bị double-book!');",
+                  "});",
+                  "pm.test('Thông báo thân thiện', function () {",
+                  "  const duLieu = pm.response.json();",
+                  "  if (!duLieu.message) throw new Error('Thiếu thông báo');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenKhach2}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"locationIndex\": {{chiSoDiaDiem}},\n  \"roomIndex\": {{chiSoPhong}},\n  \"type\": 1,\n  \"checkIn\": \"{{ngayNhan}}T14:00:00\",\n  \"checkOut\": \"{{ngayTra}}T12:00:00\",\n  \"guestCount\": 1,\n  \"note\": \"TRUNG T2 - khach khac phai bi tu choi\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/bookings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "bookings"
+              ]
+            },
+            "description": "**Test T2 — chống đặt trùng giữa hai khách.** Khách 2 đặt khung giờ mà khách 1 đã giữ. Phải **409**. Đây là chỗ hệ thống dễ hở nhất: nếu chỉ kiểm \"đơn của tôi\" thì hai khách vẫn trùng được nhau."
+          }
+        },
+        {
+          "name": "TRÙNG T3a · TAB 1 — đặt khung giờ race (gửi SONG SONG với T3b)",
+          "x-runGroup": "race-trung",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Gửi SONG SONG với T3b. Khi chạy bằng runner hoặc Newman, hai request",
+                  "// này cùng lúc tới server — đúng điều kiện race condition.",
+                  "pm.test('Trong 2 request song song chỉ 1 được tạo', function () {",
+                  "  // Runner ghi kết quả của cả nhóm vào biến này trước khi chạy script.",
+                  "  const ketQua = pm.collectionVariables.get('ketQuaRace');",
+                  "  if (!ketQua) throw new Error('Không đọc được kết quả nhóm race');",
+                  "  const soTao = ketQua.filter(r => r === 201).length;",
+                  "  const soConflict = ketQua.filter(r => r === 409).length;",
+                  "  if (soTao !== 1) throw new Error('Số đơn được tạo = ' + soTao + ' (mong đợi đúng 1). Mã: ' + JSON.stringify(ketQua));",
+                  "  if (soConflict !== 1) throw new Error('Số lần bị chặn = ' + soConflict + ' (mong đợi đúng 1). Mã: ' + JSON.stringify(ketQua));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenKhach}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"locationIndex\": {{chiSoDiaDiem}},\n  \"roomIndex\": {{chiSoPhong}},\n  \"type\": 1,\n  \"checkIn\": \"{{ngayRace}}T14:00:00\",\n  \"checkOut\": \"{{ngayTraRace}}T12:00:00\",\n  \"guestCount\": 1,\n  \"note\": \"TRUNG T3 tab 1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/bookings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "bookings"
+              ]
+            },
+            "description": "**Test T3 — race condition.** Gửi cùng lúc với `T3b`. Yêu cầu **đúng 1** đơn được tạo (201) và **đúng 1** request bị chặn (409).\n\nCách chạy: dùng runner `node docs/api/run-postman.mjs` (tự gửi song song), hoặc mở **2 tab** Postman và bấm Send gần như cùng lúc.\n\nKhông dùng `ngayNhan` mà dùng `ngayRace` để không đụng đơn đã tạo ở T1/T2."
+          }
+        },
+        {
+          "name": "TRÙNG T3b · TAB 2 — đặt khung giờ race (gửi SONG SONG với T3a)",
+          "x-runGroup": "race-trung",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Nhận xét giống T3a: hai request cùng nhóm 'race-trung'.",
+                  "pm.test('Trong 2 request song song chỉ 1 được tạo', function () {",
+                  "  const ketQua = pm.collectionVariables.get('ketQuaRace');",
+                  "  if (!ketQua) throw new Error('Không đọc được kết quả nhóm race');",
+                  "  const soTao = ketQua.filter(r => r === 201).length;",
+                  "  const soConflict = ketQua.filter(r => r === 409).length;",
+                  "  if (soTao !== 1) throw new Error('Số đơn được tạo = ' + soTao + ' (mong đợi đúng 1). Mã: ' + JSON.stringify(ketQua));",
+                  "  if (soConflict !== 1) throw new Error('Số lần bị chặn = ' + soConflict + ' (mong đợi đúng 1). Mã: ' + JSON.stringify(ketQua));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenKhach}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"locationIndex\": {{chiSoDiaDiem}},\n  \"roomIndex\": {{chiSoPhong}},\n  \"type\": 1,\n  \"checkIn\": \"{{ngayRace}}T14:00:00\",\n  \"checkOut\": \"{{ngayTraRace}}T12:00:00\",\n  \"guestCount\": 1,\n  \"note\": \"TRUNG T3 tab 2\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/bookings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "bookings"
+              ]
+            },
+            "description": "**Test T3 — tab 2.** Cùng phòng, cùng khung giờ, gửi **song song** với T3a. Xem mô tả T3a."
+          }
+        },
+        {
+          "name": "AB · Đặt vượt sức chứa phòng → 400",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function ngayLech(soNgay) {",
+                  "  const d = new Date();",
+                  "  d.setDate(d.getDate() + soNgay);",
+                  "  return d.toISOString().slice(0, 10);",
+                  "}",
+                  "",
+                  "// Mỗi nhóm test một DẢI NGÀY RIÊNG, rộng 1500 ngày, các dải cách nhau 2000 ngày.",
+                  "// Mỗi lần chạy để lại 1 đơn PENDING trong dải của nó, nên dải phải rộng để lần",
+                  "// chạy sau không đụng lần chạy trước. Nếu dải hẹp, chạy nhiều lần sẽ dần kín",
+                  "// và test chống đặt trùng nhận [409, 409] thay vì [201, 409] — hỏng vì lý do",
+                  "// không liên quan tới chính nó.",
+                  "const lech = 7000 + Math.floor(Math.random() * 1500);",
+                  "pm.collectionVariables.set('ngayVuotSucChua', ngayLech(lech + 0));",
+                  "pm.collectionVariables.set('ngayTraVuotSucChua', ngayLech(lech + 2));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', function () {",
+                  "  if (pm.response.code !== 400) throw new Error('Expected 400, got ' + pm.response.code);",
+                  "});",
+                  "pm.test('Thông báo nêu rõ vượt sức chứa', function () {",
+                  "  const duLieu = pm.response.json();",
+                  "  if (!duLieu.message) throw new Error('Thiếu thông báo');",
+                  "  const n = duLieu.message.toLowerCase();",
+                  "  if (!n.includes('khách') && !n.includes('suc chua') && !n.includes('sức chứa')) throw new Error('Thông báo không nói về sức chứa: ' + duLieu.message);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenKhach}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"locationIndex\": {{chiSoDiaDiem}},\n  \"roomIndex\": {{chiSoPhong}},\n  \"type\": 1,\n  \"checkIn\": \"{{ngayVuotSucChua}}T14:00:00\",\n  \"checkOut\": \"{{ngayTraVuotSucChua}}T12:00:00\",\n  \"guestCount\": 99,\n  \"note\": \"AB - vuot suc chua\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/bookings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "bookings"
+              ]
+            },
+            "description": "Kịch bản **bất thường**. `guestCount = 99` vượt sức chứa chắc chắn. Phải **400**.\n\nNgày thuê **tự sinh riêng** trong script tiền xử lý — nếu dùng chung ngày với đơn đã đặt thì hệ thống trả 409 (trùng lịch) trước và không tới bước kiểm sức chứa."
+          }
+        },
+        {
+          "name": "Dọn dẹp · Tìm đơn PENDING sinh ra bởi test T3",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () {",
+                  "  if (pm.response.code !== 200) throw new Error('Expected 200, got ' + pm.response.code);",
+                  "});",
+                  "const ds = pm.response.json().data.items;",
+                  "",
+                  "// Tìm đơn PENDING mới nhất KHÁC `maDonChinh` — đó chính là đơn thắng cuộc",
+                  "// đua của test T3. Đơn `maDonChinh` phải giữ lại vì nhóm sau còn dùng.",
+                  "const donChinh = pm.collectionVariables.get('maDonChinh');",
+                  "const donRace = ds.find(d => d.status === 0 && d.code !== donChinh);",
+                  "",
+                  "pm.test('Tìm thấy đơn do test T3 tạo ra', function () {",
+                  "  if (!donRace) throw new Error('Không tìm thấy đơn PENDING nào khác đơn chính');",
+                  "});",
+                  "",
+                  "if (donRace) {",
+                  "  pm.collectionVariables.set('maDonRace', donRace.code);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenKhach}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/bookings/my?page=1&pageSize=20&status=0",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "bookings",
+                "my"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                },
+                {
+                  "key": "status",
+                  "value": "0"
+                }
+              ]
+            },
+            "description": "Danh sách đơn `PENDING` mới nhất trước. Tìm đơn **khác** `maDonChinh` — đó là đơn thắng cuộc đua của test T3 — và lưu mã vào `maDonRace`."
+          }
+        },
+        {
+          "name": "Dọn dẹp · Huỷ đơn của test T3",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () {",
+                  "  if (pm.response.code !== 200) throw new Error('Expected 200, got ' + pm.response.code + ' — ' + pm.response.text());",
+                  "});",
+                  "const duLieu = pm.response.json();",
+                  "pm.test('Đã huỷ, trạng thái CANCELLED (4)', function () {",
+                  "  if (duLieu.data.status !== 4) throw new Error('status = ' + duLieu.data.status);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenKhach}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Don tam sinh cho test T3 - don nay da het vai tro\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/bookings/{{maDonRace}}/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "bookings",
+                "{{maDonRace}}",
+                "cancel"
+              ]
+            },
+            "description": "Huỷ đơn PENDING do test T3 tạo ra.\n\n**Vì sao phải có:** nếu không huỷ, mỗi lần chạy để lại 1 đơn `PENDING` trong dải ngày của nhóm. Chạy đủ nhiều lần thì dải kín và collection **hỏng vì dữ liệu do chính nó tạo ra** — thứ mà định nghĩa \"chạy lại được\" không cho phép."
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 · Đơn của tôi",
+      "item": [
+        {
+          "name": "HP · Danh sách đơn của tôi",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () {",
+                  "  if (pm.response.code !== 200) throw new Error('Expected 200, got ' + pm.response.code);",
+                  "});",
+                  "const duLieu = pm.response.json();",
+                  "pm.test('Có phân trang', function () {",
+                  "  if (typeof duLieu.data.totalItems !== 'number') throw new Error('Thiếu totalItems');",
+                  "});",
+                  "pm.test('Không lộ Id nội bộ', function () {",
+                  "  const co = duLieu.data.items.filter(d => 'id' in d).length;",
+                  "  if (co > 0) throw new Error(co + ' đơn có trường Id');",
+                  "});",
+                  "pm.test('Chỉ hiện mã đơn HS-yyMMdd-xxxx', function () {",
+                  "  const sai = duLieu.data.items.filter(d => !/^HS-\\d{6}-\\d{4}$/.test(d.code));",
+                  "  if (sai.length > 0) throw new Error(sai.length + ' mã đơn sai định dạng');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenKhach}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/bookings/my?page=1&pageSize=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "bookings",
+                "my"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Kịch bản HP. `userId` lấy từ token — không bao giờ lấy từ tham số gửi lên."
+          }
+        },
+        {
+          "name": "HP · Lọc đơn theo trạng thái PENDING",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () {",
+                  "  if (pm.response.code !== 200) throw new Error('Expected 200, got ' + pm.response.code);",
+                  "});",
+                  "const duLieu = pm.response.json();",
+                  "pm.test('Mọi đơn trả về đều là PENDING (0)', function () {",
+                  "  const sai = duLieu.data.items.filter(d => d.status !== 0);",
+                  "  if (sai.length > 0) throw new Error(sai.length + ' đơn không phải PENDING — bộ lọc không hoạt động');",
+                  "});",
+                  "pm.test('Có chứa đơn vừa tạo ở nhóm 03', function () {",
+                  "  const maDon = pm.collectionVariables.get('maDonChinh');",
+                  "  const co = duLieu.data.items.some(d => d.code === maDon);",
+                  "  if (!co) throw new Error('Không thấy đơn ' + maDon + ' trong nhóm PENDING');",
+                  "});",
+                  "pm.test('totalItems không nhỏ hơn số dòng trả về', function () {",
+                  "  // Có phân trang nên totalItems có thể LỚN HƠN items — đó là bình thường.",
+                  "  // Chỉ được sai khi totalItems nhỏ hơn items, tức bộ đếm lệch với dữ liệu trả về.",
+                  "  if (duLieu.data.totalItems < duLieu.data.items.length) throw new Error('totalItems = ' + duLieu.data.totalItems + ' nhưng items = ' + duLieu.data.items.length);",
+                  "});",
+                  "pm.test('Số dòng trả về không vượt quá pageSize', function () {",
+                  "  if (duLieu.data.items.length > duLieu.data.pageSize) throw new Error('items = ' + duLieu.data.items.length + ' > pageSize = ' + duLieu.data.pageSize);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenKhach}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/bookings/my?page=1&pageSize=20&status=0",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "bookings",
+                "my"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                },
+                {
+                  "key": "status",
+                  "value": "0"
+                }
+              ]
+            },
+            "description": "Kịch bản HP — **tính năng lọc theo trạng thái** (Bước 11). Lọc `status=0` (PENDING) phải chỉ trả đơn PENDING."
+          }
+        },
+        {
+          "name": "EC · Lọc status ngoài khoảng enum → không lỗi, trả tất cả",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200 — không báo lỗi', function () {",
+                  "  if (pm.response.code !== 200) throw new Error('Expected 200, got ' + pm.response.code);",
+                  "});",
+                  "const duLieu = pm.response.json();",
+                  "pm.test('Bỏ qua bộ lọc, trả tất cả đơn', function () {",
+                  "  if (duLieu.data.items.length < 1) throw new Error('Không trả đơn nào');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenKhach}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/bookings/my?status=99",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "bookings",
+                "my"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "99"
+                }
+              ]
+            },
+            "description": "Kịch bản **edge case**. `status=99` nằm ngoài khoảng enum (0–5) — hệ thống bỏ qua bộ lọc thay vì trả lỗi, vì đây là tham số tuỳ chọn do giao diện gửi lên chứ không phải dữ liệu người dùng nhập tay."
+          }
+        },
+        {
+          "name": "HP · Chi tiết đơn kèm lịch sử trạng thái",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () {",
+                  "  if (pm.response.code !== 200) throw new Error('Expected 200, got ' + pm.response.code);",
+                  "});",
+                  "const duLieu = pm.response.json();",
+                  "pm.test('Trả về đúng mã đơn đã yêu cầu', function () {",
+                  "  const maDon = pm.collectionVariables.get('maDonChinh');",
+                  "  if (duLieu.data.code !== maDon) throw new Error('Trả về ' + duLieu.data.code + ', cần ' + maDon);",
+                  "});",
+                  "pm.test('Có lịch sử trạng thái', function () {",
+                  "  if (!Array.isArray(duLieu.data.history) || duLieu.data.history.length < 1) throw new Error('Thiếu lịch sử');",
+                  "});",
+                  "pm.test('Dòng lịch sử đầu là do khách tự tạo', function () {",
+                  "  const dau = duLieu.data.history[0];",
+                  "  if (dau.fromStatus !== null) throw new Error('fromStatus đầu phải null');",
+                  "  if (dau.toStatus !== 0) throw new Error('toStatus đầu phải PENDING');",
+                  "});",
+                  "pm.test('Mỗi dòng lịch sử có người thực hiện', function () {",
+                  "  const thieu = duLieu.data.history.filter(h => !h.changedByName);",
+                  "  if (thieu.length > 0) throw new Error(thieu.length + ' dòng thiếu tên người thực hiện');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenKhach}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/bookings/{{maDonChinh}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "bookings",
+                "{{maDonChinh}}"
+              ]
+            },
+            "description": "Kịch bản HP. Tra cứu bằng **mã đơn** `Code`, không dùng `Id`."
+          }
+        },
+        {
+          "name": "AB · Xem đơn của người khác → 404 (không lộ tồn tại)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 404 — không phải 403', function () {",
+                  "  if (pm.response.code !== 404) throw new Error('Expected 404, got ' + pm.response.code);",
+                  "});",
+                  "pm.test('Thông báo chung chung, không nói đơn tồn tại', function () {",
+                  "  const duLieu = pm.response.json();",
+                  "  if (!duLieu.message) throw new Error('Thiếu thông báo');",
+                  "  if (duLieu.message.toLowerCase().includes('người khác') || duLieu.message.toLowerCase().includes('không có quyền')) throw new Error('Thông báo tiết lộ đơn tồn tại: ' + duLieu.message);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenKhach}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/bookings/HS-260930-0013",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "bookings",
+                "HS-260930-0013"
+              ]
+            },
+            "description": "Kịch bản **bất thường**. `HS-260930-0013` là đơn của khách 2. Khách 1 sửa URL để xem phải bị chặn.\n\nTrả **404 chứ không phải 403** là quyết định chốt ở Bước 16: 403 sẽ lộ ra là đơn đó *có thật*, chỉ cần thử mã khác là dò được."
+          }
+        },
+        {
+          "name": "HP · Hủy đơn PENDING → CANCELLED",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () {",
+                  "  if (pm.response.code !== 200) throw new Error('Expected 200, got ' + pm.response.code);",
+                  "});",
+                  "const duLieu = pm.response.json();",
+                  "pm.test('Trạng thái CANCELLED (4)', function () {",
+                  "  if (duLieu.data.status !== 4) throw new Error('status = ' + duLieu.data.status + ' (mong đợi 4 = CANCELLED)');",
+                  "});",
+                  "pm.test('Lưu lý do hủy', function () {",
+                  "  if (!duLieu.data.cancelReason) throw new Error('Không lưu lý do hủy');",
+                  "});",
+                  "pm.test('Lịch sử ghi thêm bước PENDING → CANCELLED', function () {",
+                  "  const cuoi = duLieu.data.history[duLieu.data.history.length - 1];",
+                  "  if (cuoi.fromStatus !== 0 || cuoi.toStatus !== 4) throw new Error('Bước cuối = ' + cuoi.fromStatus + ' → ' + cuoi.toStatus);",
+                  "});",
+                  "pm.test('Người hủy là khách, không phải Admin', function () {",
+                  "  const cuoi = duLieu.data.history[duLieu.data.history.length - 1];",
+                  "  if (cuoi.changedByName === 'Nguyễn Minh Quân') throw new Error('Lịch sử ghi nhầm Admin');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenKhach}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Kiem thu Buoc 18 - huy don\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/bookings/{{maDonChinh}}/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "bookings",
+                "{{maDonChinh}}",
+                "cancel"
+              ]
+            },
+            "description": "Kịch bản HP. Hủy đơn `PENDING` → `CANCELLED`, phòng trở lại `AVAILABLE`, ghi thêm một dòng lịch sử."
+          }
+        },
+        {
+          "name": "AB · Hủy lần thứ hai → 409",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 409 Conflict', function () {",
+                  "  if (pm.response.code !== 409) throw new Error('Expected 409, got ' + pm.response.code);",
+                  "});",
+                  "pm.test('Thông báo nói rõ chỉ hủy được đơn chờ xác nhận', function () {",
+                  "  const duLieu = pm.response.json();",
+                  "  if (!duLieu.message) throw new Error('Thiếu thông báo');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenKhach}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Huy lan 2 - phai bi tu choi\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/bookings/{{maDonChinh}}/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "bookings",
+                "{{maDonChinh}}",
+                "cancel"
+              ]
+            },
+            "description": "Kịch bản **bất thường**. Đơn đã `CANCELLED` ở request trước nên hủy tiếp phải **409**, không phải 200 (tránh trừ tiền hoặc giải phóng phòng hai lần)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 · Vòng đời đơn (Admin)",
+      "description": "Chạy trọn vòng đời trên **một đơn riêng**: PENDING → CONFIRMED → CHECKED_IN → COMPLETED. Cần `tokenAdmin` từ nhóm 01.",
+      "item": [
+        {
+          "name": "HP · Tạo đơn riêng cho vòng đời",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function ngayLech(soNgay) {",
+                  "  const d = new Date();",
+                  "  d.setDate(d.getDate() + soNgay);",
+                  "  return d.toISOString().slice(0, 10);",
+                  "}",
+                  "",
+                  "// Mỗi nhóm test một DẢI NGÀY RIÊNG, rộng 1500 ngày, các dải cách nhau 2000 ngày.",
+                  "// Mỗi lần chạy để lại 1 đơn PENDING trong dải của nó, nên dải phải rộng để lần",
+                  "// chạy sau không đụng lần chạy trước. Nếu dải hẹp, chạy nhiều lần sẽ dần kín",
+                  "// và test chống đặt trùng nhận [409, 409] thay vì [201, 409] — hỏng vì lý do",
+                  "// không liên quan tới chính nó.",
+                  "const lech = 5000 + Math.floor(Math.random() * 1500);",
+                  "pm.collectionVariables.set('ngayVongDoi', ngayLech(lech + 0));",
+                  "pm.collectionVariables.set('ngayTraVongDoi', ngayLech(lech + 2));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', function () {",
+                  "  if (pm.response.code !== 201) throw new Error('Expected 201, got ' + pm.response.code + ' — ' + pm.response.text());",
+                  "});",
+                  "",
+                  "const duLieu = pm.response.json();",
+                  "pm.test('Trạng thái PENDING', function () {",
+                  "  if (duLieu.data.status !== 0) throw new Error('status = ' + duLieu.data.status);",
+                  "});",
+                  "",
+                  "if (duLieu.data) {",
+                  "  pm.collectionVariables.set('maDonVongDoi', duLieu.data.code);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenKhach}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"locationIndex\": {{chiSoDiaDiem}},\n  \"roomIndex\": {{chiSoPhong}},\n  \"type\": 1,\n  \"checkIn\": \"{{ngayVongDoi}}T14:00:00\",\n  \"checkOut\": \"{{ngayTraVongDoi}}T12:00:00\",\n  \"guestCount\": 1,\n  \"note\": \"Don rieng cho vong doi\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/bookings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "bookings"
+              ]
+            },
+            "description": "Kịch bản HP. Đơn riêng để chạy vòng đời, tách khỏi nhóm 03 (đơn kia đã bị hủy nên không thể xác nhận)."
+          }
+        },
+        {
+          "name": "HP · Admin xác nhận đơn → CONFIRMED",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () {",
+                  "  if (pm.response.code !== 200) throw new Error('Expected 200, got ' + pm.response.code);",
+                  "});",
+                  "const duLieu = pm.response.json();",
+                  "pm.test('Trạng thái CONFIRMED (1)', function () {",
+                  "  if (duLieu.data.status !== 1) throw new Error('status = ' + duLieu.data.status);",
+                  "});",
+                  "pm.test('Trả về thông tin khách để Admin liên hệ', function () {",
+                  "  if (!duLieu.data.customerEmail) throw new Error('Thiếu customerEmail');",
+                  "  if (!duLieu.data.roomName) throw new Error('Thiếu roomName');",
+                  "});",
+                  "pm.test('Đơn chuyển sang CONFIRMED', function () {",
+                  "  const maDon = pm.collectionVariables.get('maDonVongDoi');",
+                  "  if (duLieu.data.code !== maDon) throw new Error('Trả về ' + duLieu.data.code + ', cần ' + maDon);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/bookings/{{maDonVongDoi}}/confirm",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "bookings",
+                "{{maDonVongDoi}}",
+                "confirm"
+              ]
+            },
+            "description": "Kịch bản HP. Xác nhận đơn `PENDING` → `CONFIRMED`; phòng chuyển sang `BOOKED`."
+          }
+        },
+        {
+          "name": "AB · Xác nhận lần hai → 409",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 409 Conflict', function () {",
+                  "  if (pm.response.code !== 409) throw new Error('Expected 409, got ' + pm.response.code);",
+                  "});",
+                  "pm.test('Thông báo nêu đúng trạng thái hiện tại và trạng thái cần', function () {",
+                  "  const duLieu = pm.response.json();",
+                  "  if (!duLieu.message) throw new Error('Thiếu thông báo');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/bookings/{{maDonVongDoi}}/confirm",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "bookings",
+                "{{maDonVongDoi}}",
+                "confirm"
+              ]
+            },
+            "description": "Kịch bản **bất thường**. Đơn đã `CONFIRMED` — xác nhận lại phải **409**, không phải 200 im lặng (sẽ ghi thêm dòng lịch sử sai)."
+          }
+        },
+        {
+          "name": "HP · Admin check-in → CHECKED_IN",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () {",
+                  "  if (pm.response.code !== 200) throw new Error('Expected 200, got ' + pm.response.code);",
+                  "});",
+                  "const duLieu = pm.response.json();",
+                  "pm.test('Trạng thái CHECKED_IN (2)', function () {",
+                  "  if (duLieu.data.status !== 2) throw new Error('status = ' + duLieu.data.status);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/bookings/{{maDonVongDoi}}/check-in",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "bookings",
+                "{{maDonVongDoi}}",
+                "check-in"
+              ]
+            },
+            "description": "Kịch bản HP. `CONFIRMED` → `CHECKED_IN`; phòng chuyển sang `OCCUPIED`."
+          }
+        },
+        {
+          "name": "AB · Hủy đơn đang CHECKED_IN → 409",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 409 Conflict', function () {",
+                  "  if (pm.response.code !== 409) throw new Error('Expected 409, got ' + pm.response.code);",
+                  "});",
+                  "pm.test('Thông báo nói chỉ hủy được đơn chờ xác nhận', function () {",
+                  "  const duLieu = pm.response.json();",
+                  "  if (!duLieu.message) throw new Error('Thiếu thông báo');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenKhach}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Khach dang o - khong duoc huy\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/bookings/{{maDonVongDoi}}/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "bookings",
+                "{{maDonVongDoi}}",
+                "cancel"
+              ]
+            },
+            "description": "Kịch bản **bất thường**. Khách đã nhận phòng thì phải **trả phòng** chứ không được huỷ ngang — hủy sẽ giải phóng phòng khi người vẫn đang ở."
+          }
+        },
+        {
+          "name": "HP · Admin check-out → COMPLETED + phòng CLEANING",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () {",
+                  "  if (pm.response.code !== 200) throw new Error('Expected 200, got ' + pm.response.code);",
+                  "});",
+                  "const duLieu = pm.response.json();",
+                  "pm.test('Trạng thái COMPLETED (3)', function () {",
+                  "  if (duLieu.data.status !== 3) throw new Error('status = ' + duLieu.data.status);",
+                  "});",
+                  "pm.test('Tổng tiền được giữ nguyên khi trả phòng', function () {",
+                  "  if (!(duLieu.data.totalAmount > 0)) throw new Error('totalAmount = ' + duLieu.data.totalAmount);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/bookings/{{maDonVongDoi}}/check-out",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "bookings",
+                "{{maDonVongDoi}}",
+                "check-out"
+              ]
+            },
+            "description": "Kịch bản HP. `CHECKED_IN` → `COMPLETED`. Phòng **không** về `AVAILABLE` ngay mà sang `CLEANING` — job nền sẽ tự chuyển về sau 2 giờ (Bước 13)."
+          }
+        },
+        {
+          "name": "HP · Lịch sử đủ 4 bước và phân biệt người thực hiện",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () {",
+                  "  if (pm.response.code !== 200) throw new Error('Expected 200, got ' + pm.response.code);",
+                  "});",
+                  "const duLieu = pm.response.json();",
+                  "const ls = duLieu.data.history;",
+                  "pm.test('Đủ 4 bước: tạo → xác nhận → nhận phòng → trả phòng', function () {",
+                  "  if (!Array.isArray(ls)) throw new Error('Không có mảng history');",
+                  "  if (ls.length !== 4) throw new Error('Có ' + ls.length + ' bước, mong đợi 4');",
+                  "});",
+                  "pm.test('Chuỗi trạng thái đúng thứ tự', function () {",
+                  "  const kyVong = [[null, 0], [0, 1], [1, 2], [2, 3]];",
+                  "  ls.forEach((buoc, i) => {",
+                  "    if (buoc.fromStatus !== kyVong[i][0] || buoc.toStatus !== kyVong[i][1]) {",
+                  "      throw new Error('Bước ' + (i + 1) + ' = ' + buoc.fromStatus + ' → ' + buoc.toStatus + ', mong đợi ' + kyVong[i][0] + ' → ' + kyVong[i][1]);",
+                  "    }",
+                  "  });",
+                  "});",
+                  "pm.test('Bước 1 do KHÁCH tạo, bước 2-4 do ADMIN thực hiện', function () {",
+                  "  // Đây là bằng chứng sửa lỗi Bước 13: trước đó lịch sử ghi nhầm id khách",
+                  "  // thay vì id Admin, nên lịch sử hiện 'khách tự xác nhận đơn của mình'.",
+                  "  if (!ls[0].changedByName) throw new Error('Bước 1 thiếu tên người thực hiện');",
+                  "  const tenKhach = pm.collectionVariables.get('tenKhach');",
+                  "  if (ls[0].changedByName !== tenKhach) throw new Error('Bước 1 ghi \"' + ls[0].changedByName + '\", mong đợi khách \"' + tenKhach + '\"');",
+                  "  if (ls[1].changedByName === tenKhach) throw new Error('Bước 2 ghi nhầm tên khách — lịch sử bị ghi sai người thực hiện');",
+                  "  if (!ls[1].changedByName) throw new Error('Bước 2 thiếu tên người thực hiện');",
+                  "});",
+                  "pm.test('Mỗi bước có thời điểm thực hiện', function () {",
+                  "  const thieu = ls.filter(b => !b.changedAt);",
+                  "  if (thieu.length > 0) throw new Error(thieu.length + ' bước thiếu thời điểm');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenKhach}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/bookings/{{maDonVongDoi}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "bookings",
+                "{{maDonVongDoi}}"
+              ]
+            },
+            "description": "Kịch bản HP. Xem lại đơn vừa chạy xong vòng đời.\n\nĐây là request **bằng chứng cho lỗi đã sửa ở Bước 13**: `ChangedByUserId` trong lịch sử từng ghi nhầm id của *khách* thay vì id *Admin*, làm lịch sử hiện sai \"khách tự xác nhận đơn của mình\". Test này khẳng định bước 1 là khách, bước 2–4 là Admin."
+          }
+        },
+        {
+          "name": "HP · Danh sách đơn Admin (có mã đơn vừa xử lý)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () {",
+                  "  if (pm.response.code !== 200) throw new Error('Expected 200, got ' + pm.response.code);",
+                  "});",
+                  "const duLieu = pm.response.json();",
+                  "pm.test('Tìm thấy mã đơn đã check-out', function () {",
+                  "  const maDon = pm.collectionVariables.get('maDonVongDoi');",
+                  "  const co = duLieu.data.items.some(d => d.code === maDon);",
+                  "  if (!co) throw new Error('Không thấy ' + maDon + ' trong danh sách Admin');",
+                  "});",
+                  "pm.test('Có bộ lọc theo trạng thái', function () {",
+                  "  if (duLieu.data.totalItems < 1) throw new Error('totalItems = ' + duLieu.data.totalItems);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/bookings?page=1&pageSize=20&status=3",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "bookings"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                },
+                {
+                  "key": "status",
+                  "value": "3"
+                }
+              ]
+            },
+            "description": "Kịch bản HP. Lọc `COMPLETED` — đơn vừa check-out phải nằm trong kết quả."
+          }
+        }
+      ]
+    },
+    {
+      "name": "07 · Phân quyền, thống kê & đánh giá",
+      "item": [
+        {
+          "name": "AB · Khách gọi API Admin → 403",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 403 Forbidden', function () {",
+                  "  if (pm.response.code !== 403) throw new Error('Expected 403, got ' + pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenKhach}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/dashboard",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "dashboard"
+              ]
+            },
+            "description": "Kịch bản **bất thường**. Đã đăng nhập nhưng sai vai trò → **403** (khác với 401 là chưa đăng nhập)."
+          }
+        },
+        {
+          "name": "AB · Không có token → 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 401 Unauthorized', function () {",
+                  "  if (pm.response.code !== 401) throw new Error('Expected 401, got ' + pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/dashboard",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "dashboard"
+              ]
+            },
+            "description": "Kịch bản **bất thường**. Không gửi header Authorization → **401**."
+          }
+        },
+        {
+          "name": "HP · Dashboard thống kê (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () {",
+                  "  if (pm.response.code !== 200) throw new Error('Expected 200, got ' + pm.response.code);",
+                  "});",
+                  "const duLieu = pm.response.json();",
+                  "const tq = duLieu.data.tongQuan;",
+                  "pm.test('Có số liệu tổng quan', function () {",
+                  "  if (typeof tq.doanhThuThangNay !== 'number') throw new Error('Thiếu tongQuan.doanhThuThangNay');",
+                  "  if (typeof tq.donThangNay !== 'number') throw new Error('Thiếu tongQuan.donThangNay');",
+                  "  if (typeof tq.tongDon !== 'number') throw new Error('Thiếu tongQuan.tongDon');",
+                  "});",
+                  "pm.test('Chuỗi tháng đủ 6 tháng, giữ cả tháng không có dữ liệu', function () {",
+                  "  if (!Array.isArray(duLieu.data.theoThang) || duLieu.data.theoThang.length !== 6) throw new Error('theoThang có ' + (duLieu.data.theoThang ? duLieu.data.theoThang.length : 'null') + ' tháng');",
+                  "  const rong = duLieu.data.theoThang.filter(t => t.doanhThu === 0 && t.soDon === 0);",
+                  "  if (duLieu.data.theoThang.some(t => t === null || t === undefined)) throw new Error('Có tháng bị null — cột phải giữ số 0');",
+                  "  if (rong.length >= 6) throw new Error('Cả 6 tháng đều rỗng — số liệu có thể sai');",
+                  "});",
+                  "pm.test('Tỷ lệ lấp đầy là tỉ lệ 0–1 (giao diện nhân 100 để hiện phần trăm)', function () {",
+                  "  const t = duLieu.data.tyLeLapDay;",
+                  "  if (typeof t !== 'number') throw new Error('tyLeLapDay không phải số');",
+                  "  if (t < 0 || t > 1) throw new Error('tyLeLapDay = ' + t + ' — nằm ngoài 0–1');",
+                  "});",
+                  "pm.test('Có bảng trạng thái phòng và bảng top phòng', function () {",
+                  "  if (!Array.isArray(duLieu.data.trangThaiPhong) || duLieu.data.trangThaiPhong.length !== 5) throw new Error('trangThaiPhong phải có đủ 5 trạng thái');",
+                  "  if (!Array.isArray(duLieu.data.topPhong)) throw new Error('Thiếu topPhong');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/dashboard",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "dashboard"
+              ]
+            },
+            "description": "Kịch bản HP. Doanh thu chỉ tính đơn `COMPLETED`; tháng không có dữ liệu vẫn giữ cột 0 (Bước 15)."
+          }
+        },
+        {
+          "name": "HP · Khách đánh giá đơn vừa hoàn thành",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', function () {",
+                  "  if (pm.response.code !== 201) throw new Error('Expected 201, got ' + pm.response.code + ' — ' + pm.response.text());",
+                  "});",
+                  "const duLieu = pm.response.json();",
+                  "pm.test('Số sao hợp lệ 1–5', function () {",
+                  "  if (duLieu.data.rating < 1 || duLieu.data.rating > 5) throw new Error('rating = ' + duLieu.data.rating);",
+                  "});",
+                  "pm.test('Nhận xét được cắt khoảng trắng thừa', function () {",
+                  "  if (duLieu.data.comment !== duLieu.data.comment.trim()) throw new Error('Nhận xét chưa trim');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenKhach}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rating\": 5,\n  \"comment\": \"  Phong sang, ghep am hoi khu rieng.  \"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/bookings/{{maDonVongDoi}}/review",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "bookings",
+                "{{maDonVongDoi}}",
+                "review"
+              ]
+            },
+            "description": "Kịch bản HP. Chỉ chủ đơn `COMPLETED` **của chính mình** mới đánh giá được. Nhận xét cố ý có khoảng trắng đầu cuối để kiểm việc trim."
+          }
+        },
+        {
+          "name": "AB · Đánh giá lần hai cùng một đơn → 409",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 409 Conflict', function () {",
+                  "  if (pm.response.code !== 409) throw new Error('Expected 409, got ' + pm.response.code);",
+                  "});",
+                  "pm.test('Thông báo nói mỗi đơn chỉ đánh giá một lần', function () {",
+                  "  const duLieu = pm.response.json();",
+                  "  if (!duLieu.message) throw new Error('Thiếu thông báo');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenKhach}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rating\": 1,\n  \"comment\": \"Danh gia lan 2 - phai bi tu choi\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/bookings/{{maDonVongDoi}}/review",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "bookings",
+                "{{maDonVongDoi}}",
+                "review"
+              ]
+            },
+            "description": "Kịch bản **bất thường**. Một đơn chỉ được đánh giá **một lần** — chặn ở cả tầng code (409) lẫn unique index trong CSDL (Bước 16)."
+          }
+        }
+      ]
+    }
+  ]
+}

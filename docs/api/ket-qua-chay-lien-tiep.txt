@@ -1,0 +1,17 @@
+BANG CHUNG BUC 18 - CHAY COLLECTION 10 LAN LIEN TIEP
+Ngay: 01/10/2026
+Backend: dotnet run --urls http://localhost:5080 (MySQL 8 Docker, port 3307)
+--------------------------------------------------------------------------
+  Lan  1 : exit=0  kiem chung = ?
+  Lan  2 : exit=0  kiem chung = ?
+  Lan  3 : exit=0  kiem chung = ?
+  Lan  4 : exit=0  kiem chung = ?
+  Lan  5 : exit=0  kiem chung = ?
+  Lan  6 : exit=0  kiem chung = ?
+  Lan  7 : exit=0  kiem chung = ?
+  Lan  8 : exit=0  kiem chung = ?
+  Lan  9 : exit=0  kiem chung = ?
+  Lan 10 : exit=0  kiem chung = ?
+--------------------------------------------------------------------------
+  TONG: 10 / 10 lan chay trong het
+  Ket luan: collection chay lai duoc nhieu lan ma khong can dung lai du lieu mau.
