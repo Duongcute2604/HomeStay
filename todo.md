@@ -734,6 +734,43 @@ Kiểu dữ liệu sai là nguyên nhân gốc: khai bắt buộc cho trường 
 
 ## Giai đoạn 7 — Hoàn thiện & kiểm thử
 
+### [x] BƯỚC 17 — Responsive + 3 trạng thái + Toast · **XONG 01/10/2026**
+- **Mục tiêu đo được:** mọi trang dùng được ở 375px · mọi danh sách có đủ 3 trạng thái · 7/7 test tay mục 11 của `docs/KIEM_THU_TAY.md`
+- **Bằng chứng:** **7/7 kịch bản PASS** (chi tiết ở `docs/KIEM_THU_TAY.md` mục 11) · Frontend **258/258** (thêm 14 unit test) · Backend **361/361** · build sạch
+- **Ảnh chụp:** ✅ `.openchamber/screenshots/b17-home-375-v2-*.jpg`, `b17-home-menu-mo-*.jpg`, `b17-rooms-375-*.jpg`, `b17-roomdetail-375-*.jpg`, `b17-404-375-*.jpg`, `b17-rong-375-*.jpg`
+
+#### Quyết định đã chốt (trước khi code)
+
+| # | Vấn đề | Chốt | Lý do |
+|---|--------|------|-------|
+| 1 | Menu trên điện thoại làm tràn ngang | Thêm nút **3 gạch**, dưới `sm` menu xếp dọc | 375px không vừa 5 mục + nút "Đăng ký" trên một hàng. Dùng nút 3 gạch thay vì bớt mục: bớt mục là **giấu chức năng** trên đúng thiết bị mà khách dùng nhiều nhất |
+| 2 | Khai báo menu 2 lần cho 2 bố cục? | **Không** — danh sách `MENU_KHACH`/`MENU_DANG_NHAP` khai 1 lần, hàm `veMenu()` dựng ra cả hai bản | Khai 2 lần thì thêm mục mới dễ quên sửa một bên, và hai bên lệch nhau rất khó phát hiện |
+| 3 | Trang chủ có cần 3 trạng thái? | **Không** — đây là trang tĩnh, không gọi API | Bắt buộc 3 trạng thái cho trang không có dữ liệu chỉ là thêm mã chết |
+| 4 | Toast tự tắt bao lâu? | **3 giây** (đã có sẵn) | Đủ đọc, không che nội dung |
+| 5 | Lỗi API có tách khỏi "không tìm thấy"? | **Có** — bắt buộc | Xem mục bug bên dưới |
+
+#### Bug tìm ra khi kiểm thử tay (đã sửa)
+
+**1. Trang chủ tràn ngang ở 375px.** Logo chồng lên menu, menu xuống dòng thành "Trang/chủ", nút "Đăng ký" bị cắt, và có thanh cuộn ngang dưới cùng.
+Đã sửa bằng nút 3 gạch + ẩn chữ logo ở màn hình nhỏ (`hidden sm:block`).
+
+**2. Trang đặt phòng báo nhầm lỗi API thành "sai phòng".**
+Khi API địa điểm hỏng, `diaDiemList` rỗng ⇒ `phong` cũng `undefined` ⇒ rơi vào nhánh *"không tìm thấy phòng"* và hiện **"Đường dẫn trỏ sai phòng. Hãy chọn lại từ trang chi tiết."**
+Người dùng tưởng mình gõ sai đường dẫn, trong khi hệ thống đang lỗi. Đã tách nhánh lỗi riêng: *"Không tải được danh sách phòng / Hệ thống đang không phản hồi"* kèm nút Thử lại.
+
+#### Cải thiện thêm
+
+Toast **không có `role`** → trình đọc màn hình im lặng. Toast tự hiện lên chứ không phải do người dùng bấm, nên người mù không biết thao tác thành công hay thất bại. Đã thêm `role="status"`/`aria-live="polite"` (thành công) và `role="alert"`/`aria-live="assertive"` (lỗi).
+
+#### ⚠️ Còn lại (ghi để không quên)
+
+- **6 trang Admin chưa kiểm bằng mắt ở 375px.** Cần đăng nhập mà công cụ trình duyệt đang lỗi khi nhập ô mật khẩu. Đã kiểm **bằng đọc code**: `AdminLayout` dùng `flex-col`/`lg:flex-row`, cả 6/6 bảng đã bọc `overflow-x-auto` + `min-w-[...]`, menu dùng `flex flex-col`.
+- **Trang chủ hiện 3 phòng "nổi bật" viết cứng trong code, không đọc CSDL.** Hôm nay khớp vì CSDL có đúng tên đó, nhưng đổi tên phòng là trang chủ hiện sai. Để ở đây để quyết định ở đợt quét code.
+
+#### Ghi chú
+
+- Kịch bản 5 và 6 (toast xanh/đỏ) kiểm bằng **unit test** với đồng hồ giả, không bấm tay. Bằng chứng này chắc hơn bấm tay vì toast tự tắt sau 3 giây — bấm chậm một chút là bỏ lỡ mà không biết là do tool hay do code.
+- Khi viết test trong jsdom, Tailwind không được áp nên phần tử có lớp `hidden` **vẫn xuất hiện** trong DOM. Với menu 2 bản phải dùng `getAllByRole` và đếm số phần tử — đó mới phản ánh đúng hành vi thật (mở menu là **thêm** một bản, không phải thay thế).
 ### [ ] BƯỚC 17 — Responsive + Loading/Error/Empty + Toast
 - **Mục tiêu đo được:** mọi trang dùng được ở 375px · mọi danh sách có đủ 3 trạng thái · 7/7 test tay mục 11 của `docs/KIEM_THU_TAY.md`
 - **Bằng chứng:** ảnh chụp 2 trang ở khung 375px

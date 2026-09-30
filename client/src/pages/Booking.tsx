@@ -50,7 +50,7 @@ export default function Booking(): JSX.Element {
     !Number.isNaN(checkOut.getTime()) &&
     checkOut > checkIn
 
-  const { data: diaDiemList = [], isPending: dangTai } = useQuery({
+  const { data: diaDiemList = [], isPending: dangTai, isError: loiDiaDiem } = useQuery({
     queryKey: ['locations'],
     queryFn: () => locationService.layDanhSach(),
     staleTime: 5 * 60 * 1000,
@@ -85,6 +85,24 @@ export default function Booking(): JSX.Element {
 
   if (dangTai) {
     return <p className="mt-8 text-center text-sm text-gray-500">Đang tải thông tin đặt phòng...</p>
+  }
+
+  // Lỗi API phải tách khỏi "không tìm thấy phòng". Trước đây cả hai rơi vào cùng
+  // một nhánh: server hỏng thì `diaDiemList` rỗng, phòng cũng undefined, và người
+  // dùng bị báo "Đường dẫn trỏ sai phòng" — họ tưởng mình gõ sai trong khi hệ
+  // thống đang lỗi. Nói đúng nguyên nhân mới giúp họ biết chờ hay thử lại.
+  if (loiDiaDiem) {
+    return (
+      <div className="card mx-auto mt-8 max-w-md p-6 text-center">
+        <p className="text-lg font-semibold text-gray-900">Không tải được danh sách phòng</p>
+        <p className="mt-1 text-sm text-gray-500">
+          Hệ thống đang không phản hồi. Vui lòng thử lại sau ít phút.
+        </p>
+        <button type="button" onClick={() => window.location.reload()} className="btn-primary mt-4">
+          Thử lại
+        </button>
+      </div>
+    )
   }
 
   if (!phong || !ngayHopLe || !checkIn || !checkOut) {

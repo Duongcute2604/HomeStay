@@ -50,7 +50,7 @@
 |------|----------|-----------|
 | Tuần 1 (29/09–05/10) | Môi trường, CSDL, seed, tài khoản (cả 2 tầng) | ✅ Xong cả backend lẫn giao diện tài khoản |
 | Tuần 2 (06/10–12/10) | Tìm kiếm, chi tiết phòng, đặt phòng, đơn của tôi | ✅ Xong (Bước 6–11) |
-| Tuần 3 (13/10–19/10) | Admin, thống kê, đánh giá, kiểm thử, Chương 4 | 🔄 Xong Bước 12–16 · còn Bước 17–20 |
+| Tuần 3 (13/10–19/10) | Admin, thống kê, đánh giá, kiểm thử, Chương 4 | 🔄 Xong Bước 12–17 · còn Bước 18–20 |
 | Tuần 4 (20/10) | Bảo vệ | ⬜ |
 
 ---
@@ -109,3 +109,4 @@
 | 30/09 | 15 | **Phat hien bug khi doi chieu SQL (quan trong):** `(den - tu).Days` cat cut phan gio nen moi don thieu 1 dem → ty le lap day ra `2/300` thay vi `4/300` (0,7% thay vi 1,3%). Giay nhan 14:00 / tra 12:00 la quy dinh co dinh, test cu dung du lieu `00:00` nen khong bao gio bat duoc | **Da sua:** cat ve ngay truoc roi tru — `(den.Date - tu.Date).Days`. Da them unit test dung dung gio 14:00/12:00 de chan | Xong (30/09) |
 | 01/10 | 16 | **Danh gia & nhan xet**: `POST /api/bookings/{code}/review` (chi don COMPLETED cua chinh minh, 1 don 1 danh gia — chan o ca code 409 va unique index) + `GET/PATCH hide/PATCH unhide/DELETE /api/admin/reviews` + `ReviewScorer` tinh lai diem phong + trang `/admin/reviews` + form danh gia tren trang chi tiet don | API **21/21** (13 khach + 8 admin, gom 6 case gia tri sai tra 400); doi chieu SQL **7/7** (0 don co >1 danh gia, `SHOW INDEX` cho `Non_unique=0`); giao dien **6/6** (form + gui that + trang admin + danh sach o trang phong) | Backend **358/358** (them 25), frontend **244/244** (them 36) | Xong (01/10) |
 | 01/10 | 16 | **Phat hien va sua 2 loi trong luc lam Buoc 16** — (1) trang chi tiet don hien **"NaN VND/gio"**: kieu `BookingDetail` khai `pricePerHour`/`pricePerDay` la bat buoc nhung API khong gui, nen `tsc` khong bat duoc va man hinh ra `NaN`; (2) `reviewId` cua don chua duoc tinh diem phong khi moi ghi xong do doc CSDL chay truoc khi flush | **Da sua triet de:** bo 6 truong kieu khai sai, thay bang Tong tien (`totalAmount`), them `roomNumber`+`capacity` vao DTO trong 1 truy v.doi; va doi thu tu ghi-them-tinh-lai trong ca 2 service. Da them test `not.toContain('NaN')` chan hoi quy | Xong (01/10) |
+| 01/10 | 17 | **Responsive + 3 trang thai + Toast**: them nut 3 gach cho menu tren dien thoai (375px), tach nhanh "loi API" khoi nhanh "khong tim thay phong" o trang dat phong, them `role`/`aria-live` cho Toast de trinh doc man hinh thong bao | **7/7** kich ban (khan 5+6 kiem bang unit test vi cong cu trinh duyet loi khi nhap mat khau); tim ra **2 loi that**: header tran ngang 375px + trang dat phong bao nham loi API thanh "sai phong" | Frontend **258/258** (them 14), backend **361/361** giu nguyen | Xong (01/10) · con: 6 trang Admin chua kiem bang mat o 375px |

@@ -498,19 +498,63 @@
 
 ---
 
-## 11. Giao diện & trải nghiệm (Bước 17)
+### Kết quả kiểm thử tay (01/10/2026)
 
 | # | Kịch bản | Kỳ vọng | Thực tế | Kết quả |
 |---|----------|---------|---------|---------|
-| 1 | Thu nhỏ cửa sổ về kích thước điện thoại (375px) | Mọi trang dùng được, không tràn ngang | | |
-| 2 | Tải trang chậm | Hiện spinner / skeleton | | |
-| 3 | Danh sách không có dữ liệu | Hiện thông báo "Chưa có dữ liệu", không phải trang trắng | | |
-| 4 | Gọi API lỗi | Hiện thông báo lỗi thân thiện, không lộ stack trace | | |
-| 5 | Thao tác thành công | Hiện toast xanh | | |
-| 6 | Thao tác thất bại | Hiện toast đỏ | | |
-| 7 | Gõ URL không tồn tại | Hiện trang 404 | | |
+| 1 | Thu nhỏ cửa sổ điện thoại (375px) | Mọi trang dùng được, không tràn ngang | **Trang chủ vỡ**: logo chồng lên menu, menu bị xuống dòng thành "Trang/chủ", nút "Đăng ký" bị cắt ở mép phải, **có thanh cuộn ngang** dưới cùng. → Đã sửa: thêm nút 3 gạch, ở dưới `sm` menu xếp dọc, chữ logo ẩn. Kiểm lại: sạch, không tràn ngang | ✅ PASS (sau khi sửa) |
+| 2 | Tải trang chậm | Hiện spinner / skeleton | Các trang có dữ liệu đều hiện dòng "Đang tải..." (`isPending`). Trang chủ là trang tĩnh, không gọi API nên không cần | ✅ PASS |
+| 3 | Danh sách không có dữ liệu | Hiện thông báo "Chưa có dữ liệu", không trang trắng | Tìm "zzzzkhongco" → hiện thẻ **"Không tìm thấy phòng nào / Thử nới rộng khoảng giá, giảm số khách hoặc bỏ bớt điều kiện lọc"** — có cả gợi ý hành động, không phải trang trắng | ✅ PASS |
+| 4 | Gọi API lỗi | Hiện thông báo lỗi thân thiện, không lộ stack trace | **Tìm ra lỗi thật ở trang đặt phòng**: khi API địa điểm hỏng, `diaDiemList` rỗng ⇒ rơi vào nhánh *"không tìm thấy phòng"* và báo **"Đường dẫn trỏ sai phòng"** — người dùng tưởng mình gõ sai trong khi hệ thống đang lỗi. Đã tách nhánh lỗi riêng: *"Không tải được danh sách phòng / Hệ thống đang không phản hồi"* + nút Thử lại. Trang 404 không lộ stack trace | ✅ PASS (sau khi sửa) |
+| 5 | Thao tác thành công | Hiện toast xanh | Toast `success` hiện lớp `toast-success`, tự tắt sau **3 giây**. **Kiểm bằng unit test** với đồng hồ giả (7 test, xem bên dưới) | ✅ PASS |
+| 6 | Thao tác thất bại | Hiện toast đỏ | Toast `error` hiện lớp `toast-error`, tự tắt sau 3 giây. Kiểm bằng unit test | ✅ PASS |
+| 7 | Gõ URL không tồn tại | Hiện trang 404 | `/khong-ton-tai-abc` → trang **404** "Không tìm thấy trang bạn yêu cầu. Đường dẫn có thể đã bị đổi hoặc bị gõ sai." + nút "Về trang chủ". Không lộ stack trace, không tràn ngang ở 375px | ✅ PASS |
 
----
+### Bổ sung phát hiện khi kiểm thử
+
+**Toast không có `role` nên trình đọc màn hình im lặng.**
+Toast là thứ *tự xuất hiện*, không phải do người dùng bấm — nếu không khai vai trò thì người mù hoàn toàn không biết thao tác của mình đã thành công hay thất bại.
+Đã thêm `role="status"` + `aria-live="polite"` cho thành công, `role="alert"` + `aria-live="assertive"` cho lỗi.
+
+**Trang chủ hiện 3 phòng "nổi bật" viết cứng trong code, không đọc từ CSDL.**
+Trang này là trang tĩnh nên không có 3 trạng thái — nhưng dữ liệu phòng thì **nên** đọc từ CSDL, không nên viết cứng: hôm nay CSDL có "Phòng Hạnh Phúc" thì khớp, đổi tên phòng là trang chủ hiện sai.
+⚠️ **Chưa sửa** — thuộc Bước 17 hay không tuỳ; ghi ra đây để không bị quên. Xem mục "Việc còn lại".
+
+### Vì sao 2 kịch bản kiểm bằng unit test chứ không bấm tay
+
+Kịch bản 5 và 6 cần đăng nhập rồi bấm một thao tác. Trong phiên làm việc này, công cụ điều khiển trình duyệt **từ chối tham số khi nhập vào ô mật khẩu** (đã thử 8 lần với các cách chọn khác nhau, đều báo `value is required`), nên không đăng nhập được để bấm tay.
+
+Thay vào đó kiểm bằng **unit test** — và bằng chứng này còn **chắc hơn** bấm tay: bấm tay thì toast tự tắt sau 3 giây, bấm chậm một chút là bỏ lỡ mà không biết là do tool hay do code.
+
+| Nội dung kiểm | Test |
+|----------------|------|
+| Toast xanh / đỏ đúng màu | `Toast.test.tsx` — `ThanhCong_HienToastXanh`, `ThatBai_HienToastDo` |
+| Tự tắt sau 3 giây | `SauMotKhongGiVanConHien` (dùng đồng hồ giả) |
+| Nhiều toast không xóa oan nhau | `MotToastHetHanKhongXoaNhatPhaiKhac` |
+| Trình đọc màn hình có thông báo | `KhaiBaoRoleDeTrinhDocManHinhThongBao` |
+| Menu thu gọn mở/đóng, không tràn ngang | `PageLayout.test.tsx` — 7 test |
+
+### ⚠️ Phần CHƯA kiểm được bằng mắt
+
+**6 trang Admin ở khung 375px** — cần đăng nhập nên không vào được.
+Đã **kiểm bằng đọc code**:
+- `AdminLayout` dùng `flex-col` + `lg:flex-row` ⇒ sidebar xếp trên nội dung ở màn hình nhỏ, không tràn.
+- Cả **6/6** bảng đã bọc trong `overflow-x-auto` kèm `min-w-[...]` ⇒ bảng rộng cuộn ngang **trong riêng nó**, không làm vỡ trang.
+- Menu Admin dùng `flex flex-col` ⇒ không tràn ngang.
+
+⚠️ Cần người kiểm tra xác nhận bằng mắt trước khi đưa vào báo cáo:
+`/admin` · `/admin/bookings` · `/admin/facilities` · `/admin/rooms` · `/admin/customers` · `/admin/reviews` ở khung 375px.
+
+### Tổng kết
+
+| Hạng mục | Kết quả |
+|----------|---------|
+| 7 kịch bản kiểm thử tay | **7/7 PASS** (2 kịch bản kiểm bằng unit test) |
+| Lỗi tìm ra và sửa | **2** — header tràn ngang ở 375px · trang đặt phòng báo nhầm lỗi API thành "sai phòng" |
+| Cải thiện | **1** — thêm `role`/`aria-live` cho Toast |
+| Unit test | Frontend **258/258** (thêm **14** test: 7 Toast + 7 PageLayout) · Backend **361/361** |
+| Build | `npm run build` sạch · `dotnet build` 0 error 0 warning |
+| Chưa kiểm bằng mắt | 6 trang Admin ở 375px (xem cảnh báo trên) |
 
 ## 12. Tổng kết
 

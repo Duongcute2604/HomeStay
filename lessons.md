@@ -1676,3 +1676,85 @@ Hậu quả: một ghi chú sai bị đưa vào lịch sử git và vào commit 
 **Đã sửa ở lượt này:** chuyển `HomeStay.sln` **vào** `server/` cho khớp sơ đồ ở `AGENTS.md` mục 5.1, và giờ `cd server; dotnet test` chạy đúng như tài liệu viết (đã kiểm: 361/361).
 
 > **Quy tắc:** trước khi viết "cái này không có", tìm ở **tối thiểu 2 nơi** (thư mục con + gốc), hoặc dùng lệnh tìm toàn bộ repo. Và câu "không có" phải kèm bằng đường dẫn đã tìm — không thì không ai kiểm chứng được.
+---
+
+## 65. Phân biệt "lỗi hệ thống" với "dữ liệu rỗng" — gộp hai nhánh là báo sai nguyên nhân
+
+**Sai ở đâu:** trang đặt phòng có:
+
+```csharp
+if (!phong || !ngayHopLe || !checkIn || !checkOut) {
+  return <div>Không đặt được phòng này — Đường dẫn thiếu ngày thuê hoặc trỏ sai phòng</div>
+}
+```
+
+Nhưng `phong` được suy ra từ `diaDiemList` — mà `diaDiemList` đến từ API.
+Khi **API hỏng**, `diaDiemList` rỗng ⇒ `phong` cũng `undefined` ⇒ rơi vào đúng nhánh đó và hiện *"Đường dẫn trỏ sai phòng"*.
+
+**Hậu quả:** người dùng nhìn thấy thông báo nói **mình** sai, trong khi hệ thống đang lỗi. Họ sẽ bấm lại 5 lần rồi bỏ đi, thay vì hiểu là chờ.
+
+**Cách sửa:** kiểm `isError` **trước**, tách nhánh riêng:
+```
+API lỗi        → "Không tải được danh sách phòng / Hệ thống đang không phản hồi" + nút Thử lại
+Dữ liệu rỗng   → "Không tìm thấy phòng nào / Thử nới rộng điều kiện lọc"
+Sai đường dẫn  → "Đường dẫn thiếu ngày thuê hoặc trỏ sai phòng"
+```
+
+> **Quy tắc:** mỗi nhánh rỗng phải trả lời được câu **"tại sao rỗng"**. Ba nguyên nhân — chưa có dữ liệu, API lỗi, người dùng sai — cần **ba thông báo khác nhau**. Gộp chúng thì thông báo chỉ còn đúng 1/3 số lần, và sai 2/3 số lần thì nói sai nguyên nhân.
+> Bước kiểm: tìm cách làm API hỏng rồi xem màn hình có nói đúng không. Bấm thử tự nhiên sẽ không bao giờ ra nhánh lỗi.
+
+---
+
+## 66. Menu dựng 2 bố cục (rộng + thu gọn) thì **khai danh sách 1 lần**, dựng ra 2 nơi
+
+Khi làm responsive, `PageLayout` cần cùng một danh sách menu ở cả bản rộng (một hàng) và bản thu gọn (xếp dọc).
+
+**Cách sai:** viết hai khối `<nav>` với danh sách link trong mỗi khối. Sau này thêm mục "Liên hệ" thì sửa một bên, quên bên kia — và **hai bên lệch nhau rất khó phát hiện bằng mắt**, vì bản còn lại vẫn "chạy bình thường".
+
+**Cách đúng:** khai danh sách ở ngoài component, một hàm `veMenu(giaoDien)` dựng ra cả hai bản:
+
+```tsx
+const MENU_KHACH = [{ to: '/', nhan: 'Trang chủ' }, ...]
+...
+<nav className="hidden sm:flex">{veMenu('ro')}</nav>
+{menuMo && <nav className="flex flex-col sm:hidden">{veMenu('dong')}</nav>}
+```
+
+> **Quy tắc:** mọi thứ xuất hiện ở nhiều chỗ, **khai 1 lần + dựng ra nhiều nơi** — đừng copy. Khai 2 lần thì lệch là chuyện thời gian, không phải chuyện may mắn.
+
+---
+
+## 67. Toast không có `role` thì trình đọc màn hình **im lặng**
+
+Toast là thứ **tự xuất hiện** chứ không phải do người dùng bấm, nên nó cần khai vai trò riêng. Thiếu thì:
+- người mù dùng trình đọc màn hình **không hề biết** thao tác đã thành công hay thất bại;
+- người nhìn bằng phím tắt cũng không có gì để điều hướng tới.
+
+Sửa:
+
+```tsx
+role={toast.type === 'error' ? 'alert' : 'status'}
+aria-live={toast.type === 'error' ? 'assertive' : 'polite'}
+```
+
+`alert` (lỗi) đọc ngay và cắt ngang những gì đang đọc; `status` (thành công) đọc sau, không chen ngang.
+
+> **Quy tắc:** bất kỳ thông báo nào **tự xuất hiện** mà không do thao tác của người dùng — toast, lỗi mạng, cảnh báo — đều phải khai `role` + `aria-live`. Đây là kiểm tra 10 giây mà bắt buộc làm, vì không ai nhìn thấy lỗi bằng mắt thường.
+
+---
+
+## 68. jsdom không áp CSS Tailwind — đừng test "phần tử không tồn tại", hãy test **lớp**
+
+Viết test cho `PageLayout` bị vấp 3 lần:
+
+| Tôi viết | Chuyện thật |
+|----------|-------------|
+| `expect(queryByRole('button', {name:'Mở menu'})).not.toBeInTheDocument()` | Nút 3 gạch **luôn** có; chỉ *menu* mới ẩn. Test sai về mặt ý nghĩa |
+| `expect(queryByText('Homestay')).not.toBeInTheDocument()` | Chữ có `hidden sm:block` — jsdom không áp CSS nên vẫn còn trong DOM |
+| `getByRole('link', {name:'Địa điểm'})` | **Trùng 2 phần tử** vì cả bản menu rộng lẫn thu gọn đều render |
+
+**Nguyên tắc khi test Tailwind trong jsdom:**
+- Phần tử ẩn bằng CSS **vẫn xuất hiện** → kiểm **lớp** (`toHaveClass('hidden', 'sm:block')`), đừng kiểm mất chữ.
+- Có nhiều bản cùng nội dung → dùng `getAllByRole` và **đếm số phần tử**. Ở đây đếm lại đúng thành phát biện: mở menu thu gọn là **thêm** một bản (1 → 2), không phải thay thế.
+
+> **Quy tắc:** test phải kiểm **hành vi quan sát được**, không kiểm hệ quả của CSS. `hidden` không phải hành vi — "bản menu thu gọn chỉ tồn tại khi bấm nút" mới là hành vi.
