@@ -86,7 +86,7 @@ export default function Login(): JSX.Element {
 
       <p className="mt-4 text-sm text-gray-600">
         Chưa có tài khoản?{' '}
-        <Link to="/register" className="font-medium text-brand-700 hover:underline">
+        <Link to="/register" className="font-medium text-amber-700 hover:underline">
           Đăng ký ngay
         </Link>
       </p>

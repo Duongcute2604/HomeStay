@@ -8,21 +8,27 @@
 
 /**
  * Loại phòng. Backend serialize enum thành SỐ — đừng so sánh chuỗi.
+ * 3 concept: Cozy (ấm cúng), Japandi (tối giản), Signature (đẳng cấp).
  */
 export const RoomType = {
-  STANDARD: 0,
-  DELUXE: 1,
-  FAMILY: 2,
-  SUITE: 3,
+  COZY: 0,
+  JAPANDI: 1,
+  SIGNATURE: 2,
 } as const
 export type RoomType = (typeof RoomType)[keyof typeof RoomType]
 
 /** Nhãn tiếng Việt cho loại phòng, dùng chung mọi màn hình. */
 export const NHAN_LOAI_PHONG: Record<RoomType, string> = {
-  [RoomType.STANDARD]: 'Tiêu chuẩn',
-  [RoomType.DELUXE]: 'Cao cấp',
-  [RoomType.FAMILY]: 'Gia đình',
-  [RoomType.SUITE]: 'Hạng nhà',
+  [RoomType.COZY]: 'Cozy',
+  [RoomType.JAPANDI]: 'Japandi',
+  [RoomType.SIGNATURE]: 'Signature',
+}
+
+/** Mô tả từng concept phòng — hiện trong tooltip hoặc trang chi tiết. */
+export const MO_TA_LOAI_PHONG: Record<RoomType, string> = {
+  [RoomType.COZY]: 'Ấm cúng, riêng tư, trốn phố cực chill',
+  [RoomType.JAPANDI]: 'Tối giản, tinh tế, ngập tràn cảm giác healing',
+  [RoomType.SIGNATURE]: 'Trùm cuối đẳng cấp với view ngắm máy bay 360 độ',
 }
 
 /**

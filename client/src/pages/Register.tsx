@@ -129,7 +129,7 @@ export default function Register(): JSX.Element {
 
       <p className="mt-4 text-sm text-gray-600">
         Đã có tài khoản?{' '}
-        <Link to="/login" className="font-medium text-brand-700 hover:underline">
+        <Link to="/login" className="font-medium text-amber-700 hover:underline">
           Đăng nhập
         </Link>
       </p>

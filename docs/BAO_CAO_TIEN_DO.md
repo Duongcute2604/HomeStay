@@ -16,13 +16,13 @@
 | | 4 | Dữ liệu mẫu (4 tài khoản, 3 địa điểm, 10 phòng, 15 đơn, 6 đánh giá) + 8 ảnh SVG | ✅ 17/17 kịch bản (HP/AB/EC) | 55 pass (thêm 28) | ✅ Xong (29/09) |
 | 29/09 | 5 | Tài khoản (đăng ký/đăng nhập/hồ sơ) — **Backend** | ✅ 51/51 kịch bản (HP/EC/AB) | 147 pass (thêm 92) | ✅ Xong (29/09) |
 | 30/09 | 5 | Tài khoản — **giao diện** (16 file FE) | ✅ 18/20 ca (HP/EC/AB), 2 ca hoãn có lý do | 147 pass (không đổi) | ✅ Xong (30/09) |
-| | 6 | Xem địa điểm | ⬜ | ⬜ | ⬜ Chưa làm |
-| | 7 | Tìm kiếm & lọc phòng | ⬜ | ⬜ | ⬜ Chưa làm |
-| | 8 | Chi tiết phòng | ⬜ | ⬜ | ⬜ Chưa làm |
-| | 9 | Kiểm tra phòng trống | ⬜ | ⬜ | ⬜ Chưa làm |
-| | 10 | Đặt phòng theo giờ / ngày | ⬜ | ⬜ | ⬜ Chưa làm |
-| | 11 | Đơn của tôi, hủy đơn, lịch sử | ⬜ | ⬜ | ⬜ Chưa làm |
-| | 12 | Admin: địa điểm, tiện nghi, phòng, ảnh | ⬜ | ⬜ | ⬜ Chưa làm |
+| | 6 | Xem địa điểm | ✅ 3/3 (HP/EC/AB) | +14 | ✅ Xong (30/09) |
+| | 7 | Tìm kiếm & lọc phòng | ✅ 3/3 (HP/EC/AB) | +16 | ✅ Xong (30/09) |
+| | 8 | Chi tiết phòng | ✅ 3/3 (HP/EC/AB) | +10 | ✅ Xong (30/09) |
+| | 9 | Kiểm tra phòng trống | ✅ 3/3 (HP/EC/AB) | +22 | ✅ Xong (30/09) |
+| | 10 | Đặt phòng theo giờ / ngày | ✅ 3/3 (HP/EC/AB) | +61 | ✅ Xong (30/09) |
+| | 11 | Đơn của tôi, hủy đơn, lịch sử | ✅ 3/3 (HP/EC/AB) | +54 | ✅ Xong (30/09) |
+| 30/09 | 12 | **Admin quản lý danh mục** (Cơ sở / Phòng / Khách hàng) | ✅ 3/3 mỗi API + 3/3 trên trình duyệt | **288 pass (thêm 50)** | ✅ Xong (30/09) |
 | | 13 | Admin: xác nhận/check-in/check-out | ⬜ | ⬜ | ⬜ Chưa làm |
 | | 14 | Admin: khóa tài khoản khách | ⬜ | ⬜ | ⬜ Chưa làm |
 | | 15 | Dashboard thống kê | ⬜ | ⬜ | ⬜ Chưa làm |
@@ -100,3 +100,6 @@
 | 30/09 | 8 | Chi tiet phong: mo rong response locations + route /locations/:csDiaDiem/rooms/:csPhong (anh lon, tien nghi, danh gia, khung chon ngay + gia tam tinh) | 8/8 ca, console sach, mobile 390px | Backend 32/32 (them 7), frontend 135/135 (them 24) | Xong (30/09) |
 | 30/09 | 9 | Kiem tra phong trong: GET /api/rooms/availability (6 quy tac) + khung ngay bao trong/ban truc tiep | 8/8 ca, console sach, mobile 390px | Backend 17/17, frontend 143/143 (them 8) | Xong (30/09) |
 | 30/09 | 10 | Dat phong theo gio/ngay: POST /api/bookings (transaction SERIALIZABLE, snapshot gia, lich su, ma HS-YYMMDD-XXXX) + trang /booking | 10/10 ca (2 tab chi 1 don), console sach, mobile 390px | Backend 27/27, frontend 160/160 (them 17) | Xong (30/09) |
+| 30/09 | 11 | Don cua toi: GET /api/bookings/my, GET /api/bookings/{code}, POST /api/bookings/{code}/cancel + trang /bookings va /bookings/:code | 8/8 ca, console sach, mobile 390px | Backend 238/238, frontend 177/177 | Xong (30/09) |
+| 30/09 | 12 | **Admin quan tri danh muc**: 3 bo API `/api/admin/{locations,rooms,customers}` (CRUD day du, chan xoa khi con phong/khong cho khoa admin) + 3 trang `/admin/{facilities,rooms,customers}` voi AdminLayout rieng | API 8/8 kich ban (HP/EC/AB); giao dien 3/3 (mo form + validate rong + xoa 2 buoc bi tu choi) | Backend **288/288** (them 50), frontend 177/177 giu nguyen | Xong (30/09) |
+| 30/09 | 12 | **Phat hien loi cua lượt truoc (quan trong):** 22 anh trong `public/images/rooms/{cozy,japandi,signature}/` KHONG phai anh phong ma la poster quang cao cua du an khac ("Nha o Hem"). Da xem truc tiep `cozy-1.jpg`, `cozy-2.jpg`, `cozy-3.jpg`, `signature-1.jpg` de xac nhan | Da sua duong dan trong seed + CSDL sang bộ anh moi (anh chinh + anh phu theo concept); **ANH CHUA DUNG NOI DUNG, can thay anh that** | ⏸ Cho user chon nguon anh |

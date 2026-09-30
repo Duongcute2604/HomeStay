@@ -115,19 +115,19 @@ export default function Booking(): JSX.Element {
           {NHAN_CACH_THUE[loai]} · {formatNgay(donDaTao.checkIn)} → {formatNgay(donDaTao.checkOut)}
           <br />
           {donDaTao.guestCount} khách · Tổng tiền:{' '}
-          <span className="number-vn font-semibold text-brand-700">
+          <span className="number-vn font-semibold text-amber-700">
             {formatVnd(donDaTao.totalAmount)}
           </span>
         </p>
         <p className="mt-2 text-sm text-amber-600">
           Đơn đang chờ quản trị viên xác nhận. Hãy giữ lại mã đơn để tra cứu.
         </p>
-        <div className="mt-4 flex justify-center gap-3">
+        <div className="mt-4 flex flex-wrap justify-center gap-3">
+          <Link to={`/bookings/${donDaTao.code}`} className="btn-primary">
+            Xem đơn của tôi
+          </Link>
           <Link to="/" className="btn-outline">
             Về trang chủ
-          </Link>
-          <Link to="/locations" className="btn-outline">
-            Xem địa điểm khác
           </Link>
         </div>
       </div>
@@ -180,7 +180,7 @@ export default function Booking(): JSX.Element {
         </p>
         <p className="number-vn mt-1 text-right text-sm text-gray-700">
           Tạm tính: {donVi} {loai === BookingType.HOUR ? 'giờ' : 'ngày'} ×{' '}
-          <span className="font-semibold text-brand-700">{formatVnd(tamTinh)}</span>
+          <span className="font-semibold text-amber-700">{formatVnd(tamTinh)}</span>
         </p>
         {tinhTrang && (
           <p

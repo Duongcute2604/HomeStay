@@ -230,7 +230,7 @@ public class SeedDataTests
 
         List<Room> phongList = await db.Rooms.AsNoTracking().ToListAsync();
 
-        Assert.Equal(4, phongList.Select(x => x.RoomType).Distinct().Count());
+        Assert.Equal(3, phongList.Select(x => x.RoomType).Distinct().Count());
         Assert.Equal(5, phongList.Select(x => x.Status).Distinct().Count());
     }
 

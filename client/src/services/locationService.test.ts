@@ -34,7 +34,7 @@ const diaDiemMau: Location = {
     {
       name: 'Phòng Tiêu Chuẩn',
       roomNumber: 'P01',
-      roomType: RoomType.STANDARD,
+      roomType: RoomType.COZY,
       capacity: 2,
       pricePerHour: 120000,
       pricePerDay: 900000,

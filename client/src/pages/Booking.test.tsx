@@ -36,7 +36,7 @@ const taoDonMock = vi.mocked(bookingService.taoDon)
 const phongMau = {
   name: 'Phòng Hạnh Phúc',
   roomNumber: 'A101',
-  roomType: RoomType.STANDARD,
+  roomType: RoomType.COZY,
   capacity: 2,
   pricePerHour: 90000,
   pricePerDay: 550000,

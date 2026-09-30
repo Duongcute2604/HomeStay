@@ -1,0 +1,93 @@
+/**
+ * Kiểu dữ liệu phía giao diện cho trang quản trị (Bước 12).
+ *
+ * Nguồn là `server/StayEasy/DTOs/AdminDtos.cs`.
+ *
+ * Khác với kiểu phía khách, các kiểu ở đây CÓ `id`. Lý do: trang quản trị
+ * cần gọi `PUT /api/admin/rooms/{id}` — không có khoá thì không sửa được.
+ * Quy tắc "không hiển thị Id" của AGENTS.md 6.3 vẫn giữ: `id` chỉ nằm trong
+ * payload, không bao giờ render ra màn hình (STT tự tính, đơn hiện bằng mã).
+ */
+
+import type { RoomStatus, RoomType } from './location'
+
+/** Một cơ sở trong trang quản trị. */
+export interface AdminLocation {
+  id: number
+  name: string
+  city: string
+  province: string
+  address: string
+  description: string | null
+  imageUrl: string | null
+  isActive: boolean
+  totalRooms: number
+}
+
+/** Dữ liệu form tạo / sửa cơ sở. */
+export interface FacilityPayload {
+  name: string
+  city: string
+  province: string
+  address: string
+  description?: string
+  imageUrl?: string
+  isActive: boolean
+}
+
+/** Một phòng trong trang quản trị. */
+export interface AdminRoom {
+  id: number
+  locationName: string
+  name: string
+  roomNumber: string
+  roomType: RoomType
+  capacity: number
+  pricePerHour: number
+  pricePerDay: number
+  description: string | null
+  status: RoomStatus
+  images: string[]
+  amenityIds: number[]
+  amenityNames: string[]
+}
+
+/** Dữ liệu form tạo / sửa phòng. */
+export interface RoomPayload {
+  locationId: number
+  name: string
+  roomNumber: string
+  roomType: RoomType
+  capacity: number
+  pricePerHour: number
+  pricePerDay: number
+  description?: string
+  imageUrls: string[]
+  amenityIds: number[]
+}
+
+/** Một khách hàng trong trang quản trị. */
+export interface Customer {
+  id: number
+  fullName: string
+  email: string
+  phoneNumber: string | null
+  isLocked: boolean
+  createdAt: string
+  totalBookings: number
+}
+
+/** Dữ liệu form tạo khách hàng (Admin nhập tay). */
+export interface CustomerPayload {
+  fullName: string
+  email: string
+  phoneNumber?: string
+  password: string
+}
+
+/** Một tiện nghi trong danh mục, dùng cho checkbox ở form phòng. */
+export interface Amenity {
+  id: number
+  name: string
+  icon: string | null
+}

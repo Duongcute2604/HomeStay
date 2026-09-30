@@ -11,7 +11,7 @@ import Input from '../components/common/Input'
 import { schemaTimKiem, type TimKiemForm } from '../schemas/roomSchemas'
 import { locationService } from '../services/locationService'
 import { roomService } from '../services/roomService'
-import { NHAN_LOAI_PHONG, NHAN_TRANG_THAI_PHONG, RoomStatus, RoomType } from '../types/location'
+import { MO_TA_LOAI_PHONG, NHAN_LOAI_PHONG, NHAN_TRANG_THAI_PHONG, RoomStatus, RoomType } from '../types/location'
 import { LOC_MAC_DINH, NHAN_SAP_XEP, SortOption, type SearchFilters } from '../types/room'
 import { formatDiem, formatVnd } from '../utils/format'
 
@@ -202,7 +202,19 @@ export default function Rooms(): JSX.Element {
 
       <div className="mt-5">
         {isPending ? (
-          <p className="mt-8 text-center text-sm text-gray-500">Đang tìm phòng...</p>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="card overflow-hidden">
+                <div className="skeleton h-36 w-full" />
+                <div className="p-4 space-y-2">
+                  <div className="skeleton h-4 w-3/4" />
+                  <div className="skeleton h-3 w-1/2" />
+                  <div className="skeleton h-3 w-2/3" />
+                  <div className="skeleton h-6 w-1/3 ml-auto" />
+                </div>
+              </div>
+            ))}
+          </div>
         ) : isError ? (
           <div className="card mx-auto mt-8 max-w-md p-6 text-center">
             <p className="text-sm text-red-600">{layThongBaoLoi(error)}</p>
@@ -233,13 +245,13 @@ export default function Rooms(): JSX.Element {
                   <Link
                     key={`${trangHienTai}-${chiSo}`}
                     to={`/locations/${phong.locationIndex}/rooms/${phong.roomIndex}`}
-                    className="card overflow-hidden transition hover:shadow-md"
+                    className="card card-phong overflow-hidden"
                   >
                     {phong.thumbnailUrl ? (
                       <img
                         src={phong.thumbnailUrl}
                         alt={phong.name}
-                        className="h-36 w-full object-cover"
+                        className="card-phong-img h-36 w-full object-cover"
                         loading="lazy"
                       />
                     ) : (
@@ -265,13 +277,18 @@ export default function Rooms(): JSX.Element {
                         </span>
                       </div>
 
-                      <p className="mt-1 text-left text-sm text-gray-500">
-                        {NHAN_LOAI_PHONG[phong.roomType]} · Phòng {phong.roomNumber} · Tối đa{' '}
-                        {phong.capacity} khách
-                        {phong.ratingCount > 0 && (
-                          <> · ★ {formatDiem(phong.ratingAvg)} ({phong.ratingCount} đánh giá)</>
-                        )}
-                      </p>
+                      <div className="mt-1">
+                        <p className="text-left text-sm text-amber-700 font-medium">
+                          {NHAN_LOAI_PHONG[phong.roomType]} · Phòng {phong.roomNumber} · Tối đa{' '}
+                          {phong.capacity} khách
+                          {phong.ratingCount > 0 && (
+                            <> · ★ {formatDiem(phong.ratingAvg)} ({phong.ratingCount} đánh giá)</>
+                          )}
+                        </p>
+                        <p className="text-left text-xs text-amber-600 mt-0.5 italic">
+                          {MO_TA_LOAI_PHONG[phong.roomType]}
+                        </p>
+                      </div>
 
                       <div className="mt-3 flex items-baseline justify-end gap-4 text-sm">
                         <span className="number-vn text-right text-gray-600">

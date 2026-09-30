@@ -65,4 +65,26 @@ public static class ErrorMessages
     public const string MatKhauMoiQuaDai = "Mật khẩu mới không được vượt quá 100 ký tự";
     public const string KhongTimThayNguoiDung = "Không tìm thấy thông tin tài khoản";
     public const string LoiHeThong = "Đã xảy ra lỗi. Vui lòng thử lại sau";
+
+    // ----- Quản trị: cơ sở, phòng, khách hàng -----
+
+    public const string KhongTimThayCoSo = "Không tìm thấy cơ sở";
+    public const string TenCoSoRong = "Vui lòng nhập tên cơ sở";
+    public const string TenCoSoQuaDai = "Tên cơ sở không được vượt quá 150 ký tự";
+    public const string DiaChiCoSoRong = "Vui lòng nhập địa chỉ cơ sở";
+    public const string KhongXoaCoSoDangCoPhong = "Không thể xoá cơ sở đang có phòng. Vui lòng xoá hoặc chuyển các phòng trước";
+
+    public const string TenPhongRong = "Vui lòng nhập tên phòng";
+    public const string TenPhongQuaDai = "Tên phòng không được vượt quá 150 ký tự";
+    public const string MoTaPhongQuaDai = "Mô tả phòng không được vượt quá 1000 ký tự";
+    public const string SoPhongQuaDai = "Số phòng không được vượt quá 20 ký tự";
+    public const string SoKhachKhongHopLe = "Số khách tối đa phải từ 1 đến 20";
+    public const string GiaGioKhongHopLe = "Giá theo giờ phải lớn hơn 0";
+    public const string GiaNgayKhongHopLe = "Giá theo ngày phải lớn hơn 0";
+    public const string AnhPhongQuaNhieu = "Mỗi phòng chỉ được tải tối đa 10 ảnh";
+    public const string TienNghiKhongHopLe = "Có tiện nghi không tồn tại trong danh mục";
+    public const string KhongXoaPhongDangCoDon = "Không thể xoá phòng đã có đơn đặt. Vui lòng chuyển phòng sang bảo trì";
+
+    public const string KhongTimThayKhach = "Không tìm thấy khách hàng";
+    public const string KhongDuQuyenThaoTac = "Chỉ quản trị viên mới được thực hiện thao tác này";
 }

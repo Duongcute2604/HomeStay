@@ -61,7 +61,7 @@ public static class TestDataBuilder
             LocationId = location.Id,
             Name = $"Phòng {roomNumber}",
             RoomNumber = roomNumber,
-            RoomType = RoomType.STANDARD,
+            RoomType = RoomType.COZY,
             Capacity = 2,
             PricePerHour = 120_000m,
             PricePerDay = 900_000m,

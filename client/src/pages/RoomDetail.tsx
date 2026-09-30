@@ -4,6 +4,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 
 import { layThongBaoLoi } from '../api/client'
 import Button from '../components/common/Button'
+import Lightbox from '../components/common/Lightbox'
 import type { LuaChonThue } from '../components/RoomDateFrame'
 import RoomDateFrame from '../components/RoomDateFrame'
 import { BookingType } from '../utils/pricing'
@@ -89,11 +90,11 @@ export default function RoomDetail(): JSX.Element {
   return (
     <div>
       <nav className="text-sm text-gray-500">
-        <Link to="/locations" className="text-brand-700 hover:underline">
+        <Link to="/locations" className="text-amber-700 hover:underline">
           Địa điểm
         </Link>
         {' / '}
-        <Link to={`/locations/${soDiaDiem}`} className="text-brand-700 hover:underline">
+        <Link to={`/locations/${soDiaDiem}`} className="text-amber-700 hover:underline">
           {diaDiem.name}
         </Link>
         {' / '}
@@ -167,7 +168,7 @@ export default function RoomDetail(): JSX.Element {
             <span className="number-vn text-right text-gray-600">
               {formatVnd(phong.pricePerHour)}/giờ
             </span>
-            <span className="number-vn text-right text-lg font-semibold text-brand-700">
+            <span className="number-vn text-right text-lg font-semibold text-amber-700">
               {formatVnd(phong.pricePerDay)}/ngày
             </span>
           </div>
@@ -237,21 +238,7 @@ export default function RoomDetail(): JSX.Element {
       )}
 
       {moAnhLon && anhChinh && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
-          onClick={() => setMoAnhLon(false)}
-          role="dialog"
-          aria-label="Xem ảnh lớn"
-        >
-          <img src={anhChinh} alt={phong.name} className="max-h-full max-w-full rounded-lg" />
-          <button
-            type="button"
-            className="absolute right-4 top-4 rounded-full bg-white px-3 py-1 text-sm font-medium"
-            onClick={() => setMoAnhLon(false)}
-          >
-            Đóng
-          </button>
-        </div>
+        <Lightbox src={anhChinh} alt={phong.name} dong={() => setMoAnhLon(false)} />
       )}
     </div>
   )

@@ -23,9 +23,6 @@ public static class DuLieuMau
     /// <summary>Độ khó BCrypt. 11 là mức cân bằng giữa an toàn và tốc độ đăng nhập.</summary>
     private const int DoKhoBcrypt = 11;
 
-    /// <summary>Ảnh nội thất dùng chung cho mọi phòng, đóng vai trò ảnh phụ.</summary>
-    private const string DuongDanAnhNoiThat = "/images/rooms/noi-that-chung.svg";
-
     /// <summary>
     /// 4 tài khoản: 1 Admin + 3 khách.
     /// Tài khoản cuối cố tình để trạng thái LOCKED để khi demo luồng đăng nhập sẽ thấy ngay
@@ -129,25 +126,25 @@ public static class DuLieuMau
         [
             new Room
             {
-                Location = diaDiem, Name = "Phòng Hạnh Phúc", RoomNumber = "A101", RoomType = RoomType.STANDARD,
+                Location = diaDiem, Name = "Phòng Hạnh Phúc", RoomNumber = "A101", RoomType = RoomType.COZY,
                 Capacity = 2, PricePerHour = 90_000m, PricePerDay = 550_000m, Status = RoomStatus.AVAILABLE,
                 Description = "Ban công riêng hướng công viên, hợp khách đi dã ngoại."
             },
             new Room
             {
-                Location = diaDiem, Name = "Phòng Bình Minh", RoomNumber = "A102", RoomType = RoomType.STANDARD,
+                Location = diaDiem, Name = "Phòng Bình Minh", RoomNumber = "A102", RoomType = RoomType.COZY,
                 Capacity = 2, PricePerHour = 85_000m, PricePerDay = 520_000m, Status = RoomStatus.CLEANING,
                 Description = "Sau khi trả phòng cần 2 giờ vệ sinh trước khi nhận khách mới."
             },
             new Room
             {
-                Location = diaDiem, Name = "Phòng Hải Yến", RoomNumber = "A201", RoomType = RoomType.DELUXE,
+                Location = diaDiem, Name = "Phòng Hải Yến", RoomNumber = "A201", RoomType = RoomType.JAPANDI,
                 Capacity = 3, PricePerHour = 130_000m, PricePerDay = 850_000m, Status = RoomStatus.AVAILABLE,
                 Description = "Ban công hướng biển, thích hợp nhóm 3 người."
             },
             new Room
             {
-                Location = diaDiem, Name = "Phòng Xuân Hương", RoomNumber = "A301", RoomType = RoomType.FAMILY,
+                Location = diaDiem, Name = "Phòng Xuân Hương", RoomNumber = "A301", RoomType = RoomType.SIGNATURE,
                 Capacity = 5, PricePerHour = 180_000m, PricePerDay = 1_250_000m, Status = RoomStatus.AVAILABLE,
                 Description = "Phòng lớn 2 giường, có khu sinh hoạt chung cho cả gia đình."
             }
@@ -160,19 +157,19 @@ public static class DuLieuMau
         [
             new Room
             {
-                Location = diaDiem, Name = "Phòng Sương Mù", RoomNumber = "B101", RoomType = RoomType.DELUXE,
+                Location = diaDiem, Name = "Phòng Sương Mù", RoomNumber = "B101", RoomType = RoomType.JAPANDI,
                 Capacity = 2, PricePerHour = 150_000m, PricePerDay = 950_000m, Status = RoomStatus.BOOKED,
                 Description = "Cửa sổ toàn cảnh thung lũng, yên tĩnh, hợp làm việc."
             },
             new Room
             {
-                Location = diaDiem, Name = "Phòng Hoa Tử Đài", RoomNumber = "B102", RoomType = RoomType.STANDARD,
+                Location = diaDiem, Name = "Phòng Hoa Tử Đài", RoomNumber = "B102", RoomType = RoomType.COZY,
                 Capacity = 2, PricePerHour = 100_000m, PricePerDay = 600_000m, Status = RoomStatus.MAINTENANCE,
                 Description = "Đang sửa điều hòa, tạm thời không nhận đặt phòng."
             },
             new Room
             {
-                Location = diaDiem, Name = "Phòng Đồi Thông", RoomNumber = "B201", RoomType = RoomType.FAMILY,
+                Location = diaDiem, Name = "Phòng Đồi Thông", RoomNumber = "B201", RoomType = RoomType.SIGNATURE,
                 Capacity = 4, PricePerHour = 200_000m, PricePerDay = 1_350_000m, Status = RoomStatus.AVAILABLE,
                 Description = "Nhà 2 tầng, thích hợp tiệc cưới gia đình nhỏ."
             }
@@ -185,19 +182,19 @@ public static class DuLieuMau
         [
             new Room
             {
-                Location = diaDiem, Name = "Phòng Đèn Lồng", RoomNumber = "C101", RoomType = RoomType.STANDARD,
+                Location = diaDiem, Name = "Phòng Đèn Lồng", RoomNumber = "C101", RoomType = RoomType.COZY,
                 Capacity = 2, PricePerHour = 95_000m, PricePerDay = 580_000m, Status = RoomStatus.OCCUPIED,
                 Description = "Khách đang ở lại, không nhận đặt thêm trong lúc thuê."
             },
             new Room
             {
-                Location = diaDiem, Name = "Phòng Gốm Sứ", RoomNumber = "C102", RoomType = RoomType.DELUXE,
+                Location = diaDiem, Name = "Phòng Gốm Sứ", RoomNumber = "C102", RoomType = RoomType.JAPANDI,
                 Capacity = 3, PricePerHour = 145_000m, PricePerDay = 900_000m, Status = RoomStatus.AVAILABLE,
                 Description = "Trang trí theo phong cách gốm Hội An, tầng 2 có ban công."
             },
             new Room
             {
-                Location = diaDiem, Name = "Phòng Chèo Xe", RoomNumber = "C201", RoomType = RoomType.SUITE,
+                Location = diaDiem, Name = "Phòng Chèo Xe", RoomNumber = "C201", RoomType = RoomType.SIGNATURE,
                 Capacity = 4, PricePerHour = 250_000m, PricePerDay = 1_800_000m, Status = RoomStatus.BOOKED,
                 Description = "Phòng hạng nhà, có phòng khách riêng và bồn tắm nước nóng."
             }
@@ -205,32 +202,43 @@ public static class DuLieuMau
     }
 
     /// <summary>Ảnh đại diện theo loại phòng — mỗi loại một ảnh để phân biệt ngay khi lưới danh sách.</summary>
-    private static string DuongDanAnhChinh(RoomType loai)
+    /// <summary>Ảnh chính và ảnh phụ của từng concept, theo thứ tự giá trị `RoomType`.
+    /// Mảng đánh số nên thêm concept mới chỉ cần thêm một dòng, không sửa hàm bên dưới.</summary>
+    private static readonly (string Chinh, string Phu)[] DuongDanAnhTheoLoai =
     {
-        return loai switch
-        {
-            RoomType.STANDARD => "/images/rooms/phong-tieu-chuan.svg",
-            RoomType.DELUXE => "/images/rooms/phong-cao-cap.svg",
-            RoomType.FAMILY => "/images/rooms/phong-ho-ginh-dinh.svg",
-            RoomType.SUITE => "/images/rooms/phong-hang-nha.svg",
-            _ => throw new ArgumentOutOfRangeException(nameof(loai), loai, "Loại phòng chưa có ảnh đại diện.")
-        };
+        ("/images/rooms/cozy/cozy-1.jpg", "/images/rooms/cozy/cozy-2.jpg"),
+        ("/images/rooms/japandi/japandi-1.jpg", "/images/rooms/japandi/japandi-2.jpg"),
+        ("/images/rooms/signature/signature-1.jpg", "/images/rooms/signature/signature-2.jpg"),
+    };
+
+    /// <summary>
+    /// Ảnh đại diện + ảnh phụ theo concept. Ảnh đầu là ảnh khách thấy trước nên
+    /// thứ tự trong mảng có ý nghĩa, không được đảo.
+    /// </summary>
+    private static (string Chinh, string Phu) DuongDanAnhChinh(RoomType loai)
+    {
+        // Mảng đánh số theo đúng thứ tự giá trị của `RoomType` (COZY = 0).
+        return (int)loai < DuongDanAnhTheoLoai.Length
+            ? DuongDanAnhTheoLoai[(int)loai]
+            : throw new ArgumentOutOfRangeException(nameof(loai), loai, "Loại phòng chưa có ảnh đại diện.");
     }
 
-    /// <summary>Mỗi phòng có 1 ảnh đại diện theo loại phòng và 1 ảnh nội thất chung làm ảnh phụ.</summary>
+    /// <summary>Mỗi phòng có 1 ảnh chính và 1 ảnh phụ, đều theo concept của phòng.</summary>
     public static List<RoomImage> TaoAnhPhong(List<Room> phongList)
     {
         List<RoomImage> anhList = [];
 
         foreach (Room phong in phongList)
         {
+            (string chinh, string phu) = DuongDanAnhChinh(phong.RoomType);
+
             anhList.Add(new RoomImage
             {
-                Room = phong, ImageUrl = DuongDanAnhChinh(phong.RoomType), IsPrimary = true, SortOrder = 0
+                Room = phong, ImageUrl = chinh, IsPrimary = true, SortOrder = 0
             });
             anhList.Add(new RoomImage
             {
-                Room = phong, ImageUrl = DuongDanAnhNoiThat, IsPrimary = false, SortOrder = 1
+                Room = phong, ImageUrl = phu, IsPrimary = false, SortOrder = 1
             });
         }
 

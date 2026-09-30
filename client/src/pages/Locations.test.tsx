@@ -33,7 +33,7 @@ const haiDiaDiem: Location[] = [
       {
         name: 'Phòng Tiêu Chuẩn',
         roomNumber: 'P01',
-        roomType: RoomType.STANDARD,
+        roomType: RoomType.COZY,
         capacity: 2,
         pricePerHour: 120000,
         pricePerDay: 900000,
@@ -49,7 +49,7 @@ const haiDiaDiem: Location[] = [
       {
         name: 'Phòng Cao Cấp',
         roomNumber: 'P02',
-        roomType: RoomType.DELUXE,
+        roomType: RoomType.JAPANDI,
         capacity: 4,
         pricePerHour: 200000,
         pricePerDay: 1500000,

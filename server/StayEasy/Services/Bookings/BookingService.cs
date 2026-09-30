@@ -153,6 +153,188 @@ public class BookingService : IBookingService
         }
     }
 
+    /// <inheritdoc />
+    public async Task<PagedResultDto<MyBookingDto>> LayCuaToiAsync(
+        int userId, int page, int pageSize, CancellationToken ct)
+    {
+        page = Math.Max(page, 1);
+        pageSize = Math.Clamp(pageSize, 1, 50);
+
+        IQueryable<Entities.Booking> query = _db.Bookings
+            .AsNoTracking()
+            .Where(don => don.UserId == userId)
+            .OrderByDescending(don => don.CreatedAt)
+            .ThenByDescending(don => don.Id);
+
+        int tongSo = await query.CountAsync(ct);
+
+        List<MyBookingDto> items = await query
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(don => new MyBookingDto
+            {
+                Code = don.Code,
+                RoomName = don.Room.Name,
+                LocationName = don.Room.Location.Name,
+                BookingType = don.BookingType,
+                CheckIn = don.CheckIn,
+                CheckOut = don.CheckOut,
+                GuestCount = don.GuestCount,
+                TotalAmount = don.TotalAmount,
+                Status = don.Status,
+                CreatedAt = don.CreatedAt,
+            })
+            .ToListAsync(ct);
+
+        return new PagedResultDto<MyBookingDto>
+        {
+            Items = items,
+            Page = page,
+            PageSize = pageSize,
+            TotalItems = tongSo,
+            TotalPages = tongSo == 0 ? 0 : (int)Math.Ceiling(tongSo / (double)pageSize),
+        };
+    }
+
+    /// <inheritdoc />
+    public async Task<BookingDetailDto> LayChiTietAsync(int userId, string code, CancellationToken ct)
+    {
+        Entities.Booking don = await TimDonCuaKhachAsync(userId, code, ct);
+
+        return await ThanhChiTietAsync(don, ct);
+    }
+
+    /// <inheritdoc />
+    public async Task<BookingDetailDto> HuyDonAsync(int userId, string code, string? reason, CancellationToken ct)
+    {
+        Entities.Booking don = await TimDonCuaKhachAsync(userId, code, ct);
+
+        // Chỉ đơn chưa vào sử dụng mới được hủy: đang ở thì phải trả phòng chứ
+        // không được hủy ngang; xong/huỷ/từ chối rồi thì không còn gì để hủy.
+        if (don.Status != BookingStatus.PENDING && don.Status != BookingStatus.CONFIRMED)
+        {
+            throw new AppException(
+                HttpStatusCode.Conflict,
+                "Chỉ được hủy đơn đang chờ xác nhận hoặc đã xác nhận");
+        }
+
+        await using var giaoDich = await _db.Database.BeginTransactionAsync(
+            IsolationLevel.Serializable, ct);
+
+        try
+        {
+            // Tải lại bản THEO DÕI để ghi: `don` ở trên là `AsNoTracking`, gắn nó
+            // bằng `Attach` sẽ vỡ khi context đang giữ sẵn một instance cùng Id
+            // (ví dụ tạo rồi hủy ngay trong cùng một scope). `FirstAsync` trả về
+            // đúng instance đang track nếu có, không thì tải mới và track.
+            Entities.Booking donGhi = await _db.Bookings.FirstAsync(d => d.Id == don.Id, ct);
+
+            BookingStatus trangThaiCu = donGhi.Status;
+            donGhi.Status = BookingStatus.CANCELLED;
+            donGhi.CancelReason = string.IsNullOrWhiteSpace(reason) ? null : reason.Trim();
+            donGhi.UpdatedAt = DateTime.Now;
+
+            // Phòng về trống khi đơn xác nhận bị hủy. Hiện tại phòng luôn
+            // AVAILABLE (Bước 13 mới đổi khi xác nhận) nên đây là no-op, nhưng
+            // viết sẵn cho đúng sau Bước 13. Chỉ đụng `BOOKED` — không đụng
+            // `OCCUPIED` vì đó có thể là đơn khác đang ở.
+            Entities.Room? phong = await _db.Rooms
+                .FirstOrDefaultAsync(p => p.Id == don.RoomId, ct);
+
+            if (phong is not null && phong.Status == RoomStatus.BOOKED)
+            {
+                phong.Status = RoomStatus.AVAILABLE;
+            }
+
+            _db.BookingStatusHistory.Add(new BookingStatusHistory
+            {
+                BookingId = don.Id,
+                FromStatus = trangThaiCu,
+                ToStatus = BookingStatus.CANCELLED,
+                ChangedByUserId = userId,
+                ChangedAt = DateTime.Now,
+            });
+
+            await _db.SaveChangesAsync(ct);
+            await giaoDich.CommitAsync(ct);
+
+            // Đồng bộ lại bản đọc (`don` tải AsNoTracking, `donGhi` mới là bản
+            // đã đổi) — nếu không DTO trả về vẫn mang trạng thái cũ.
+            don.Status = donGhi.Status;
+            don.CancelReason = donGhi.CancelReason;
+            don.UpdatedAt = donGhi.UpdatedAt;
+
+            return await ThanhChiTietAsync(don, ct);
+        }
+        catch
+        {
+            await giaoDich.RollbackAsync(ct);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Tìm đơn theo mã và chủ sở hữu. Đơn của người khác hoặc mã sai đều 404 —
+    /// không để lộ đơn của ai có tồn tại hay không.
+    /// </summary>
+    private async Task<Entities.Booking> TimDonCuaKhachAsync(int userId, string code, CancellationToken ct)
+    {
+        Entities.Booking? don = await _db.Bookings
+            .AsNoTracking()
+            .FirstOrDefaultAsync(d => d.Code == code && d.UserId == userId, ct);
+
+        return don
+            ?? throw new AppException(HttpStatusCode.NotFound, ErrorMessages.KhongTimThayDuLieu);
+    }
+
+    /// <summary>Dựng chi tiết đơn kèm lịch sử (cũ nhất trước).</summary>
+    private async Task<BookingDetailDto> ThanhChiTietAsync(Entities.Booking don, CancellationToken ct)
+    {
+        string tenPhong = await _db.Rooms
+            .AsNoTracking()
+            .Where(phong => phong.Id == don.RoomId)
+            .Select(phong => phong.Name)
+            .FirstAsync(ct);
+
+        string tenDiaDiem = await _db.Rooms
+            .AsNoTracking()
+            .Where(phong => phong.Id == don.RoomId)
+            .Select(phong => phong.Location.Name)
+            .FirstAsync(ct);
+
+        List<BookingHistoryDto> lichSu = await _db.BookingStatusHistory
+            .AsNoTracking()
+            .Where(lich => lich.BookingId == don.Id)
+            .OrderBy(lich => lich.ChangedAt)
+            .ThenBy(lich => lich.Id)
+            .Select(lich => new BookingHistoryDto
+            {
+                FromStatus = lich.FromStatus,
+                ToStatus = lich.ToStatus,
+                ChangedByName = lich.ChangedByUser.FullName,
+                Note = lich.Note,
+                ChangedAt = lich.ChangedAt,
+            })
+            .ToListAsync(ct);
+
+        return new BookingDetailDto
+        {
+            Code = don.Code,
+            RoomName = tenPhong,
+            LocationName = tenDiaDiem,
+            BookingType = don.BookingType,
+            CheckIn = don.CheckIn,
+            CheckOut = don.CheckOut,
+            GuestCount = don.GuestCount,
+            TotalAmount = don.TotalAmount,
+            Status = don.Status,
+            Note = don.Note,
+            CancelReason = don.CancelReason,
+            CreatedAt = don.CreatedAt,
+            History = lichSu,
+        };
+    }
+
     /// <summary>
     /// Sinh mã đơn `HS-yyMMdd-XXXX` với 4 số ngẫu nhiên mật mã, kiểm tồn tại rồi
     /// mới dùng. Unique index trên cột `Code` là chốt chặn cuối nếu vẫn trùng.

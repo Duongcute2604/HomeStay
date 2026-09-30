@@ -58,7 +58,7 @@ describe('roomService.timKiem', () => {
       ...LOC_MAC_DINH,
       keyword: '  Hạnh Phúc  ',
       locationIndex: 0,
-      roomType: RoomType.DELUXE,
+      roomType: RoomType.JAPANDI,
       minPrice: 500000,
       maxPrice: 1000000,
       capacity: 2,

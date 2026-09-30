@@ -65,7 +65,7 @@ export default function LocationDetail(): JSX.Element {
 
   return (
     <div>
-      <Link to="/locations" className="text-sm text-brand-700 hover:underline">
+      <Link to="/locations" className="text-sm text-amber-700 hover:underline">
         ← Danh sách địa điểm
       </Link>
 
@@ -139,7 +139,7 @@ export default function LocationDetail(): JSX.Element {
                   <span className="number-vn text-right text-gray-600">
                     {formatVnd(phong.pricePerHour)}/giờ
                   </span>
-                  <span className="number-vn text-right font-semibold text-brand-700">
+                  <span className="number-vn text-right font-semibold text-amber-700">
                     {formatVnd(phong.pricePerDay)}/ngày
                   </span>
                 </div>

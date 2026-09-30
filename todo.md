@@ -591,10 +591,22 @@ từ query string) nên không có cách kích hoạt. Vẫn cần nói rõ vớ
 | 10 | Giao diện | Route `/booking/:chiSoDiaDiem/:chiSoPhong?loai&checkIn&checkOut` (bọc `ProtectedRoute`) + form số khách/ghi chú + trang thành công hiện `Code` | Query param để F5 không mất. Chưa link "Đơn của tôi" — trang đó thuộc Bước 11, link chết bị cấm |
 | 11 | Nút "Tiếp tục đặt phòng" | Ở trang chi tiết, hiện khi khung báo trống; bấm → sang trang đặt kèm ngày đã chọn | Khung phát lựa chọn ra qua callback `onThayDoi` (Bước 8 đã tách khung để dùng lại) |
 
-### [ ] BƯỚC 11 — Đơn của tôi, hủy đơn, lịch sử
-- **Mục tiêu đo được:** `/api/bookings/my` chỉ trả đơn của chính mình (lấy `userId` từ token) · hủy đơn `PENDING`/`CONFIRMED` đưa phòng về `AVAILABLE` · từ chối hủy đơn `CHECKED_IN` · xem lịch sử trạng thái · 3/3 test tay
+### [ ] BƯỚC 11 — Đơn của tôi, hủy đơn, lịch sử (đang làm 30/09/2026)
+- **Mục tiêu đo được:** `GET /api/bookings/my` chỉ đơn của chính mình · hủy `PENDING`/`CONFIRMED`, từ chối hủy `CHECKED_IN` trở đi · xem lịch sử · 3/3 test tay · **≥ 10 unit test backend** + **≥ 10 unit test frontend**
 - **Bằng chứng:**
 - **Ảnh chụp:**
+
+#### Quyết định đã chốt (trước khi code)
+
+| # | Vấn đề | Chốt | Lý do |
+|---|--------|------|-------|
+| 1 | Định danh đơn trên URL | Dùng `Code` (`/api/bookings/HS-261005-4821/cancel`) | `Code` sinh ra để tra cứu thay `Id` (ghi trong entity). `Id` không bao giờ lộ |
+| 2 | Xem/hủy đơn người khác? | **404** (không phải 403) | Không để lộ đơn của người khác có tồn tại hay không |
+| 3 | Được hủy trạng thái nào? | Chỉ `PENDING`/`CONFIRMED` → `CANCELLED`; còn lại **409** | `CHECKED_IN` đang ở thì phải trả phòng chứ không được huỷ ngang; `COMPLETED/CANCELLED/REJECTED` đã xong |
+| 4 | Phòng về `AVAILABLE` khi hủy? | Chỉ khi phòng đang `BOOKED` mới đặt lại `AVAILABLE` | Hiện tại phòng luôn `AVAILABLE` (Bước 13 mới đổi khi xác nhận) nên đây là no-op, nhưng viết sẵn cho đúng sau Bước 13. Không đụng `OCCUPIED` của đơn khác |
+| 5 | Lý do hủy | Không bắt buộc (`reason?`, ≤ 500) | Giảm ma sát; vẫn lưu để Admin tra cứu |
+| 6 | Danh sách có phân trang? | Có (`page/pageSize`, mặc định 20, tối đa 50), mới nhất trước | `AGENTS.md` 6.4 cấm trả toàn bộ bảng |
+| 7 | Giao diện | `/bookings` (danh sách + hủy 2 bước bấm) · `/bookings/:code` (chi tiết + dòng thời gian lịch sử) · link "Đơn của tôi" khi đã đăng nhập · trang thành công Bước 10 nối link xem đơn | Không link chết: trang thành công sửa thêm link (bước trước để trống đúng vì trang chưa có) |
 
 ---
 

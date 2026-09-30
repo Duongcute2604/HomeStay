@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin - Cơ sở (Wireframe)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <style>[x-cloak]{display:none!important}</style>
+</head>
+<body class="bg-gray-50 min-h-screen" x-data="{
+    selectedFacility: null,
+    openModal: false,
+    editFacility: null,
+    showDeleteConfirm: false,
+    deleteTarget: null,
+    facilities: [
+      { id: 1, name: 'Cơ sở 1 Linh Đàm', address: '123 Đường Lê Văn Lương, phường Hưng Yên', floors: 3, totalRooms: 12, images: ['/images/locations/hung-yen.svg', '/images/locations/hung-yen-2.svg'], isActive: true, rooms: [
+        { name: 'Phòng Hạnh Phúc', number: 'A101', type: 'Tiêu chuẩn', capacity: 2, status: 'AVAILABLE', pricingType: 'hourly', priceHour: 90000, minHours: 3 },
+        { name: 'Phòng Bình Minh', number: 'A102', type: 'Tiêu chuẩn', capacity: 2, status: 'CLEANING', pricingType: 'daily', priceDay: 520000 },
+        { name: 'Phòng Hải Yến', number: 'A201', type: 'Cao cấp', capacity: 3, status: 'AVAILABLE', pricingType: 'hourly', priceHour: 130000, minHours: 3 },
+        { name: 'Phòng Xuân Hương', number: 'A301', type: 'Gia đình', capacity: 5, status: 'AVAILABLE', pricingType: 'daily', priceDay: 1250000 }
+      ]},
+      { id: 2, name: 'Cơ sở 2 Đà Lạt', address: '456 Đường Đặng Thùy Trâm, phường 3, Đà Lạt', floors: 2, totalRooms: 8, images: ['/images/locations/da-lat.svg', '/images/locations/da-lat-2.svg'], isActive: true, rooms: [
+        { name: 'Phòng Sương Mù', number: 'B101', type: 'Cao cấp', capacity: 2, status: 'BOOKED', pricingType: 'hourly', priceHour: 150000, minHours: 3 },
+        { name: 'Phòng Hoa Tử Đài', number: 'B102', type: 'Tiêu chuẩn', capacity: 2, status: 'MAINTENANCE', pricingType: 'daily', priceDay: 600000 }
+      ]},
+      { id: 3, name: 'Cơ sở 3 Hội An', address: '789 Phố cổ Hội An, Quảng Nam', floors: 2, totalRooms: 6, images: ['/images/locations/hoi-an.svg', '/images/locations/hoi-an-2.svg'], isActive: true, rooms: [
+        { name: 'Phòng Đèn Lồng', number: 'C101', type: 'Tiêu chuẩn', capacity: 2, status: 'AVAILABLE', pricingType: 'hourly', priceHour: 95000, minHours: 3 },
+        { name: 'Phòng Gốm Sứ', number: 'C102', type: 'Cao cấp', capacity: 3, status: 'AVAILABLE', pricingType: 'daily', priceDay: 900000 }
+      ]}
+    ],
+    statusLabels: { AVAILABLE: 'Trống', BOOKED: 'Đã đặt', OCCUPIED: 'Đang ở', CLEANING: 'Đang dọn', MAINTENANCE: 'Bảo trì' },
+    statusColors: { AVAILABLE: 'bg-green-100 text-green-700', BOOKED: 'bg-blue-100 text-blue-700', OCCUPIED: 'bg-purple-100 text-purple-700', CLEANING: 'bg-yellow-100 text-yellow-700', MAINTENANCE: 'bg-red-100 text-red-700' },
+    formatPrice(price) {
+      return price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ' ₫'
+    }
+  }">
+  <div class="flex">
+    <aside class="w-64 bg-gray-900 text-white min-h-screen p-4 fixed inset-y-0 left-0 z-40">
+      <h1 class="text-xl font-bold mb-2">StayEasy</h1>
+      <p class="text-xs text-gray-400 mb-8">Admin Panel</p>
+      <nav class="space-y-1">
+        <a href="#" class="flex items-center gap-3 px-4 py-2.5 rounded-lg text-gray-300 hover:bg-gray-800 hover:text-white transition-colors"><span>📊</span> Dashboard</a>
+        <a href="#" class="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-blue-600 text-white"><span>🏢</span> Cơ sở</a>
+        <a href="#" class="flex items-center gap-3 px-4 py-2.5 rounded-lg text-gray-300 hover:bg-gray-800 hover:text-white transition-colors"><span>🛏️</span> Phòng</a>
+        <a href="#" class="flex items-center gap-3 px-4 py-2.5 rounded-lg text-gray-300 hover:bg-gray-800 hover:text-white transition-colors"><span>📋</span> Đơn & Khách</a>
+      </nav>
+    </aside>
+
+    <main class="flex-1 ml-64 p-8">
+      <!-- View: Danh sách cơ sở -->
+      <div x-show="!selectedFacility">
+        <div class="flex justify-between items-center mb-6">
+          <div>
+            <h2 class="text-2xl font-bold text-gray-900">Quản lý cơ sở</h2>
+            <p class="text-sm text-gray-500 mt-1">Tổng cộng <span x-text="facilities.length"></span> cơ sở · Click vào cơ sở để xem phòng</p>
+          </div>
+          <button @click="openModal = true; editFacility = null" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg font-medium transition-colors flex items-center gap-2">
+            <span>+</span> Thêm cơ sở
+          </button>
+        </div>
+
+        <!-- Cards -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <template x-for="fac in facilities" :key="fac.id">
+            <div @click="selectedFacility = fac" class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md hover:border-blue-300 transition-all cursor-pointer group">
+              <div class="h-48 bg-gray-100 relative">
+                <img :src="fac.images[0]" class="w-full h-full object-cover" :alt="fac.name">
+                <div class="absolute top-3 right-3">
+                  <button @click.stop="fac.isActive = !fac.isActive" :class="fac.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'" class="px-3 py-1 rounded-full text-xs font-medium transition-colors">
+                    <span x-text="fac.isActive ? 'Đang hoạt động' : 'Tạm tắt'"></span>
+                  </button>
+                </div>
+                <div class="absolute bottom-3 left-3 bg-black/60 text-white px-3 py-1 rounded-lg text-sm">
+                  <span x-text="fac.floors"></span> tầng · <span x-text="fac.totalRooms"></span> phòng
+                </div>
+                <div class="absolute bottom-3 right-3 bg-blue-600 text-white px-3 py-1 rounded-lg text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                  Xem phòng →
+                </div>
+              </div>
+              <div class="p-5">
+                <h3 class="text-lg font-bold text-gray-900 mb-1 group-hover:text-blue-600 transition-colors" x-text="fac.name"></h3>
+                <p class="text-sm text-gray-500" x-text="fac.address"></p>
+              </div>
+            </div>
+          </template>
+        </div>
+      </div>
+
+      <!-- View: Chi tiết cơ sở (danh sách phòng) -->
+      <div x-show="selectedFacility" x-cloak>
+        <button @click="selectedFacility = null" class="flex items-center gap-2 text-blue-600 hover:text-blue-800 font-medium mb-6 transition-colors">
+          <span>←</span> Quay lại danh sách cơ sở
+        </button>
+
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-6">
+          <div class="h-48 bg-gray-100 relative">
+            <img :src="selectedFacility?.images[0]" class="w-full h-full object-cover" :alt="selectedFacility?.name">
+            <div class="absolute bottom-3 left-3 bg-black/60 text-white px-3 py-1 rounded-lg text-sm">
+              <span x-text="selectedFacility?.floors"></span> tầng · <span x-text="selectedFacility?.totalRooms"></span> phòng
+            </div>
+          </div>
+          <div class="p-6">
+            <h3 class="text-xl font-bold text-gray-900 mb-1" x-text="selectedFacility?.name"></h3>
+            <p class="text-sm text-gray-500" x-text="selectedFacility?.address"></p>
+          </div>
+        </div>
+
+        <div class="flex justify-between items-center mb-4">
+          <h4 class="text-lg font-bold text-gray-900">Danh sách phòng (<span x-text="selectedFacility?.rooms.length"></span>)</h4>
+          <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">+ Thêm phòng vào cơ sở</button>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+          <table class="w-full">
+            <thead class="bg-gray-50 border-b border-gray-200">
+              <tr>
+                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Số phòng</th>
+                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Tên phòng</th>
+                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Loại</th>
+                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Sức chứa</th>
+                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Bảng giá</th>
+                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Trạng thái</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+              <template x-for="room in selectedFacility?.rooms" :key="room.number">
+                <tr class="hover:bg-gray-50 transition-colors">
+                  <td class="px-6 py-4 text-sm font-medium text-gray-900" x-text="room.number"></td>
+                  <td class="px-6 py-4 text-sm text-gray-900" x-text="room.name"></td>
+                  <td class="px-6 py-4">
+                    <span class="px-2.5 py-1 rounded-full text-xs font-medium"
+                          :class="room.type === 'Gia đình' ? 'bg-green-100 text-green-700' : room.type === 'Cao cấp' ? 'bg-purple-100 text-purple-700' : room.type === 'Hạng nhà' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'"
+                          x-text="room.type"></span>
+                  </td>
+                  <td class="px-6 py-4 text-sm text-gray-600" x-text="room.capacity + ' khách'"></td>
+                  <td class="px-6 py-4">
+                    <div x-show="room.pricingType === 'hourly'">
+                      <p class="text-sm font-medium text-gray-900" x-text="formatPrice(room.priceHour) + '/giờ'"></p>
+                      <p class="text-xs text-gray-500" x-text="'Tối thiểu ' + room.minHours + ' giờ'"></p>
+                    </div>
+                    <div x-show="room.pricingType === 'daily'">
+                      <p class="text-sm font-medium text-gray-900" x-text="formatPrice(room.priceDay) + '/ngày'"></p>
+                      <p class="text-xs text-gray-500">14:00 - 12:00</p>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4">
+                    <span class="px-2.5 py-1 rounded-full text-xs font-medium" :class="statusColors[room.status]" x-text="statusLabels[room.status]"></span>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Modal Thêm/Sửa cơ sở -->
+      <div x-show="openModal" x-cloak x-transition.opacity class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div @click.outside="openModal = false" class="bg-white rounded-xl w-full max-w-lg shadow-2xl">
+          <div class="flex justify-between items-center p-6 border-b border-gray-100">
+            <h3 class="text-lg font-bold text-gray-900" x-text="editFacility ? 'Sửa cơ sở' : 'Thêm cơ sở mới'"></h3>
+            <button @click="openModal = false" class="text-gray-400 hover:text-gray-600 transition-colors text-2xl leading-none">&times;</button>
+          </div>
+          <div class="p-6 space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Tên cơ sở *</label>
+              <input type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition" placeholder="VD: Cơ sở 1 Linh Đàm" :value="editFacility?.name || ''">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Địa chỉ *</label>
+              <input type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition" placeholder="VD: 123 Đường Lê Văn Lương, phường Hưng Yên" :value="editFacility?.address || ''">
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Số tầng *</label>
+                <input type="number" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition" value="3" min="1">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Tổng số phòng *</label>
+                <input type="number" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition" value="12" min="1">
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Hình ảnh cơ sở (nhiều ảnh)</label>
+              <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 hover:bg-blue-50 transition-colors cursor-pointer">
+                <span class="text-3xl text-gray-400">📷</span>
+                <p class="text-sm text-gray-500 mt-2">Kéo thả hoặc click để upload nhiều ảnh</p>
+                <p class="text-xs text-gray-400 mt-1">Ảnh đầu tiên sẽ là ảnh đại diện</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <input type="checkbox" id="isActive" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" :checked="editFacility?.isActive ?? true">
+              <label for="isActive" class="text-sm text-gray-700">Đang hoạt động (hiển thị cho khách)</label>
+            </div>
+          </div>
+          <div class="flex justify-end gap-3 p-6 border-t border-gray-100 bg-gray-50 rounded-b-xl">
+            <button @click="openModal = false" class="px-4 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 font-medium transition-colors">Huỷ</button>
+            <button @click="openModal = false" class="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors">Lưu</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Xác nhận xoá -->
+      <div x-show="showDeleteConfirm" x-cloak x-transition.opacity class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl w-full max-w-sm shadow-2xl p-6 text-center">
+          <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span class="text-2xl">⚠️</span>
+          </div>
+          <h3 class="text-lg font-bold text-gray-900 mb-2">Xoá cơ sở?</h3>
+          <p class="text-sm text-gray-500 mb-6">Bạn có chắc muốn xoá <strong x-text="deleteTarget?.name"></strong>? Tất cả phòng trong cơ sở cũng sẽ bị xoá.</p>
+          <div class="flex gap-3">
+            <button @click="showDeleteConfirm = false" class="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium transition-colors">Huỷ</button>
+            <button @click="facilities = facilities.filter(f => f.id !== deleteTarget.id); showDeleteConfirm = false" class="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors">Xoá</button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</body>
+</html>

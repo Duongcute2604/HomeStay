@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin - Địa điểm (Wireframe)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <style>
+    [x-cloak] { display: none !important; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen" x-data="{
+    openModal: false,
+    editLocation: null,
+    showDeleteConfirm: false,
+    deleteTarget: null,
+    locations: [
+      { id: 1, name: 'Hưng Yên Ven Biển', city: 'Hưng Yên', province: 'Hưng Yên', address: 'Đường Lê Văn Lương, phường Hưng Yên', description: 'Homestay cách biển Hưng Yên 300 m, thích hợp nghỉ ngắn ngày cuối tuần.', imageUrl: '/images/locations/hung-yen.svg', isActive: true, roomCount: 4 },
+      { id: 2, name: 'Đà Lạt Đồi Thông', city: 'Đà Lạt', province: 'Lâm Đồng', address: 'Đường Đặng Thùy Trâm, phường 3, thành phố Đà Lạt', description: 'Homestay trên đồi, không khí mát mẻ quanh năm, phù hợp tiệc cưới gia đình.', imageUrl: '/images/locations/da-lat.svg', isActive: true, roomCount: 3 },
+      { id: 3, name: 'Hội An Phố Cổ', city: 'Hội An', province: 'Quảng Nam', address: 'Phố cổ Hội An, phường Hội An', description: 'Nhà cổ cách phố cổ 5 phút đi bộ, tiện tham quan chợ phiêu và ẩm thực.', imageUrl: '/images/locations/hoi-an.svg', isActive: true, roomCount: 3 }
+    ]
+  }">
+
+  <!-- Sidebar -->
+  <div class="flex">
+    <aside class="w-64 bg-gray-900 text-white min-h-screen p-4 fixed inset-y-0 left-0 z-40">
+      <h1 class="text-xl font-bold mb-2">StayEasy</h1>
+      <p class="text-xs text-gray-400 mb-8">Admin Panel</p>
+      <nav class="space-y-1">
+        <a href="#" class="flex items-center gap-3 px-4 py-2.5 rounded-lg text-gray-300 hover:bg-gray-800 hover:text-white transition-colors">
+          <span>📊</span> Dashboard
+        </a>
+        <a href="#" class="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-blue-600 text-white">
+          <span>📍</span> Địa điểm
+        </a>
+        <a href="#" class="flex items-center gap-3 px-4 py-2.5 rounded-lg text-gray-300 hover:bg-gray-800 hover:text-white transition-colors">
+          <span>🏷️</span> Tiện nghi
+        </a>
+        <a href="#" class="flex items-center gap-3 px-4 py-2.5 rounded-lg text-gray-300 hover:bg-gray-800 hover:text-white transition-colors">
+          <span>🛏️</span> Phòng
+        </a>
+        <a href="#" class="flex items-center gap-3 px-4 py-2.5 rounded-lg text-gray-300 hover:bg-gray-800 hover:text-white transition-colors">
+          <span>📋</span> Đơn đặt
+        </a>
+        <a href="#" class="flex items-center gap-3 px-4 py-2.5 rounded-lg text-gray-300 hover:bg-gray-800 hover:text-white transition-colors">
+          <span>👥</span> Khách hàng
+        </a>
+      </nav>
+    </aside>
+
+    <!-- Main -->
+    <main class="flex-1 ml-64 p-8">
+      <!-- Header -->
+      <div class="flex justify-between items-center mb-6">
+        <div>
+          <h2 class="text-2xl font-bold text-gray-900">Quản lý địa điểm</h2>
+          <p class="text-sm text-gray-500 mt-1">Tổng cộng <span x-text="locations.length"></span> địa điểm</p>
+        </div>
+        <button @click="openModal = true; editLocation = null"
+                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg font-medium transition-colors flex items-center gap-2">
+          <span>+</span> Thêm địa điểm
+        </button>
+      </div>
+
+      <!-- Table -->
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <table class="w-full">
+          <thead class="bg-gray-50 border-b border-gray-200">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Địa điểm</th>
+              <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Tỉnh/Thành</th>
+              <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Số phòng</th>
+              <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Trạng thái</th>
+              <th class="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Hành động</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100">
+            <template x-for="loc in locations" :key="loc.id">
+              <tr class="hover:bg-gray-50 transition-colors">
+                <td class="px-6 py-4">
+                  <div class="flex items-center gap-3">
+                    <img :src="loc.imageUrl" class="w-12 h-12 rounded-lg object-cover bg-gray-100" :alt="loc.name">
+                    <div>
+                      <p class="font-medium text-gray-900" x-text="loc.name"></p>
+                      <p class="text-xs text-gray-500" x-text="loc.address"></p>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-6 py-4 text-sm text-gray-600" x-text="loc.province"></td>
+                <td class="px-6 py-4 text-sm text-gray-600" x-text="loc.roomCount + ' phòng'"></td>
+                <td class="px-6 py-4">
+                  <button @click="loc.isActive = !loc.isActive"
+                          :class="loc.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'"
+                          class="px-3 py-1 rounded-full text-xs font-medium transition-colors">
+                    <span x-text="loc.isActive ? 'Đang hoạt động' : 'Tạm tắt'"></span>
+                  </button>
+                </td>
+                <td class="px-6 py-4 text-right">
+                  <button @click="editLocation = loc; openModal = true"
+                          class="text-blue-600 hover:text-blue-800 text-sm font-medium mr-4 transition-colors">Sửa</button>
+                  <button @click="deleteTarget = loc; showDeleteConfirm = true"
+                          class="text-red-600 hover:text-red-800 text-sm font-medium transition-colors">Xoá</button>
+                </td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Modal Thêm/Sửa -->
+      <div x-show="openModal" x-cloak x-transition.opacity class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div @click.outside="openModal = false" class="bg-white rounded-xl w-full max-w-lg shadow-2xl" x-transition>
+          <div class="flex justify-between items-center p-6 border-b border-gray-100">
+            <h3 class="text-lg font-bold text-gray-900" x-text="editLocation ? 'Sửa địa điểm' : 'Thêm địa điểm mới'"></h3>
+            <button @click="openModal = false" class="text-gray-400 hover:text-gray-600 transition-colors text-2xl leading-none">&times;</button>
+          </div>
+          <div class="p-6 space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Tên địa điểm *</label>
+              <input type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition" placeholder="VD: Hưng Yên Ven Biển" :value="editLocation?.name || ''">
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Tỉnh/Thành *</label>
+                <input type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition" placeholder="VD: Hưng Yên" :value="editLocation?.province || ''">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Thành phố *</label>
+                <input type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition" placeholder="VD: Hưng Yên" :value="editLocation?.city || ''">
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Địa chỉ *</label>
+              <input type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition" placeholder="VD: Đường Lê Văn Lương, phường Hưng Yên" :value="editLocation?.address || ''">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Mô tả</label>
+              <textarea rows="3" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition resize-none" placeholder="Mô tả ngắn về địa điểm..." :value="editLocation?.description || ''"></textarea>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">URL ảnh đại diện</label>
+              <input type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition" placeholder="/images/locations/..." :value="editLocation?.imageUrl || ''">
+            </div>
+            <div class="flex items-center gap-2">
+              <input type="checkbox" id="isActive" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" :checked="editLocation?.isActive ?? true">
+              <label for="isActive" class="text-sm text-gray-700">Đang hoạt động (hiển thị cho khách)</label>
+            </div>
+          </div>
+          <div class="flex justify-end gap-3 p-6 border-t border-gray-100 bg-gray-50 rounded-b-xl">
+            <button @click="openModal = false" class="px-4 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 font-medium transition-colors">Huỷ</button>
+            <button @click="openModal = false" class="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors">Lưu</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Xác nhận xoá -->
+      <div x-show="showDeleteConfirm" x-cloak x-transition.opacity class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl w-full max-w-sm shadow-2xl p-6 text-center">
+          <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span class="text-2xl">⚠️</span>
+          </div>
+          <h3 class="text-lg font-bold text-gray-900 mb-2">Xoá địa điểm?</h3>
+          <p class="text-sm text-gray-500 mb-6">Bạn có chắc muốn xoá <strong x-text="deleteTarget?.name"></strong>? Hành động này không thể hoàn tác.</p>
+          <div class="flex gap-3">
+            <button @click="showDeleteConfirm = false" class="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium transition-colors">Huỷ</button>
+            <button @click="locations = locations.filter(l => l.id !== deleteTarget.id); showDeleteConfirm = false" class="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors">Xoá</button>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</body>
+</html>

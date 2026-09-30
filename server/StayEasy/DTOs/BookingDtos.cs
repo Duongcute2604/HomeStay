@@ -74,3 +74,77 @@ public class BookingResponseDto
     /// <summary>Thời điểm tạo đơn.</summary>
     public DateTime CreatedAt { get; set; }
 }
+
+/// <summary>Dữ liệu gửi lên khi khách hủy đơn của chính mình.</summary>
+public class CancelBookingRequest
+{
+    /// <summary>Lý do hủy, không bắt buộc, tối đa 500 ký tự.</summary>
+    [StringLength(500, ErrorMessage = "Lý do hủy không được vượt quá 500 ký tự")]
+    public string? Reason { get; set; }
+}
+
+/// <summary>Một đơn trong danh sách "Đơn của tôi". Không có `Id`.</summary>
+public class MyBookingDto
+{
+    /// <summary>Mã đơn để tra cứu và hủy.</summary>
+    public string Code { get; set; } = string.Empty;
+
+    /// <summary>Tên phòng.</summary>
+    public string RoomName { get; set; } = string.Empty;
+
+    /// <summary>Tên địa điểm.</summary>
+    public string LocationName { get; set; } = string.Empty;
+
+    /// <summary>Cách thuê, dạng số.</summary>
+    public BookingType BookingType { get; set; }
+
+    /// <summary>Thời điểm nhận phòng.</summary>
+    public DateTime CheckIn { get; set; }
+
+    /// <summary>Thời điểm trả phòng.</summary>
+    public DateTime CheckOut { get; set; }
+
+    /// <summary>Số khách.</summary>
+    public int GuestCount { get; set; }
+
+    /// <summary>Tổng tiền đã chốt (VNĐ).</summary>
+    public decimal TotalAmount { get; set; }
+
+    /// <summary>Trạng thái đơn, dạng số.</summary>
+    public BookingStatus Status { get; set; }
+
+    /// <summary>Thời điểm tạo đơn.</summary>
+    public DateTime CreatedAt { get; set; }
+}
+
+/// <summary>Một dòng lịch sử trạng thái của đơn.</summary>
+public class BookingHistoryDto
+{
+    /// <summary>Trạng thái trước, null ở dòng tạo đơn.</summary>
+    public BookingStatus? FromStatus { get; set; }
+
+    /// <summary>Trạng thái sau.</summary>
+    public BookingStatus ToStatus { get; set; }
+
+    /// <summary>Tên người thực hiện (khách hoặc Admin).</summary>
+    public string ChangedByName { get; set; } = string.Empty;
+
+    /// <summary>Ghi chú kèm theo, có thể null.</summary>
+    public string? Note { get; set; }
+
+    /// <summary>Thời điểm đổi.</summary>
+    public DateTime ChangedAt { get; set; }
+}
+
+/// <summary>Chi tiết một đơn kèm toàn bộ lịch sử — dùng `Code` để tra cứu.</summary>
+public class BookingDetailDto : MyBookingDto
+{
+    /// <summary>Ghi chú của khách lúc đặt.</summary>
+    public string? Note { get; set; }
+
+    /// <summary>Lý do hủy/từ chối, có thể null.</summary>
+    public string? CancelReason { get; set; }
+
+    /// <summary>Lịch sử trạng thái, cũ nhất trước.</summary>
+    public List<BookingHistoryDto> History { get; set; } = new();
+}

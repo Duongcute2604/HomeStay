@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Wireframes - Tổng quan</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen p-8">
+  <div class="max-w-4xl mx-auto">
+    <h1 class="text-3xl font-bold text-gray-900 mb-2">StayEasy Admin - Wireframes</h1>
+    <p class="text-gray-500 mb-8">Bộ wireframe tổng quan phần quản trị. Click vào từng trang để xem chi tiết.</p>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <a href="admin-dashboard.html" class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md hover:border-blue-300 transition-all group">
+        <span class="text-4xl mb-4 block">📊</span>
+        <h3 class="text-lg font-bold text-gray-900 group-hover:text-blue-600 transition-colors">Dashboard</h3>
+        <p class="text-sm text-gray-500 mt-1">4 số liệu, biểu đồ doanh thu 12 tháng, tỷ lệ lấp đầy, đơn gần đây</p>
+      </a>
+
+      <a href="admin-facilities.html" class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md hover:border-blue-300 transition-all group">
+        <span class="text-4xl mb-4 block">🏢</span>
+        <h3 class="text-lg font-bold text-gray-900 group-hover:text-blue-600 transition-colors">Cơ sở</h3>
+        <p class="text-sm text-gray-500 mt-1">Card layout, click vào xem danh sách phòng trong cơ sở</p>
+      </a>
+
+      <a href="admin-rooms.html" class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md hover:border-blue-300 transition-all group">
+        <span class="text-4xl mb-4 block">🛏️</span>
+        <h3 class="text-lg font-bold text-gray-900 group-hover:text-blue-600 transition-colors">Phòng</h3>
+        <p class="text-sm text-gray-500 mt-1">Bảng + expand xem tiện nghi, 2 loại bảng giá (giờ/ngày), modal 4 tab</p>
+      </a>
+
+      <a href="admin-customers.html" class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md hover:border-blue-300 transition-all group">
+        <span class="text-4xl mb-4 block">👥</span>
+        <h3 class="text-lg font-bold text-gray-900 group-hover:text-blue-600 transition-colors">Khách hàng</h3>
+        <p class="text-sm text-gray-500 mt-1">Click vào khách hàng xem lịch sử giao dịch + thanh toán, khoá/mở khoá</p>
+      </a>
+    </div>
+
+    <div class="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+      <p class="text-sm text-blue-800">
+        <strong>Lưu ý:</strong> Đây là wireframe tĩnh (không nối API). Dùng để duyệt layout trước khi code React thật.
+      </p>
+    </div>
+  </div>
+</body>
+</html>

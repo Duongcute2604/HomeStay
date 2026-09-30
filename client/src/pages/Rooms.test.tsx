@@ -31,7 +31,7 @@ function phongMau(ten: string): RoomSearchItem {
   return {
     name: ten,
     roomNumber: 'P01',
-    roomType: RoomType.STANDARD,
+    roomType: RoomType.COZY,
     capacity: 2,
     pricePerHour: 120000,
     pricePerDay: 900000,
@@ -75,7 +75,10 @@ describe('Rooms - trang thai', () => {
 
     dungTrang()
 
-    expect(screen.getByText('Đang tìm phòng...')).toBeInTheDocument()
+    // Lúc đang tải, trang hiện khung skeleton (vài thanh xám) thay vì dòng chữ
+    // "Đang tìm phòng...". Kiểm tra theo class `skeleton` vì đó là thứ thực sự
+    // xuất hiện — test khẳng định hành vi, không khẳng định lời thoại.
+    expect(document.querySelectorAll('.skeleton').length).toBeGreaterThan(0)
   })
 
   it('Loi_HienThongBaoVaNutThuLai', async () => {

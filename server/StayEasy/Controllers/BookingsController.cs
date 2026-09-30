@@ -48,6 +48,54 @@ public class BookingsController : ControllerBase
     }
 
     /// <summary>
+    /// Danh sách đơn của chính người đang đăng nhập, mới nhất trước.
+    /// </summary>
+    [HttpGet("my")]
+    [Authorize]
+    [ProducesResponseType(typeof(ApiResponse<PagedResultDto<MyBookingDto>>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> LayCuaToi(
+        [FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken ct = default)
+    {
+        PagedResultDto<MyBookingDto> result =
+            await _bookingService.LayCuaToiAsync(LayUserIdHienTai(), page, pageSize, ct);
+
+        return Ok(ApiResponse<PagedResultDto<MyBookingDto>>.SuccessResponse("Lấy danh sách đơn thành công", result));
+    }
+
+    /// <summary>
+    /// Chi tiết một đơn của chính mình kèm lịch sử trạng thái. Tra cứu bằng `Code`.
+    /// </summary>
+    [HttpGet("{code}")]
+    [Authorize]
+    [ProducesResponseType(typeof(ApiResponse<BookingDetailDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> LayChiTiet(string code, CancellationToken ct)
+    {
+        BookingDetailDto result = await _bookingService.LayChiTietAsync(LayUserIdHienTai(), code, ct);
+
+        return Ok(ApiResponse<BookingDetailDto>.SuccessResponse("Lấy chi tiết đơn thành công", result));
+    }
+
+    /// <summary>
+    /// Khách hủy đơn của chính mình. Chỉ đơn `PENDING`/`CONFIRMED` được hủy.
+    /// </summary>
+    [HttpPost("{code}/cancel")]
+    [Authorize]
+    [ProducesResponseType(typeof(ApiResponse<BookingDetailDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> HuyDon(
+        string code, [FromBody] CancelBookingRequest? request, CancellationToken ct)
+    {
+        // Body được phép rỗng hoàn toàn (lý do không bắt buộc) — `request` null
+        // thì lý do là null, không báo lỗi thiếu body.
+        BookingDetailDto result = await _bookingService.HuyDonAsync(
+            LayUserIdHienTai(), code, request?.Reason, ct);
+
+        return Ok(ApiResponse<BookingDetailDto>.SuccessResponse("Hủy đơn thành công", result));
+    }
+
+    /// <summary>
     /// Lấy định danh người dùng từ access token.
     /// TUYỆT ĐỐI không tin id do client gửi — đổi một con số là đặt đơn hộ người khác.
     /// </summary>

@@ -39,7 +39,7 @@ const motDiaDiem: Location[] = [
       {
         name: 'Phòng Hạnh Phúc',
         roomNumber: 'A101',
-        roomType: RoomType.STANDARD,
+        roomType: RoomType.COZY,
         capacity: 2,
         pricePerHour: 90000,
         pricePerDay: 550000,
@@ -157,12 +157,31 @@ describe('RoomDetail - thu vien anh', () => {
     dungTrangTai('/locations/0/rooms/0')
 
     await screen.findByRole('heading', { name: 'Phòng Hạnh Phúc' })
+    const anhChinh = screen.getByRole('button', { name: /Xem lớn ảnh/ })
+
+    // Chưa bấm thì lightbox chưa có trong DOM.
+    expect(document.querySelector('.lightbox')).toBeNull()
+
+    fireEvent.click(anhChinh)
+    expect(document.querySelector('.lightbox')).not.toBeNull()
+
+    // Bấm ra ngoài ảnh (chính là lớp phủ của lightbox) thì đóng.
+    fireEvent.click(document.querySelector('.lightbox') as HTMLElement)
+    expect(document.querySelector('.lightbox')).toBeNull()
+  })
+
+  it('BamAnhChinh_MoLopPhu_BamEscThiDong', async () => {
+    layDanhSachMock.mockResolvedValue(motDiaDiem)
+
+    dungTrangTai('/locations/0/rooms/0')
+
+    await screen.findByRole('heading', { name: 'Phòng Hạnh Phúc' })
     fireEvent.click(screen.getByRole('button', { name: /Xem lớn ảnh/ }))
+    expect(document.querySelector('.lightbox')).not.toBeNull()
 
-    expect(screen.getByRole('dialog', { name: 'Xem ảnh lớn' })).toBeInTheDocument()
-
-    fireEvent.click(screen.getByRole('button', { name: 'Đóng' }))
-    expect(screen.queryByRole('dialog', { name: 'Xem ảnh lớn' })).not.toBeInTheDocument()
+    // Phím Esc cũng đóng được — cách duy nhất khi không có chuột.
+    fireEvent.keyDown(window, { key: 'Escape' })
+    expect(document.querySelector('.lightbox')).toBeNull()
   })
 })
 

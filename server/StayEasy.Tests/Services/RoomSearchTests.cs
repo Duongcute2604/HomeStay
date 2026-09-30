@@ -89,12 +89,12 @@ public class RoomSearchTests
         RoomService service = TaoService(db);
 
         RoomSearchRequest request = TaoYeuCau();
-        request.RoomType = (int)StayEasy.Enums.RoomType.DELUXE;
+        request.RoomType = (int)StayEasy.Enums.RoomType.JAPANDI;
 
         PagedResultDto<RoomSearchItemDto> result = await service.SearchAsync(request, CancellationToken.None);
 
         Assert.NotEmpty(result.Items);
-        Assert.All(result.Items, phong => Assert.Equal(StayEasy.Enums.RoomType.DELUXE, phong.RoomType));
+        Assert.All(result.Items, phong => Assert.Equal(StayEasy.Enums.RoomType.JAPANDI, phong.RoomType));
     }
 
     [Fact]

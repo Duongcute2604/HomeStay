@@ -1,21 +1,14 @@
-using System.Data;
-using System.Net;
-using Microsoft.EntityFrameworkCore;
 using StayEasy.Common;
-using StayEasy.Data;
 using StayEasy.DTOs;
-using StayEasy.Entities;
-using StayEasy.Enums;
-using StayEasy.Services.Booking;
-using StayEasy.Services.Rooms;
 
 namespace StayEasy.Services.Bookings;
 
 /// <summary>
-/// Nghiệp vụ tạo đơn đặt phòng của khách.
+/// Nghiệp vụ đơn đặt phòng của khách: tạo, xem, hủy.
 ///
 /// Mọi quy tắc về ngày/giờ/trùng lịch tái sử dụng `IRoomService.KiemTraTrongAsync`
 /// thay vì viết lại (DRY) — đặt được hay không do đúng một nơi quyết định.
+/// `userId` luôn lấy từ token, không nhận từ client.
 /// </summary>
 public interface IBookingService
 {
@@ -28,4 +21,24 @@ public interface IBookingService
     /// 409 khi phòng bận trong khoảng đã chọn.
     /// </exception>
     Task<BookingResponseDto> TaoDonAsync(int userId, CreateBookingRequest request, CancellationToken ct);
+
+    /// <summary>
+    /// Danh sách đơn của chính khách, mới nhất trước, có phân trang.
+    /// `userId` lấy từ token — không bao giờ lẫn đơn người khác.
+    /// </summary>
+    Task<PagedResultDto<MyBookingDto>> LayCuaToiAsync(int userId, int page, int pageSize, CancellationToken ct);
+
+    /// <summary>
+    /// Chi tiết một đơn của chính khách kèm lịch sử trạng thái.
+    /// </summary>
+    /// <exception cref="AppException">404 khi mã sai hoặc đơn của người khác.</exception>
+    Task<BookingDetailDto> LayChiTietAsync(int userId, string code, CancellationToken ct);
+
+    /// <summary>
+    /// Khách hủy đơn của chính mình. Chỉ `PENDING`/`CONFIRMED` được hủy.
+    /// </summary>
+    /// <exception cref="AppException">
+    /// 404 khi mã sai hoặc đơn của người khác. 409 khi đơn đã qua bước được hủy.
+    /// </exception>
+    Task<BookingDetailDto> HuyDonAsync(int userId, string code, string? reason, CancellationToken ct);
 }

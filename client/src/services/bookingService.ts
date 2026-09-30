@@ -1,6 +1,7 @@
 import { apiClient, bocDuLieu } from '../api/client'
 import type { ApiResponse } from '../types/auth'
-import type { BookingResult, CreateBookingPayload } from '../types/booking'
+import type { BookingDetail, BookingResult, CreateBookingPayload, MyBooking } from '../types/booking'
+import type { PagedResult } from '../types/room'
 import { BookingType } from '../utils/pricing'
 
 /**
@@ -27,6 +28,32 @@ export const bookingService = {
       // là truthy, `|| undefined` không bắt được.
       note: payload.note?.trim() || undefined,
     })
+    return bocDuLieu(response.data)
+  },
+
+  /** Danh sách đơn của chính người đang đăng nhập, mới nhất trước. */
+  async layCuaToi(page = 1, pageSize = 20): Promise<PagedResult<MyBooking>> {
+    const response = await apiClient.get<ApiResponse<PagedResult<MyBooking>>>(
+      `/bookings/my?page=${page}&pageSize=${pageSize}`,
+    )
+    return bocDuLieu(response.data)
+  },
+
+  /** Chi tiết một đơn của chính mình. Tra cứu bằng `Code`, không dùng `Id`. */
+  async layChiTiet(code: string): Promise<BookingDetail> {
+    const response = await apiClient.get<ApiResponse<BookingDetail>>(
+      `/bookings/${encodeURIComponent(code)}`,
+    )
+    return bocDuLieu(response.data)
+  },
+
+  /** Hủy đơn của chính mình. Lý do không bắt buộc. */
+  async huyDon(code: string, reason?: string): Promise<BookingDetail> {
+    const response = await apiClient.post<ApiResponse<BookingDetail>>(
+      `/bookings/${encodeURIComponent(code)}/cancel`,
+      // Lý do rỗng thì gửi object rỗng — backend cho phép body thiếu lý do.
+      reason?.trim() ? { reason: reason.trim() } : {},
+    )
     return bocDuLieu(response.data)
   },
 }

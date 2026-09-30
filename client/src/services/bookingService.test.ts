@@ -10,15 +10,16 @@ import { BookingType } from '../utils/pricing'
  * sang số của API, và ghi chú rỗng thì không gửi.
  */
 
-const { mockPost } = vi.hoisted(() => ({
+const { mockPost, mockGet } = vi.hoisted(() => ({
   mockPost: vi.fn(),
+  mockGet: vi.fn(),
 }))
 
 vi.mock('../api/client', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../api/client')>()
   return {
     ...actual,
-    apiClient: { post: mockPost },
+    apiClient: { post: mockPost, get: mockGet },
   }
 })
 
@@ -38,6 +39,7 @@ const donMau = {
 
 beforeEach(() => {
   mockPost.mockReset()
+  mockGet.mockReset()
 })
 
 describe('bookingService.taoDon', () => {
@@ -112,5 +114,60 @@ describe('bookingService.taoDon', () => {
         guestCount: 2,
       }),
     ).rejects.toThrow('Phòng đã có người đặt trong khoảng thời gian này')
+  })
+})
+
+describe('bookingService - don cua toi', () => {
+  it('layCuaToi_GoiDungDuongDan_PhanTrang', async () => {
+    const trangMau = { items: [], page: 1, pageSize: 20, totalItems: 0, totalPages: 0 }
+    mockGet.mockResolvedValue({ data: { success: true, message: 'OK', data: trangMau } })
+
+    const ketQua = await bookingService.layCuaToi(2, 10)
+
+    expect(mockGet).toHaveBeenCalledWith('/bookings/my?page=2&pageSize=10')
+    expect(ketQua.page).toBe(1)
+  })
+
+  it('layChiTiet_MaHoaUrl_TraVeChiTiet', async () => {
+    const chiTietMau = { code: 'HS-261005-4821', history: [] }
+    mockGet.mockResolvedValue({ data: { success: true, message: 'OK', data: chiTietMau } })
+
+    const ketQua = await bookingService.layChiTiet('HS-261005-4821')
+
+    expect(mockGet).toHaveBeenCalledWith('/bookings/HS-261005-4821')
+    expect(ketQua.code).toBe('HS-261005-4821')
+  })
+
+  it('huyDon_CoLyDo_GuiLyDoDaTrim', async () => {
+    mockPost.mockResolvedValue({
+      data: { success: true, message: 'OK', data: { code: 'HS-261005-4821', status: 4 } },
+    })
+
+    await bookingService.huyDon('HS-261005-4821', '  Đổi kế hoạch  ')
+
+    expect(mockPost).toHaveBeenCalledWith('/bookings/HS-261005-4821/cancel', {
+      reason: 'Đổi kế hoạch',
+    })
+  })
+
+  it('huyDon_KhongLyDo_GuiObjectRong', async () => {
+    mockPost.mockResolvedValue({
+      data: { success: true, message: 'OK', data: { code: 'HS-261005-4821', status: 4 } },
+    })
+
+    await bookingService.huyDon('HS-261005-4821')
+
+    // Gửi `{}` chứ không gửi `{ reason: undefined }` — backend cho phép thiếu.
+    expect(mockPost).toHaveBeenCalledWith('/bookings/HS-261005-4821/cancel', {})
+  })
+
+  it('huyDon_ThatBai_NemLoi', async () => {
+    mockPost.mockResolvedValue({
+      data: { success: false, message: 'Chỉ được hủy đơn đang chờ xác nhận hoặc đã xác nhận', data: null },
+    })
+
+    await expect(bookingService.huyDon('HS-261005-4821')).rejects.toThrow(
+      'Chỉ được hủy đơn đang chờ xác nhận hoặc đã xác nhận',
+    )
   })
 })

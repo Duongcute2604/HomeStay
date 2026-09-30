@@ -411,19 +411,29 @@
 
 ---
 
-## 8. Admin — quản lý danh mục (Bước 12)
+## 8. Admin — quản lý danh mục (Bước 12) — **30/09/2026**
 
 | # | Loại | Kịch bản | Kỳ vọng | Thực tế | Kết quả |
 |---|------|----------|---------|---------|---------|
-| 1 | AU | Khách gõ URL `/admin/rooms` | Bị chặn | | |
-| 2 | HP | Thêm 1 địa điểm mới | Lưu được, khách thấy ngay ở trang chủ | | |
-| 3 | AB | Thêm địa điểm trùng tên | Báo lỗi trùng | | |
-| 4 | AB | Xóa địa điểm đang có phòng | Bị từ chối, báo lý do | | |
-| 5 | HP | Thêm phòng mới + 3 tiện nghi + 2 ảnh | Khách tìm thấy phòng này | | |
-| 6 | AB | Nhập giá âm hoặc 0 | Bị chặn bởi validate | | |
-| 7 | AB | Xóa phòng đang có đơn chưa hoàn tất | Bị từ chối | | |
-| 8 | EC | STT bảng admin qua 2 trang | Liên tục 1, 2, 3… không bị lặp | | |
-| 9 | AB | Tạo tiện nghi trùng tên | Bị chặn | | |
+| 1 | AU | Khách gõ URL `/admin/rooms` | Bị chặn, đưa về trang chủ | `ProtectedRoute` chặn khi `role !== ADMIN`; backend `[Authorize(Roles = "ADMIN")]` chặn tiếp | ✅ |
+| 2 | HP | Admin tạo cơ sở mới qua API | Lưu được, `totalRooms = 0` | `{"success":true,"message":"Tạo cơ sở thành công","totalRooms":0}` | ✅ |
+| 3 | AB | Sửa cơ sở + tắt hoạt động | Cập nhật đúng tên, `isActive = false` | `name="Homestay Test B12 - Đã sửa", isActive=false` | ✅ |
+| 4 | AB | Tạo cơ sở với tên rỗng | 400 kèm thông báo tiếng Việt | HTTP 400 `{"success":false,"message":"Vui lòng nhập tên cơ sở"}` | ✅ |
+| 5 | AB | Xoá cơ sở **đang có phòng** | Bị từ chối, báo lý do | HTTP 400 `"Không thể xoá cơ sở đang có phòng. Vui lòng xoá hoặc chuyển các phòng trước"` | ✅ |
+| 6 | EC | Xoá cơ sở đã rỗng | Xoá được | HTTP 200 `"Xoá cơ sở thành công"` | ✅ |
+| 7 | HP | Tạo phòng + 2 ảnh + 2 tiện nghi | Ảnh đầu là ảnh chính, tiện nghi gắn đủ | `images: [cozy-1.jpg, cozy-2.jpg]`, `amenityNames: ["WiFi miễn phí","Máy lạnh"]`, `status: 0` | ✅ |
+| 8 | AB | Tạo phòng với giá giờ = 0 | Bị chặn | HTTP 400 `"Giá theo giờ phải lớn hơn 0"` | ✅ |
+| 9 | HP | Đổi trạng thái phòng sang `MAINTENANCE` | Chỉ đổi trạng thái, không đụng tên/giá | `status: 4`, `name` và `pricePerHour` giữ nguyên | ✅ |
+| 10 | AB | Xoá phòng đã có đơn | Bị từ chối, giữ nguyên phòng | HTTP 400 `"Không thể xoá phòng đã có đơn đặt. Vui lòng chuyển phòng sang bảo trì"`; kiểm CSDL phòng vẫn còn | ✅ |
+| 11 | AB | Tạo khách với email đã tồn tại | 409 Conflict | HTTP 409 `"Email này đã được đăng ký. Vui lòng đăng nhập hoặc dùng email khác"` | ✅ |
+| 12 | HP | Tạo khách mới + danh sách khách | Không lẫn tài khoản Admin | 4 khách, `totalBookings` lần lượt 6/4/5/0 — không có dòng nào là `admin@stayeasy.vn` | ✅ |
+| 13 | GIAO DIỆN | `/admin/facilities` — 3 cơ sở, 10 phòng | Bảng hiển thị đúng, STT tự tính | Header "Tổng 3 cơ sở · 10 phòng"; STT 1, 2, 3; **không hiển thị Id** | ✅ |
+| 14 | GIAO DIỆN | Mở form "Thêm cơ sở", bấm Lưu khi tên rỗng | Chặn ngay, chưa gọi API | Hiện đỏ "Vui lòng nhập tên cơ sở" trong form, danh sách không đổi | ✅ |
+| 15 | GIAO DIỆN | Bấm "Xoá" cơ sở đang có phòng | Bấm 1 lần hỏi lại, bấm 2 lần mới xoá | Nút đổi thành "Chắc chắn xoá?"; sau cú bấm 2 hiện đỏ "Không thể xoá cơ sở đang có phòng…" | ✅ |
+| 16 | GIAO DIỆN | `/admin/rooms` — 10 phòng | Giá đúng định dạng VND, căn phải | "90.000 ₫", "1.800.000 ₫" căn phải; concept hiện Cozy / Japandi / Signature | ✅ |
+| 17 | GIAO DIỆN | `/admin/rooms` — đổi trạng thái bằng dropdown | Ô chọn hiện 5 trạng thái tiếng Việt | "Còn trống / Đã được đặt / Đang có khách / Đang dọn dẹp / Bảo trì" | ✅ |
+
+> **Lỗi phát hiện trong lúc kiểm thử:** 22 ảnh trong `public/images/rooms/{cozy,japandi,signature}/` **không phải ảnh phòng** mà là poster quảng cáo của một dự án khác ("Nhà Ở Hẻm": banner, bản đồ tiện ích, poster khuyến mãi). Xem trực tiếp `cozy-1.jpg`, `cozy-2.jpg`, `cozy-3.jpg`, `signature-1.jpg` để xác nhận. Đường dẫn trong seed + CSDL đã sửa sang bộ ảnh mới, nhưng **nội dung ảnh vẫn cần thay bằng ảnh thật**.
 
 ---
 

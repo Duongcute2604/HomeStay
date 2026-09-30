@@ -20,7 +20,7 @@ public class Room
     public string RoomNumber { get; set; } = string.Empty;
 
     /// <summary>Loại phòng.</summary>
-    public RoomType RoomType { get; set; } = RoomType.STANDARD;
+    public RoomType RoomType { get; set; } = RoomType.COZY;
 
     /// <summary>Số khách tối đa phòng chịu được.</summary>
     public int Capacity { get; set; }

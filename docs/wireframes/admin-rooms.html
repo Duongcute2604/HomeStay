@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin - Phòng (Wireframe)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <style>[x-cloak]{display:none!important}</style>
+</head>
+<body class="bg-gray-50 min-h-screen" x-data="{
+    openModal: false,
+    editRoom: null,
+    showDeleteConfirm: false,
+    deleteTarget: null,
+    activeTab: 'basic',
+    pricingType: 'hourly',
+    expandedRoom: null,
+    rooms: [
+      { id: 1, name: 'Phòng Hạnh Phúc', facility: 'Cơ sở 1 Linh Đàm', roomNumber: 'A101', type: 'Tiêu chuẩn', capacity: 2, pricingType: 'hourly', priceHour: 90000, minHours: 3, status: 'AVAILABLE', hasBooking: false, images: ['/images/rooms/phong-tieu-chuan.svg', '/images/rooms/noi-that-chung.svg'], amenities: ['WiFi miễn phí', 'Máy lạnh', 'Nhà tắm riêng', 'Giường king', 'Chỗ đỗ xe máy'] },
+      { id: 2, name: 'Phòng Bình Minh', facility: 'Cơ sở 1 Linh Đàm', roomNumber: 'A102', type: 'Tiêu chuẩn', capacity: 2, pricingType: 'daily', priceDay: 520000, status: 'CLEANING', hasBooking: true, images: ['/images/rooms/phong-tieu-chuan.svg', '/images/rooms/noi-that-chung.svg'], amenities: ['WiFi miễn phí', 'Máy lạnh', 'Nhà tắm riêng', 'Giường king', 'Chỗ đỗ xe máy'] },
+      { id: 3, name: 'Phòng Hải Yến', facility: 'Cơ sở 1 Linh Đàm', roomNumber: 'A201', type: 'Cao cấp', capacity: 3, pricingType: 'hourly', priceHour: 130000, minHours: 3, status: 'AVAILABLE', hasBooking: false, images: ['/images/rooms/phong-cao-cap.svg', '/images/rooms/noi-that-chung.svg'], amenities: ['WiFi miễn phí', 'Máy lạnh', 'Nhà tắm riêng', 'Giường king', 'Bồn tắm nước nóng', 'Chỗ đỗ xe máy'] },
+      { id: 4, name: 'Phòng Xuân Hương', facility: 'Cơ sở 1 Linh Đàm', roomNumber: 'A301', type: 'Gia đình', capacity: 5, pricingType: 'daily', priceDay: 1250000, status: 'AVAILABLE', hasBooking: false, images: ['/images/rooms/phong-ho-gia-dinh.svg', '/images/rooms/noi-that-chung.svg'], amenities: ['WiFi miễn phí', 'Máy lạnh', 'Nhà tắm riêng', 'Giường king', 'Bếp chung', 'Bàn làm việc', 'Chỗ đỗ xe máy'] },
+      { id: 5, name: 'Phòng Sương Mù', facility: 'Cơ sở 2 Đà Lạt', roomNumber: 'B101', type: 'Cao cấp', capacity: 2, pricingType: 'hourly', priceHour: 150000, minHours: 3, status: 'BOOKED', hasBooking: true, images: ['/images/rooms/phong-cao-cap.svg', '/images/rooms/noi-that-chung.svg'], amenities: ['WiFi miễn phí', 'Máy lạnh', 'Nhà tắm riêng', 'Giường king', 'Bồn tắm nước nóng', 'Chỗ đỗ xe máy'] },
+      { id: 6, name: 'Phòng Hoa Tử Đài', facility: 'Cơ sở 2 Đà Lạt', roomNumber: 'B102', type: 'Tiêu chuẩn', capacity: 2, pricingType: 'daily', priceDay: 600000, status: 'MAINTENANCE', hasBooking: true, images: ['/images/rooms/phong-tieu-chuan.svg', '/images/rooms/noi-that-chung.svg'], amenities: ['WiFi miễn phí', 'Máy lạnh', 'Nhà tắm riêng', 'Giường king', 'Chỗ đỗ xe máy'] }
+    ],
+    allAmenities: ['WiFi miễn phí', 'Máy lạnh', 'Nhà tắm riêng', 'Giường king', 'Chỗ đỗ xe máy', 'Bếp chung', 'Bàn làm việc', 'Bồn tắm nước nóng', 'Bồn tắm riêng', 'TV', 'Tủ lạnh', 'Nước nóng', 'Sofa', 'Máy chiếu phim', 'Ban công', 'Tủ quần áo', 'Đèn đọc sách', 'Két sắt', 'Máy pha cà phê'],
+    statusLabels: { AVAILABLE: 'Trống', BOOKED: 'Đã đặt', OCCUPIED: 'Đang ở', CLEANING: 'Đang dọn', MAINTENANCE: 'Bảo trì' },
+    statusColors: { AVAILABLE: 'bg-green-100 text-green-700', BOOKED: 'bg-blue-100 text-blue-700', OCCUPIED: 'bg-purple-100 text-purple-700', CLEANING: 'bg-yellow-100 text-yellow-700', MAINTENANCE: 'bg-red-100 text-red-700' },
+    formatPrice(price) {
+      return price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ' ₫'
+    }
+  }">
+  <div class="flex">
+    <aside class="w-64 bg-gray-900 text-white min-h-screen p-4 fixed inset-y-0 left-0 z-40">
+      <h1 class="text-xl font-bold mb-2">StayEasy</h1>
+      <p class="text-xs text-gray-400 mb-8">Admin Panel</p>
+      <nav class="space-y-1">
+        <a href="#" class="flex items-center gap-3 px-4 py-2.5 rounded-lg text-gray-300 hover:bg-gray-800 hover:text-white transition-colors"><span>📊</span> Dashboard</a>
+        <a href="#" class="flex items-center gap-3 px-4 py-2.5 rounded-lg text-gray-300 hover:bg-gray-800 hover:text-white transition-colors"><span>🏢</span> Cơ sở</a>
+        <a href="#" class="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-blue-600 text-white"><span>🛏️</span> Phòng</a>
+        <a href="#" class="flex items-center gap-3 px-4 py-2.5 rounded-lg text-gray-300 hover:bg-gray-800 hover:text-white transition-colors"><span>📋</span> Đơn đặt</a>
+        <a href="#" class="flex items-center gap-3 px-4 py-2.5 rounded-lg text-gray-300 hover:bg-gray-800 hover:text-white transition-colors"><span>👥</span> Khách hàng</a>
+      </nav>
+    </aside>
+
+    <main class="flex-1 ml-64 p-8">
+      <div class="flex justify-between items-center mb-6">
+        <div>
+          <h2 class="text-2xl font-bold text-gray-900">Quản lý phòng</h2>
+          <p class="text-sm text-gray-500 mt-1">Tổng cộng <span x-text="rooms.length"></span> phòng · Click mũi tên để xem tiện nghi</p>
+        </div>
+        <button @click="openModal = true; editRoom = null; activeTab = 'basic'; pricingType = 'hourly'" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg font-medium transition-colors flex items-center gap-2">
+          <span>+</span> Thêm phòng
+        </button>
+      </div>
+
+      <!-- Table -->
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <table class="w-full">
+          <thead class="bg-gray-50 border-b border-gray-200">
+            <tr>
+              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase w-10"></th>
+              <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Phòng</th>
+              <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Cơ sở</th>
+              <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Loại</th>
+              <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Bảng giá</th>
+              <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Trạng thái</th>
+              <th class="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Hành động</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100">
+            <template x-for="room in rooms" :key="room.id">
+              <template>
+                <!-- Main Row -->
+                <tr class="hover:bg-gray-50 transition-colors" :class="expandedRoom === room.id ? 'bg-blue-50/50' : ''">
+                  <td class="px-4 py-4">
+                    <button @click="expandedRoom = expandedRoom === room.id ? null : room.id"
+                            class="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center transition-all"
+                            :class="expandedRoom === room.id ? 'rotate-180' : ''">
+                      <svg class="w-4 h-4 text-gray-500 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                      </svg>
+                    </button>
+                  </td>
+                  <td class="px-6 py-4">
+                    <div class="flex items-center gap-3">
+                      <img :src="room.images[0]" class="w-12 h-12 rounded-lg object-cover bg-gray-100" :alt="room.name">
+                      <div>
+                        <p class="font-medium text-gray-900" x-text="room.name"></p>
+                        <p class="text-xs text-gray-500" x-text="'Phòng ' + room.roomNumber + ' · Tối đa ' + room.capacity + ' khách'"></p>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 text-sm text-gray-600" x-text="room.facility"></td>
+                  <td class="px-6 py-4">
+                    <span class="px-2.5 py-1 rounded-full text-xs font-medium"
+                          :class="room.type === 'Gia đình' ? 'bg-green-100 text-green-700' : room.type === 'Cao cấp' ? 'bg-purple-100 text-purple-700' : room.type === 'Hạng nhà' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'"
+                          x-text="room.type"></span>
+                  </td>
+                  <td class="px-6 py-4">
+                    <div x-show="room.pricingType === 'hourly'">
+                      <p class="text-sm font-medium text-gray-900" x-text="formatPrice(room.priceHour) + '/giờ'"></p>
+                      <p class="text-xs text-gray-500" x-text="'Tối thiểu ' + room.minHours + ' giờ'"></p>
+                    </div>
+                    <div x-show="room.pricingType === 'daily'">
+                      <p class="text-sm font-medium text-gray-900" x-text="formatPrice(room.priceDay) + '/ngày'"></p>
+                      <p class="text-xs text-gray-500">14:00 - 12:00</p>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4">
+                    <span class="px-2.5 py-1 rounded-full text-xs font-medium" :class="statusColors[room.status]" x-text="statusLabels[room.status]"></span>
+                  </td>
+                  <td class="px-6 py-4 text-right">
+                    <button @click="editRoom = room; openModal = true; activeTab = 'basic'; pricingType = room.pricingType" class="text-blue-600 hover:text-blue-800 text-sm font-medium mr-4 transition-colors">Sửa</button>
+                    <button @click="deleteTarget = room; showDeleteConfirm = true" :disabled="room.hasBooking"
+                            :class="room.hasBooking ? 'text-gray-300 cursor-not-allowed' : 'text-red-600 hover:text-red-800'"
+                            class="text-sm font-medium transition-colors">Xoá</button>
+                  </td>
+                </tr>
+                <!-- Expanded Row: Tiện nghi -->
+                <tr x-show="expandedRoom === room.id" x-transition>
+                  <td colspan="7" class="px-6 py-4 bg-blue-50/30">
+                    <div class="ml-12">
+                      <p class="text-xs font-semibold text-gray-500 uppercase mb-3">Tiện nghi của phòng (<span x-text="room.amenities.length"></span>)</p>
+                      <div class="flex flex-wrap gap-2">
+                        <template x-for="amenity in room.amenities" :key="amenity">
+                          <span class="px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 flex items-center gap-1.5">
+                            <span class="text-green-500">✓</span>
+                            <span x-text="amenity"></span>
+                          </span>
+                        </template>
+                      </div>
+                      <div class="mt-3 flex gap-2">
+                        <button @click="editRoom = room; openModal = true; activeTab = 'amenities'" class="text-xs text-blue-600 hover:text-blue-800 font-medium transition-colors">Chỉnh sửa tiện nghi →</button>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              </template>
+            </template>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Modal Thêm/Sửa -->
+      <div x-show="openModal" x-cloak x-transition.opacity class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div @click.outside="openModal = false" class="bg-white rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
+          <div class="flex justify-between items-center p-6 border-b border-gray-100">
+            <h3 class="text-lg font-bold text-gray-900" x-text="editRoom ? 'Sửa phòng' : 'Thêm phòng mới'"></h3>
+            <button @click="openModal = false" class="text-gray-400 hover:text-gray-600 transition-colors text-2xl leading-none">&times;</button>
+          </div>
+
+          <!-- Tabs -->
+          <div class="border-b border-gray-200 px-6">
+            <nav class="flex gap-6">
+              <button @click="activeTab = 'basic'" :class="activeTab === 'basic' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500 hover:text-gray-700'" class="py-3 text-sm font-medium transition-colors">Thông tin cơ bản</button>
+              <button @click="activeTab = 'pricing'" :class="activeTab === 'pricing' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500 hover:text-gray-700'" class="py-3 text-sm font-medium transition-colors">Bảng giá</button>
+              <button @click="activeTab = 'images'" :class="activeTab === 'images' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500 hover:text-gray-700'" class="py-3 text-sm font-medium transition-colors">Ảnh</button>
+              <button @click="activeTab = 'amenities'" :class="activeTab === 'amenities' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500 hover:text-gray-700'" class="py-3 text-sm font-medium transition-colors">Tiện nghi</button>
+            </nav>
+          </div>
+
+          <div class="p-6">
+            <!-- Tab: Thông tin cơ bản -->
+            <div x-show="activeTab === 'basic'" class="space-y-4">
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Tên phòng *</label>
+                  <input type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition" placeholder="VD: Phòng Hạnh Phúc" :value="editRoom?.name || ''">
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Số phòng *</label>
+                  <input type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition" placeholder="VD: A101" :value="editRoom?.roomNumber || ''">
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Cơ sở *</label>
+                  <select class="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
+                    <option>Cơ sở 1 Linh Đàm</option>
+                    <option>Cơ sở 2 Đà Lạt</option>
+                    <option>Cơ sở 3 Hội An</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Loại phòng *</label>
+                  <select class="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
+                    <option>Tiêu chuẩn</option>
+                    <option>Cao cấp</option>
+                    <option>Gia đình</option>
+                    <option>Hạng nhà</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Sức chứa (khách) *</label>
+                  <input type="number" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition" value="2" min="1">
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Trạng thái</label>
+                  <select class="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
+                    <option value="AVAILABLE">Trống</option>
+                    <option value="BOOKED">Đã đặt</option>
+                    <option value="OCCUPIED">Đang ở</option>
+                    <option value="CLEANING">Đang dọn</option>
+                    <option value="MAINTENANCE">Bảo trì</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Mô tả</label>
+                <textarea rows="3" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition resize-none" placeholder="Mô tả về phòng..."></textarea>
+              </div>
+            </div>
+
+            <!-- Tab: Bảng giá -->
+            <div x-show="activeTab === 'pricing'" class="space-y-6">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-3">Loại bảng giá *</label>
+                <div class="flex gap-4">
+                  <label class="flex-1 cursor-pointer">
+                    <input type="radio" name="pricingType" value="hourly" x-model="pricingType" class="peer sr-only">
+                    <div class="border-2 rounded-xl p-4 transition-all" :class="pricingType === 'hourly' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'">
+                      <p class="font-semibold text-gray-900">Theo giờ</p>
+                      <p class="text-xs text-gray-500 mt-1">Tối thiểu 3 giờ, tính tiền theo giờ</p>
+                    </div>
+                  </label>
+                  <label class="flex-1 cursor-pointer">
+                    <input type="radio" name="pricingType" value="daily" x-model="pricingType" class="peer sr-only">
+                    <div class="border-2 rounded-xl p-4 transition-all" :class="pricingType === 'daily' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'">
+                      <p class="font-semibold text-gray-900">Theo ngày</p>
+                      <p class="text-xs text-gray-500 mt-1">Check-in 14:00, check-out 12:00 hôm sau</p>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              <div x-show="pricingType === 'hourly'" class="space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Giá mỗi giờ (₫) *</label>
+                    <input type="number" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition" value="120000">
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Số giờ tối thiểu *</label>
+                    <input type="number" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition" value="3" min="1">
+                  </div>
+                </div>
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <p class="text-sm text-blue-800"><strong>Ví dụ:</strong> Khách thuê 5 giờ → tính 5 × 120.000 = 600.000 ₫</p>
+                </div>
+              </div>
+
+              <div x-show="pricingType === 'daily'" class="space-y-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Giá mỗi ngày (₫) *</label>
+                  <input type="number" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition" value="900000">
+                </div>
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <p class="text-sm text-blue-800"><strong>Quy ước:</strong> Check-in sau 14:00, check-out trước 12:00 hôm sau. Khách ở qua đêm tính 1 ngày.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tab: Ảnh -->
+            <div x-show="activeTab === 'images'" class="space-y-4">
+              <p class="text-sm text-gray-500">Ảnh đầu tiên sẽ là ảnh đại diện. Kéo thả hoặc click để upload.</p>
+              <div class="grid grid-cols-4 gap-3">
+                <template x-for="i in 4" :key="i">
+                  <div class="relative aspect-video bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 hover:border-blue-400 hover:bg-blue-50 transition-colors cursor-pointer flex items-center justify-center">
+                    <div class="text-center">
+                      <span class="text-2xl text-gray-400">+</span>
+                      <p class="text-xs text-gray-400 mt-1">Thêm ảnh</p>
+                    </div>
+                    <div x-show="i <= 2" class="absolute inset-0 bg-gray-200 rounded-lg flex items-center justify-center">
+                      <span class="text-xs text-gray-500">Ảnh <span x-text="i"></span></span>
+                    </div>
+                    <button x-show="i === 1" class="absolute top-1 right-1 bg-blue-600 text-white text-xs px-2 py-0.5 rounded">Đại diện</button>
+                  </div>
+                </template>
+              </div>
+            </div>
+
+            <!-- Tab: Tiện nghi -->
+            <div x-show="activeTab === 'amenities'" class="space-y-4">
+              <p class="text-sm text-gray-500">Chọn tiện nghi cho phòng này. Mỗi phòng có thể có bộ tiện nghi khác nhau.</p>
+              <div class="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto border border-gray-200 rounded-lg p-4">
+                <template x-for="amenity in allAmenities" :key="amenity">
+                  <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded transition-colors">
+                    <input type="checkbox" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                    <span class="text-sm text-gray-700" x-text="amenity"></span>
+                  </label>
+                </template>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex justify-end gap-3 p-6 border-t border-gray-100 bg-gray-50 rounded-b-xl">
+            <button @click="openModal = false" class="px-4 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 font-medium transition-colors">Huỷ</button>
+            <button @click="openModal = false" class="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors">Lưu</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Xác nhận xoá -->
+      <div x-show="showDeleteConfirm" x-cloak x-transition.opacity class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl w-full max-w-sm shadow-2xl p-6 text-center">
+          <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span class="text-2xl">⚠️</span>
+          </div>
+          <h3 class="text-lg font-bold text-gray-900 mb-2">Xoá phòng?</h3>
+          <p class="text-sm text-gray-500 mb-6">Bạn có chắc muốn xoá <strong x-text="deleteTarget?.name"></strong>? Hành động này không thể hoàn tác.</p>
+          <div class="flex gap-3">
+            <button @click="showDeleteConfirm = false" class="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium transition-colors">Huỷ</button>
+            <button @click="rooms = rooms.filter(r => r.id !== deleteTarget.id); showDeleteConfirm = false" class="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors">Xoá</button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</body>
+</html>

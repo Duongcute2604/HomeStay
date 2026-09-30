@@ -88,7 +88,7 @@ export default function Locations(): JSX.Element {
                 <div className="mt-3 flex items-center justify-between text-sm">
                   <span className="text-gray-500">{diaDiem.rooms.length} phòng</span>
                   {giaThapNhat !== null && (
-                    <span className="number-vn text-right font-semibold text-brand-700">
+                    <span className="number-vn text-right font-semibold text-amber-700">
                       Từ {formatVnd(giaThapNhat)}/ngày
                     </span>
                   )}

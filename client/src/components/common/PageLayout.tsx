@@ -20,10 +20,14 @@ export default function PageLayout({ children }: { children: React.ReactNode }):
 
   return (
     <div className="flex min-h-screen flex-col bg-gray-50">
-      <header className="border-b border-gray-200 bg-white">
+      <header className="border-b border-amber-100 bg-white/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-3">
-          <Link to="/" className="text-lg font-bold text-brand-700">
-            StayEasy
+          <Link to="/" className="flex items-center gap-2">
+            <img src="/images/logo.jpg" alt="StayEasy" className="h-9 w-9 rounded-lg object-cover" />
+            <div>
+              <span className="text-lg font-bold text-amber-700">StayEasy</span>
+              <p className="text-xs text-amber-500 -mt-0.5">Homestay</p>
+            </div>
           </Link>
 
           <nav className="flex items-center gap-4 text-sm">
@@ -39,6 +43,9 @@ export default function PageLayout({ children }: { children: React.ReactNode }):
 
             {daDangNhap ? (
               <>
+                <Link to="/bookings" className="text-gray-600 hover:text-brand-700">
+                  Đơn của tôi
+                </Link>
                 <Link to="/profile" className="text-gray-600 hover:text-brand-700">
                   Hồ sơ
                 </Link>
@@ -66,8 +73,8 @@ export default function PageLayout({ children }: { children: React.ReactNode }):
 
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6">{children}</main>
 
-      <footer className="border-t border-gray-200 py-4 text-center text-xs text-gray-400">
-        Đồ án 4 · Nguyễn Hải Nam — 12523W.1
+      <footer className="border-t border-amber-100 py-4 text-center text-xs text-amber-600">
+        © 2026 StayEasy — Hệ thống đặt phòng &amp; quản lý homestay
       </footer>
     </div>
   )

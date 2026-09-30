@@ -68,7 +68,7 @@ describe('schemaTimKiem', () => {
   })
 
   it('RoomTypeHopLe_ChapNhan', () => {
-    const ketQua = schemaTimKiem.safeParse({ roomType: RoomType.DELUXE })
+    const ketQua = schemaTimKiem.safeParse({ roomType: RoomType.JAPANDI })
 
     expect(ketQua.success).toBe(true)
   })

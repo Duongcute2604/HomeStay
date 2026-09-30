@@ -5,15 +5,12 @@ namespace StayEasy.Enums;
 /// </summary>
 public enum RoomType
 {
-    /// <summary>Phòng tiêu chuẩn.</summary>
-    STANDARD = 0,
+    /// <summary>Phòng Cozy — ấm cúng, riêng tư.</summary>
+    COZY = 0,
 
-    /// <summary>Phòng cao cấp.</summary>
-    DELUXE = 1,
+    /// <summary>Phòng Japandi — tối giản, tinh tế.</summary>
+    JAPANDI = 1,
 
-    /// <summary>Phòng cho gia đình, sức chứa lớn hơn.</summary>
-    FAMILY = 2,
-
-    /// <summary>Phòng hạng nhà.</summary>
-    SUITE = 3
+    /// <summary>Phòng Signature — đẳng cấp, view đẹp.</summary>
+    SIGNATURE = 2
 }
