@@ -632,3 +632,90 @@ Nguyên nhân thật: `recharts` mặc định `isAnimationActive = true`, quét
 | Giao diện | **6/6** PASS |
 | Unit test | Backend **333/333** (thêm 21) · Frontend **208/208** (thêm 10) |
 | Build | `0 Error(s) · 0 Warning(s)` · `npm run build` sạch |
+---
+
+## 12. Bước 16 — Đánh giá & nhận xét (kiểm thử 30/09/2026)
+
+### 12A. Khách ghi đánh giá — API
+
+Đơn dùng để kiểm thử: `HS-260928-0010` (COMPLETED, của khách2, chưa có đánh giá).
+Lệnh dùng: `Invoke-RestMethod` (xem mục 11A về lý do không dùng `curl.exe`).
+
+| # | Loại | Kịch bản | Kỳ vọng | Thực tế | Kết quả |
+|---|------|----------|---------|---------|---------|
+| 1 | HP | Khách đánh giá đơn `COMPLETED` của chính mình | 201, điểm phòng tăng | HTTP 201, `rating=4`, nhận xét `"  Phong sang, nhung ghep am hoi khu rieng.  "` → lưu thành `"Phong sang, nhung ghep am hoi khu rieng."` (**đã cắt khoảng trắng**) | **PASS** |
+| 2 | HP | Điểm phòng sau khi đánh giá | `0.00 / 0` → `4.00 / 1` | `GET /api/rooms/search` trả `ratingAvg=4.00 ratingCount=1` | **PASS** |
+| 3 | HP | Chi tiết đơn báo đã đánh giá | `daDanhGia = true` | `daDanhGia=True`, `danhGiaCuaToi.rating=4` | **PASS** |
+| 4 | EC | Đánh giá lần 2 trên cùng đơn | **409** + thông báo rõ | HTTP 409 `"Bạn đã đánh giá đơn này rồi. Mỗi đơn chỉ được đánh giá một lần"` | **PASS** |
+| 5 | EC | Đánh giá đơn của khách khác | **404** | HTTP 404 (không phải 403 — không lộ đơn người khác có tồn tại) | **PASS** |
+| 6 | EC | Đánh giá đơn `PENDING` | **409** | HTTP 409, thông báo nêu đích danh trạng thái đang có | **PASS** |
+| 7 | EC | `rating = 0` | **400** | HTTP 400 | **PASS** |
+| 8 | EC | `rating = 6` (vượt trần) | **400** | HTTP 400 | **PASS** |
+| 9 | EC | `rating = -1` (số âm) | **400** | HTTP 400 | **PASS** |
+| 10 | EC | Nhận xét 1200 ký tự (vượt 1000) | **400** | HTTP 400 | **PASS** |
+| 11 | EC | Body không gửi `rating` | **400** | HTTP 400 (không phải 500 vì thiếu rồi mặc định thành 5 sao) | **PASS** |
+| 12 | AB | Khách gọi `GET /api/admin/reviews` | **403** | HTTP 403 | **PASS** |
+| 13 | AB | Mã đơn không tồn tại | **404** | HTTP 404 | **PASS** |
+
+### 12B. Admin ẩn / hiện / xoá — API
+
+| # | Loại | Kịch bản | Kỳ vọng | Thực tế | Kết quá |
+|---|------|----------|---------|---------|---------|
+| 1 | HP | Danh sách đánh giá (mới nhất trước) | 7 dòng, sắp theo thời điểm giảm dần | 7 dòng, dòng đầu là đánh giá vừa tạo | **PASS** |
+| 2 | HP | `PATCH /{id}/hide` | Điểm phòng giảm, `phongSoDanhGia` giảm | `phongDiemTrungBinh=0`, `phongSoDanhGia=0`; `rooms/search` xác nhận `ratingAvg=0.00 ratingCount=0` | **PASS** |
+| 3 | HP | `PATCH /{id}/unhide` | Điểm phòng trở lại | `phongDiemTrungBinh=4`, `phongSoDanhGia=1` | **PASS** |
+| 4 | HP | `DELETE /{id}` | Bản ghi mất, điểm tính lại | Tổng đánh giá 7 → 6, `phongDiemTrungBinh=0` | **PASS** |
+| 5 | EC | `?anId=true` | Chỉ đánh giá đang ẩn | 1 dòng | **PASS** |
+| 6 | EC | `?soSao=5` | Chỉ đánh giá 5 sao | 3 dòng | **PASS** |
+| 7 | EC | `?page=0&pageSize=9999` | Tự chuẩn về mặc định | `page=1 pageSize=20`, không lỗi | **PASS** |
+| 8 | AB | Thao tác đánh giá không tồn tại (`id=9999`) | **404** | HTTP 404 cho cả `hide` lẫn `DELETE` | **PASS** |
+
+### 12C. Đối chiếu với SQL trực tiếp
+
+| # | Kiểm tra | Kết quả SQL | Kỳ vọng |
+|---|----------|-------------|---------|
+| 1 | Số bản ghi `Reviews` | `6` | Khớp số API trả về sau khi xoá 1 dòng thử |
+| 2 | Số đơn `COMPLETED` | `9` | — |
+| 3 | Số đơn `COMPLETED` **chưa** có đánh giá | `3` | Khớp |
+| 4 | **Số đơn có > 1 đánh giá** | **`0`** | **Chứng minh unique index giữ được** |
+| 5 | `SHOW INDEX FROM Reviews` | `Non_unique = 0` trên `IX_Reviews_BookingId` | Index **thật sự** là UNIQUE ở tầng CSDL |
+| 6 | Check constraint `CK_Reviews_Rating` | ``((`Rating` >= 1) and (`Rating` <= 5))`` | Đúng thiết kế |
+| 7 | Check constraint `CK_Rooms_Rating` | ``((`RatingAvg` >= 0) and (`RatingAvg` <= 5))`` | Đúng thiết kế |
+
+### 12D. Giao diện
+
+| # | Loại | Kịch bản | Kỳ vọng | Thực tế | Kết quả |
+|---|------|----------|---------|---------|---------|
+| 1 | HP | Khách mở đơn **chưa** đánh giá | Hiện form chấm sao + ô nhận xét | 5 sao rỗng, dòng *"Chưa chọn — hãy chấm số sao trước khi gửi"*, nút Gửi **bị khoá** | **PASS** |
+| 2 | HP | Chấm 4 sao + ghi nhận xét rồi bấm Gửi | Đánh giá lưu, form đổi sang dòng đã đánh giá | Thành công: hiện 4★ + 1☆, `4,0`, nhận xét, thời điểm, và dòng *"Mỗi đơn chỉ được đánh giá một lần"* | **PASS** |
+| 3 | HP | Mở lại đơn đã đánh giá | Không còn form sửa | Chỉ hiện "Đánh giá của bạn", không có nút Gửi | **PASS** |
+| 4 | HP | Trang `/admin/reviews` | Bảng đủ cột, STT tự tính, có nút Ẩn/Xoá | 7 dòng, STT 1–7 (không phải Id), cột Mã đơn hiện `HS-260929-0006` | **PASS** |
+| 5 | HP | Đánh giá đang ẩn trong bảng Admin | Nhãn đổi đúng | Dòng 4 có badge "Đang ẩn" + nút **"Hiện lại"** (không phải "Ẩn") | **PASS** |
+| 6 | HP | Trang chi tiết phòng | Danh sách đánh giá hiện sao kèm **sao rỗng** | Đánh giá 3★ hiện `★★★☆☆` — trước đây chỉ vẽ `★★★` nên không so sánh được với 5★ | **PASS** |
+
+### 12E. Bug phát hiện khi kiểm thử giao diện — đã sửa
+
+Trang chi tiết đơn hiện **"NaN ₫/giờ"** và **"NaN ₫/ngày"** (lỗi có sẵn từ Bước 11, phát hiện khi chụp ảnh Bước 16).
+
+**Nguyên nhân gốc — không phải chỗ hiển thị:**
+`BookingDetail` ở TypeScript khai `pricePerHour`, `pricePerDay` là **bắt buộc**, nhưng `BookingDetailDto` của backend **không gửi** 2 trường đó → giá trị `undefined` → `formatVnd(undefined)` = `NaN`.
+Khai bắt buộc cho trường mà API không gửi khiến `tsc` không bắt được, và mình tin `tsc` sạch là đúng.
+
+**Đã sửa triệt để (không vá chỗ hiện):**
+1. Xoá 6 trường không thuộc về chi tiết đơn khỏi kiểu `BookingDetail` (`pricePerHour`, `pricePerDay`, `description`, `ratingAvg`, `ratingCount`, `reviews`) — chúng là dữ liệu của chi tiết **phòng**.
+2. Thay dòng giá bằng **Tổng tiền** (`totalAmount` — API có sẵn, đúng nghĩa với một đơn).
+3. Thêm `roomNumber` + `capacity` vào `BookingDetailDto` (giao diện đã cần mà thiếu), lấy trong **1** truy vấn thay vì 3.
+4. Thêm test `expect(document.body.textContent).not.toContain('NaN')` chặn hồi quy.
+
+**Xác nhận:** sau khi sửa, trang hiện `Theo giờ · Phòng C101 · Tối đa 2 khách` và `Tổng tiền 1.160.000 ₫`.
+
+### 12F. Tổng kết
+
+| Hạng mục | Kết quả |
+|----------|---------|
+| API khách ghi đánh giá | **13/13** PASS |
+| API Admin ẩn/hiện/xoá | **8/8** PASS |
+| Đối chiếu SQL | **7/7** khớp (1 đơn `SHOW INDEX` chứng minh unique index) |
+| Giao diện | **6/6** PASS |
+| Unit test | Backend **358/358** (thêm 25) · Frontend **244/244** (thêm 36) |
+| Build | `0 Error(s) · 0 Warning(s)` · `npm run build` sạch |

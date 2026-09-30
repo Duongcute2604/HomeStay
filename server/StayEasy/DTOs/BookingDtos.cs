@@ -147,4 +147,30 @@ public class BookingDetailDto : MyBookingDto
 
     /// <summary>Lịch sử trạng thái, cũ nhất trước.</summary>
     public List<BookingHistoryDto> History { get; set; } = new();
+
+    /// <summary>
+    /// Số phòng thực tế, ví dụ `A101`.
+    /// </summary>
+    /// <remarks>
+    /// Thêm ở Bước 16: trước đó giao diện hiện số phòng nhưng DTO không có trường
+    /// này nên chỗ trống — kiểu `BookingDetail` ở TypeScript khai nó là bắt buộc
+    /// dù API không gửi, và TypeScript không bắt được lỗi đó.
+    /// </remarks>
+    public string RoomNumber { get; set; } = string.Empty;
+
+    /// <summary>Sức chứa của phòng, để khách nhớ mình đặt phòng mấy người.</summary>
+    public int Capacity { get; set; }
+
+    /// <summary>
+    /// Đơn này đã có đánh giá của chính người đang xem hay chưa.
+    /// </summary>
+    /// <remarks>
+    /// Giao diện dựa vào cờ này để quyết định hiện form đánh giá hay hiện dòng
+    /// "Bạn đã đánh giá". Không có cờ này thì hoặc phải để khách bấm gửi rồi mới
+    /// nhận 409, hoặc phải thêm một endpoint riêng chỉ để hỏi câu "đánh giá chưa".
+    /// </remarks>
+    public bool DaDanhGia { get; set; }
+
+    /// <summary>Đánh giá của chính người đang xem, null khi chưa đánh giá.</summary>
+    public MyReviewDto? DanhGiaCuaToi { get; set; }
 }

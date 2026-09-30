@@ -15,6 +15,7 @@ using StayEasy.Services.Admin;
 using StayEasy.Services.Auth;
 using StayEasy.Services.Bookings;
 using StayEasy.Services.Locations;
+using StayEasy.Services.Reviews;
 using StayEasy.Services.Rooms;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -143,6 +144,12 @@ builder.Services.AddScoped<IAdminRoomService, AdminRoomService>();
 builder.Services.AddScoped<IAdminCustomerService, AdminCustomerService>();
 builder.Services.AddScoped<IAdminBookingService, AdminBookingService>();
 builder.Services.AddScoped<IAdminDashboardService, AdminDashboardService>();
+builder.Services.AddScoped<IAdminReviewService, AdminReviewService>();
+builder.Services.AddScoped<IReviewService, ReviewService>();
+
+// Tính lại điểm phòng dùng chung cho cả khách ghi đánh giá lẫn Admin ẩn/xoá,
+// nên đăng ký 1 instance cho 3 chỗ gọi trong cùng 1 request.
+builder.Services.AddScoped<ReviewScorer>();
 // Job nền: tự chuyển phòng đã vệ sinh xong (CLEANING) sang còn trống.
 builder.Services.AddHostedService<RoomCleaningJob>();
 builder.Services.AddSingleton<IPasswordHasher, PasswordHasher>();

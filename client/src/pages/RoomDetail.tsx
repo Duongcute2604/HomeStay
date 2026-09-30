@@ -6,11 +6,12 @@ import { layThongBaoLoi } from '../api/client'
 import Button from '../components/common/Button'
 import Lightbox from '../components/common/Lightbox'
 import type { LuaChonThue } from '../components/RoomDateFrame'
+import ReviewList from '../components/ReviewList'
 import RoomDateFrame from '../components/RoomDateFrame'
 import { BookingType } from '../utils/pricing'
 import { locationService } from '../services/locationService'
 import { NHAN_LOAI_PHONG, NHAN_TRANG_THAI_PHONG, RoomStatus } from '../types/location'
-import { formatDiem, formatNgay, formatVnd } from '../utils/format'
+import { formatDiem, formatVnd } from '../utils/format'
 
 /**
  * Trang chi tiết một phòng.
@@ -189,27 +190,7 @@ export default function RoomDetail(): JSX.Element {
       )}
 
       <section className="card mt-4 p-4">
-        <h2 className="font-semibold text-gray-900">
-          Đánh giá ({phong.reviews.length})
-        </h2>
-        {phong.reviews.length === 0 ? (
-          <p className="mt-2 text-sm text-gray-500">Phòng này chưa có đánh giá nào.</p>
-        ) : (
-          <ul className="mt-2 flex flex-col gap-3">
-            {phong.reviews.map((danhGia, chiSo) => (
-              <li key={chiSo} className="border-b border-gray-100 pb-3 last:border-0">
-                <p className="text-left text-sm">
-                  <span className="font-semibold text-gray-900">{danhGia.reviewerName}</span>
-                  <span className="ml-2 text-amber-500">{'★'.repeat(danhGia.rating)}</span>
-                  <span className="ml-2 text-xs text-gray-400">{formatNgay(danhGia.createdAt)}</span>
-                </p>
-                {danhGia.comment && (
-                  <p className="mt-1 text-left text-sm text-gray-600">{danhGia.comment}</p>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
+        <ReviewList reviews={phong.reviews} />
       </section>
 
       <RoomDateFrame

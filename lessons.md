@@ -1539,3 +1539,90 @@ một phần vòng cung. Nhiều lần chụp liên tiếp đều trúng, nên t
 > **Quy tắc:** payload > 2.000 ký tự thì đừng thử `edit` lần đầu, và **tuyệt đối không
 > xoá dòng trong `todo.md`/`docs/` trước khi đã đọc được file tạm** — lần đầu mình
 > xoá 4 dòng rồi mới chèn, mất trắng mục Bước 15 phải làm lại từ đầu.
+---
+
+## 58. PowerShell: `$lines[-1]` trả phần tử CUỐI, không phải phần tử "không có" — lần này xoá sạch 1 file
+
+**Sai ở đâu:** muốn tìm dòng đánh dấu trong file để chèn nội dung, tôi viết:
+
+```powershell
+$idx = -1
+for (...) { if (khop) { $idx = $i; break } }
+$out = @()
+for ($i = 0; $i -lt $idx; $i++) { $out += $lines[$i] }
+```
+
+Khi không tìm thấy, `$idx = -1`, vòng `for ($i = 0; $i -lt -1; ...)` **không chạy lần nào** → `$out` rỗng → `WriteAllLines` ghi đè file còn **0 dòng**.
+Mất trắng toàn bộ `ReviewDtos.cs`, phải viết lại từ đầu.
+
+**Vì sao dễ rơi vào:** PowerShell cho phép chỉ số âm, nên `$lines[-1]` hợp lệ và trả **phần tử cuối cùng** chứ **không** ném lỗi. Script in ra `$lines[$idx]` là in ra dấu `}` cuối file — trông như "tìm thấy chỗ nào đó" thay vì "không tìm thấy gì".
+
+**Ngay trước đó mình đã mất một lần theo kiểu gần giống** (xoá 4 dòng `todo.md` rồi mới chèn, phải làm lại mục Bước 15). Lần thứ hai là do quên bài học lần đầu.
+
+**Cách sửa / quy tắc:**
+- Dùng `[array]::IndexOf()` hoặc `break` + kiểm tra: `if ($idx -lt 0) { Write-Output "SAO: khong tim thay"; exit 1 }` **trước khi** ghi file.
+- Luôn **đọc lại và đối chiếu số dòng** trước khi `WriteAllLines`:
+  `if ($lines[N].Trim() -ne "dòng-mong-đợi") { exit 1 }` — lệnh này chặn được cả ghi đè nhầm lẫn xoá nhầm.
+- `Select-String -Pattern 'X' -like 'X*'` cũng bẫy: `-like` hiểu `[ ]` là **ký tự lớp**, nên `'### [ ] BƯỚC 16*'` không khớp `### [ ] BƯỚC 16`. Dùng `.StartsWith()`.
+
+---
+
+## 59. Grep phân biệt hoa thường mà quên `-i`, rồi kết luận sai về code của chính mình
+
+**Sai ở đâu:** khi khảo sát trước Bước 16, tôi grep `Reviews|ratingAvg|ratingCount` rồi kết luận: *"giao diện mới chỉ hiện điểm trung bình, **chưa hiện danh sách đánh giá**"* — và viết kết luận đó vào `todo.md`.
+
+**Sự thật:** trang chi tiết phòng **đã có** danh sách đánh giá từ Bước 8, dùng `phong.reviews` (chữ thường). Tôi grep `Reviews` (chữ hoa) nên không thấy dòng `phong.reviews.map(...)`.
+
+**Vì sao nguy hiểm:** đây không phải lỗi kỹ thuật mà là lỗi **kết luận**. Vì tin kết luận sai mà:
+- suýt tạo thêm một component trùng chức năng với cái đã có,
+- ghi vào `todo.md` một nhận định sai — mà báo cáo sẽ lấy từ đó.
+
+**Quy tắc:**
+1. Trước khi viết "cái này **chưa có**" vào tài liệu, **đọc thật file** (`read` / mở file), đừng kết luận từ kết quả grep.
+2. Khi tìm tên khác hoa/thường: grep cả hai, hoặc dùng `-i`.
+3. Câu hỏi tự kiểm: *"mình đã đọc code hay mình đoán?"* — ở đây mình đoán.
+4. Nếu đã viết sai vào tài liệu thì **sửa ngay và ghi lại** để người đọc không tin nhầm.
+
+---
+
+## 60. Kiểu dữ liệu khai sai là nguyên nhân gốc của bug hiển thị — "tsc sạch" không bảo chứng có dữ liệu
+
+**Bug:** trang chi tiết đơn hiện **"NaN ₫/giờ"** và **"NaN ₫/ngày"**.
+
+**Vì sao `npm run build` không bắt được:**
+`BookingDetail` ở TypeScript khai `pricePerHour: number` và `pricePerDay: number` là **bắt buộc**, nhưng `BookingDetailDto` của backend **không gửi** hai trường đó. Kiểu khai sai ⇒ giá trị chạy là `undefined` ⇒ `formatVnd(undefined)` = `NaN`.
+`tsc` không đỏi vì khai sai cũng là khai hợp lệ về hình thức.
+
+**Vì sao lỗi tồn tại lâu:** test cũ khẳng định `screen.getByText(/120\.000/)` — truyền **giá trị giả** vào `bookingService` mock. Test xanh vì dữ liệu mình bịa có đủ trường; dữ liệu thật thì không.
+
+**Đã sửa (không vá chỗ hiển thị):**
+1. Xoá 6 trường không thuộc chi tiết đơn khỏi kiểu (`pricePerHour`, `pricePerDay`, `description`, `ratingAvg`, `ratingCount`, `reviews`).
+2. Thay bằng `totalAmount` — API có sẵn, đúng nghĩa với một đơn.
+3. Thêm `roomNumber` + `capacity` vào DTO thật (giao diện đã cần mà thiếu), lấy trong 1 truy vấn.
+4. Thêm test `expect(document.body.textContent).not.toContain('NaN')` — chốt chặn hồi quy.
+
+> **Quy tắc 1:** kiểu dữ liệu phải khớp **API thật**. Khi một kiểu khai 15 trường nhưng API chỉ gửi 9, hãy xoá 6 trường đó — đừng để chúng nằm đó "cho đủ".
+>
+> **Quy tắc 2:** `tsc` sạch **không** chứng minh có dữ liệu đúng. Kiểm chứng điều đó là bằng **request thật** và nhìn màn hình.
+>
+> **Quy tắc 3:** mock trong test phải **sao chép** response thật. Trước khi viết mock, bọm response API vào rồi dùng luôn — nếu không tự tay thêm trường thì rất dễ thêm cả trường không có thật, và test sẽ bảo vệ cho một thứ không tồn tại.
+
+---
+
+## 61. Phải `SaveChanges` rồi mới đếm lại — truy vấn chưa thấy dữ liệu vừa `Add`
+
+**Sai ở đâu:** `ReviewService.TaoDanhGiaAsync` làm `Add(danhGia)` → `TinhLaiAsync()` → `SaveChangesAsync()`.
+`TinhLaiAsync` đếm bằng truy vấn `SUM/COUNT` nên đánh giá vừa `Add` **chưa có trong CSDL** ⇒ điểm phòng thiếu **đúng đánh giá mới nhất**. Test fail 4/25 với kỳ vọng rất dễ hiểu: `RatingCount` = 0 thay vì 1.
+Y hệt vậy ở `XoaAsync`: `Remove()` rồi đếm ⇒ dòng vừa xoá vẫn còn trong kết quả ⇒ điểm không giảm.
+
+**Cách sửa — thứ tự bắt buộc:**
+```
+1. Add / Remove / đổi IsHidden
+2. SaveChangesAsync      ← ghi thay đổi vào giao dịch
+3. TinhLaiAsync          ← lúc này truy vấn mới thấy dữ liệu mới
+4. SaveChangesAsync      ← lưu điểm vừa tính
+5. Commit
+```
+
+> **Quy tắc:** khi một thao tác **tính lại** số liệu từ dữ liệu vừa thay đổi bằng truy vấn, phải **ghi thay đổi trước, đọc sau**. Cùng nguyên tắc với mục 55: không được đọc CSDL rồi mới kịp ghi.
+> Ngoài ra giữ cả 2 lần `SaveChanges` trong **cùng một transaction** — tách ra thì điểm phòng lệch với danh sách đánh giá trong khoảnh khắc giữa.

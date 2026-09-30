@@ -12,6 +12,29 @@ using StayEasy.Services.Rooms;
 
 namespace StayEasy.Services.Bookings;
 
+/// <summary>
+/// 4 thông tin của phòng cần cho chi tiết đơn: tên phòng, tên cơ sở, số phòng,
+/// sức chứa.
+/// </summary>
+/// <remarks>
+/// Khai báo rõ tên thay vì dùng kiểu ẩn danh, vì chỗ gọi đã cần ?. và phải
+/// kiểm tra null — có tên thì ý nghĩa rõ và tái dùng được sau này.
+/// </remarks>
+internal sealed class ThongTinPhong
+{
+    /// <summary>Tên phòng.</summary>
+    public string Name { get; set; } = string.Empty;
+
+    /// <summary>Tên cơ sở chứa phòng.</summary>
+    public string LocationName { get; set; } = string.Empty;
+
+    /// <summary>Số phòng thực tế, ví dụ A101.</summary>
+    public string RoomNumber { get; set; } = string.Empty;
+
+    /// <summary>Số khách tối đa.</summary>
+    public int Capacity { get; set; }
+}
+
 /// <summary>Tạo đơn đặt phòng của khách.</summary>
 public class BookingService : IBookingService
 {
@@ -290,17 +313,38 @@ public class BookingService : IBookingService
     /// <summary>Dựng chi tiết đơn kèm lịch sử (cũ nhất trước).</summary>
     private async Task<BookingDetailDto> ThanhChiTietAsync(Entities.Booking don, CancellationToken ct)
     {
-        string tenPhong = await _db.Rooms
+        // Gộp 4 trường của phòng vào 1 truy vấn: trước đây tên phòng và địa điểm
+        // phải hỏi riêng, thêm số phòng/sức chữa nữa thì thành 4 vòng đọc cho
+        // cùng một dòng (N+1 ngụy trang).
+        ThongTinPhong? phong = await _db.Rooms
             .AsNoTracking()
-            .Where(phong => phong.Id == don.RoomId)
-            .Select(phong => phong.Name)
-            .FirstAsync(ct);
+            .Where(p => p.Id == don.RoomId)
+            .Select(p => new ThongTinPhong
+            {
+                Name = p.Name,
+                LocationName = p.Location.Name,
+                RoomNumber = p.RoomNumber,
+                Capacity = p.Capacity,
+            })
+            .FirstOrDefaultAsync(ct);
 
-        string tenDiaDiem = await _db.Rooms
+        if (phong is null)
+        {
+            throw new AppException(HttpStatusCode.NotFound, ErrorMessages.KhongTimThayPhong);
+        }
+
+        // Chiếu thẳng ra DTO thay vì tải entity `Review`: chỉ cần 3 cột, mà
+        // entity kéo theo quan hệ `Booking`/`User`/`Room` không dùng tới.
+        MyReviewDto? danhGia = await _db.Reviews
             .AsNoTracking()
-            .Where(phong => phong.Id == don.RoomId)
-            .Select(phong => phong.Location.Name)
-            .FirstAsync(ct);
+            .Where(d => d.BookingId == don.Id)
+            .Select(d => new MyReviewDto
+            {
+                Rating = d.Rating,
+                Comment = d.Comment,
+                CreatedAt = d.CreatedAt,
+            })
+            .FirstOrDefaultAsync(ct);
 
         List<BookingHistoryDto> lichSu = await _db.BookingStatusHistory
             .AsNoTracking()
@@ -320,8 +364,10 @@ public class BookingService : IBookingService
         return new BookingDetailDto
         {
             Code = don.Code,
-            RoomName = tenPhong,
-            LocationName = tenDiaDiem,
+            RoomName = phong.Name,
+            LocationName = phong.LocationName,
+            RoomNumber = phong.RoomNumber,
+            Capacity = phong.Capacity,
             BookingType = don.BookingType,
             CheckIn = don.CheckIn,
             CheckOut = don.CheckOut,
@@ -332,6 +378,9 @@ public class BookingService : IBookingService
             CancelReason = don.CancelReason,
             CreatedAt = don.CreatedAt,
             History = lichSu,
+            DaDanhGia = danhGia is not null,
+            DanhGiaCuaToi = danhGia,
+
         };
     }
 

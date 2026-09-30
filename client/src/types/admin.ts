@@ -183,3 +183,35 @@ export interface Dashboard {
   trangThaiPhong: RoomStatusCount[]
   topPhong: TopRoom[]
 }
+
+/**
+ * Một dòng đánh giá trong trang quản trị (Bước 16).
+ *
+ * `id` có trong payload để gọi API, nhưng giao diện **không** hiển thị —
+ * hiện tên người viết và mã đơn thay thế (AGENTS.md 6.3).
+ */
+export interface AdminReview {
+  id: number
+  bookingCode: string
+  reviewerName: string
+  roomName: string
+  locationName: string
+  rating: number
+  comment: string | null
+  isHidden: boolean
+  createdAt: string
+}
+
+/**
+ * Kết quả ẩn/hiện/xoá một đánh giá.
+ *
+ * Kèm luôn điểm phòng sau khi tính lại để bảng Admin hiển thị đúng ngay,
+ * không phải bấm "Làm mới" mới thấy — số điểm bị ảo khiến Admin tưởng thao tác
+ * chưa có hiệu lực.
+ */
+export interface ReviewVisibilityResult {
+  id: number
+  isHidden: boolean
+  phongDiemTrungBinh: number
+  phongSoDanhGia: number
+}

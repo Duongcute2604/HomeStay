@@ -671,6 +671,60 @@ Nguyên nhân: giờ nhận phòng 14:00 và giờ trả phòng 12:00 là quy đ
 
 - Trang dùng **recharts** — đã có sẵn trong `package.json`, **không thêm thư viện mới**.
 - Mọi biểu đồ đặt `isAnimationActive={false}`: dashboard không nên vẽ lại mỗi lần bấm "Làm mới", và ảnh chụp cho báo cáo phải ổn định. Đồng thời tránh được việc ảnh chụp rơi vào giữa animation nên nhìn như biểu đồ vỡ — đã mắc và mất nhiều thời gian chẩn đoán nhầm (xem `lessons.md` mục 56).
+### [x] BƯỚC 16 — Đánh giá & nhận xét · **XONG 01/10/2026** (kiểm thử tay 30/09)
+- **Mục tiêu đo được:** chỉ đánh giá được đơn `COMPLETED` · 1 đơn 1 đánh giá (unique index) · cập nhật `RatingAvg`/`RatingCount` → **≥ 3 unit test** · Admin ẩn/xóa được
+- **Bằng chứng:** **Backend 358/358** (thêm 25 unit test) · **Frontend 244/244** (thêm 36 unit test) · build **0 error 0 warning** · `npm run build` sạch · API **15/15** kịch bản · giao diện **6/6** (chi tiết ở `docs/KIEM_THU_TAY.md` mục 12)
+- **Ảnh chụp:** ✅ `.openchamber/screenshots/buoc16-*.jpg`
+
+#### Bug phát hiện khi kiểm thử tay giao diện (đã sửa + đã có test chặn)
+
+Trang chi tiết đơn hiện **"NaN ₫/giờ"** và **"NaN ₫/ngày"**.
+Nguyên nhân: `BookingDetail` ở TypeScript khai `pricePerHour`/`pricePerDay` là **bắt buộc**, nhưng `BookingDetailDto` của backend **không gửi** 2 trường đó → `undefined` → `formatVnd(undefined)` ra `NaN`.
+Kiểu dữ liệu sai là nguyên nhân gốc: khai bắt buộc cho trường API không gửi thì TypeScript không bắt được, và mình tin `tsc` sạch là đúng.
+
+Đã sửa triệt để, không vá chỗ hiện:
+- Xoá `pricePerHour`/`pricePerDay`/`description`/`ratingAvg`/`ratingCount`/`reviews` khỏi `BookingDetail` — chúng thuộc về chi tiết **phòng**, không phải chi tiết **đơn**.
+- Thay dòng giá bằng **Tổng tiền** (`totalAmount`, API có sẵn và đúng nghĩa với một đơn).
+- Thêm `roomNumber` + `capacity` vào `BookingDetailDto` — giao diện cần và lấy được trong 1 truy vấn.
+- Thêm test `expect(document.body.textContent).not.toContain('NaN')` để chặn hồi quy.
+
+#### Ghi chú
+
+- `RatingAvg` của phòng **tính lại từ đầu** mỗi lần có thay đổi (`SUM/COUNT` trên đánh giá chưa ẩn) chứ không cộng dồn — tự sửa được mọi sai lệch tích luỹ.
+- Logic tính điểm nằm ở `ReviewScorer`, dùng chung cho cả khách ghi đánh giá lẫn Admin ẩn/xoá. Nếu để mỗi nơi tự `Sum` thì sớm có một chỗ quên điều kiện "không tính đánh giá ẩn".
+- `TenTrangThai` tách ra `BookingStatusLabels` (khỏi `private` trong `AdminBookingService`) vì Bước 16 cũng cần — copy là cách chắc chắn hai bên lệch nhau.
+- Đã mở khoá lại tài khoản `khach3@gmail.com` bị khoá sót từ kiểm thử tay Bước 14.
+
+#### Khảo sát trước khi code — phần đã có sẵn
+
+| Phần | Trạng thái |
+|------|-----------|
+| Bảng `Reviews` + `DbSet<Review>` | ✅ có từ Bước 3 |
+| Unique index `BookingId` (1 đơn = 1 đánh giá) | ✅ có, test `Reviews_BookingId_LamUnique` đã bảo vệ |
+| Check constraint `CK_Reviews_Rating` (1–5) | ✅ có |
+| `Room.RatingAvg` / `RatingCount` + `CK_Rooms_Rating` | ✅ có |
+| Seed 6 đánh giá mẫu | ✅ có, test `SeedDataTests` kiểm điểm khớp |
+| API đọc đánh giá trong chi tiết phòng | ✅ `RoomDetailDto.Reviews` (chỉ 5 cái mới nhất, đã loại đánh giá ẩn) |
+| **Ghi đánh giá** | ❌ chưa có — phần chính của Bước 16 |
+| **Cập nhật lại điểm phòng** | ❌ chưa có logic nào tính `RatingAvg` khi có đánh giá mới |
+| **Quản lý đánh giá phía Admin** | ❌ chưa có |
+| **Giao diện — sửa lại sau khi khảo sát kỹ hơn** | Danh sách đánh giá **đã có sẵn** ở trang chi tiết phòng (Bước 8). Lúc đầu mình grep `Reviews` phân biệt hoa thường nên không thấy `phong.reviews` và kết luận nhầm là "chưa có". Việc còn làm ở Bước 16: tách component dùng chung + vẽ sao rỗng + thêm form đánh giá + trang quản trị |
+
+> Nói rõ điểm này vì báo cáo dễ ghi "đã có sẵn" — thực tế **phần ghi và phần quản trị
+> là mới**, còn phần đọc và cấu trúc CSDL đã có sẵn từ Bước 3.
+
+#### Quyết định đã chốt (trước khi code)
+
+| # | Vấn đề | Chốt | Lý do |
+|---|--------|------|-------|
+| 1 | Ai được đánh giá? | Chủ đơn `COMPLETED` **của chính mình** | Không ai đánh giá hộ được: điểm phòng phải phản ánh người thực sự đã ở |
+| 2 | Đánh giá đơn của người khác? | **404** (không phải 403) | Đồng Bước 11 — không để lộ đơn người khác có tồn tại hay không |
+| 3 | Chặn trùng bằng gì? | **Cả hai lớp**: code trả 409 rõ ràng + unique index | Index là chốt chặn cuối khi 2 request song song; nếu chỉ dựa vào index thì lỗi `DbUpdateException` trả 500 — người dùng không hiểu |
+| 4 | Khách có sửa/xoá đánh giá của mình không? | **Không** — chỉ Admin ẩn/xoá | Nếu khách sửa được: đánh giá 1 sao xong sửa lại 5 sao thì điểm phòng bị đầu độc. Đơn giản và công bằng hơn |
+| 5 | `RatingAvg` tính trên đánh giá nào? | Chỉ đánh giá **không bị ẩn** | Đánh giá vi phạm bị ẩn thì không được cộng vào điểm, nhưng bản ghi vẫn còn để Admin tra cứu. Khớp với `LocationService` khi đọc |
+| 6 | Admin ẩn hay xoá? | **Cả hai** | Ẩn để xử lý vi phạm (giữ dữ liệu để đối chiếu), xoá khi bị spam |
+| 7 | Tính lại điểm kiểu nào? | `SUM/COUNT` lại **toàn bộ** đánh giá chưa ẩn của phòng | Tính lại từ đầu tự sửa được mọi sai lệch; cộng dồn `+1/10` thì mất đồng bộ ngay khi có xoá |
+| 8 | Có cần transaction không? | **Có** — ghi đánh giá + cập nhật điểm phòng cùng lúc | Không có transaction thì giữa lúc ghi đánh giá và lúc tính điểm, người khác đọc trang phòng sẽ thấy điểm chưa cộng |
 ### [ ] BƯỚC 16 — Đánh giá & nhận xét
 - **Mục tiêu đo được:** chỉ đánh giá được đơn `COMPLETED` · 1 đơn 1 đánh giá (unique index) · cập nhật `RatingAvg`/`RatingCount` → **≥ 3 unit test** · Admin ẩn/xóa được
 - **Bằng chứng:**

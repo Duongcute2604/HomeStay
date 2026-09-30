@@ -113,7 +113,11 @@ describe('RoomDetail - hien thi', () => {
     expect(screen.getByText('Đánh giá (2)')).toBeInTheDocument()
     expect(screen.getByText('Trần Thị Mai')).toBeInTheDocument()
     expect(screen.getByText('Sạch sẽ, thoáng mát.')).toBeInTheDocument()
-    expect(screen.getByText('★★★★★')).toBeInTheDocument()
+    // Sao do `StarRating` ve, moi sao mot `<span>` va co `aria-label` du de
+    // trinh doc man hinh doc duoc. Khong khang dinh chuoi "★★★★★" vi 5 sao
+    // giay nam o 5 phan tu rieng (kem sao rong cho danh gia duoi 5 sao).
+    expect(screen.getByRole('img', { name: '5,0 trên 5 sao' })).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: '4,0 trên 5 sao' })).toBeInTheDocument()
   })
 
   it('KhungChonNgay_TinhTamTinhDung', async () => {

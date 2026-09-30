@@ -21,6 +21,7 @@ const MENU = [
   { to: '/admin', nhan: 'Thống kê', hetTrang: true },
   { to: '/admin/bookings', nhan: 'Đơn đặt phòng', hetTrang: false },
   { to: '/admin/facilities', nhan: 'Cơ sở', hetTrang: false },
+  { to: '/admin/reviews', nhan: 'Đánh giá', hetTrang: false },
   { to: '/admin/rooms', nhan: 'Phòng', hetTrang: false },
   { to: '/admin/customers', nhan: 'Khách hàng', hetTrang: false },
 ] as const

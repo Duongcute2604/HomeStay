@@ -6,6 +6,7 @@ using StayEasy.Common;
 using StayEasy.DTOs;
 using StayEasy.Services.Auth;
 using StayEasy.Services.Bookings;
+using StayEasy.Services.Reviews;
 
 namespace StayEasy.Controllers;
 
@@ -20,11 +21,13 @@ namespace StayEasy.Controllers;
 public class BookingsController : ControllerBase
 {
     private readonly IBookingService _bookingService;
+    private readonly IReviewService _reviewService;
 
-    /// <summary>Khởi tạo controller với service đặt phòng.</summary>
-    public BookingsController(IBookingService bookingService)
+    /// <summary>Khởi tạo controller với service đặt phòng và service đánh giá.</summary>
+    public BookingsController(IBookingService bookingService, IReviewService reviewService)
     {
         _bookingService = bookingService;
+        _reviewService = reviewService;
     }
 
     /// <summary>
@@ -93,5 +96,32 @@ public class BookingsController : ControllerBase
             User.LayUserIdHienTai(), code, request?.Reason, ct);
 
         return Ok(ApiResponse<BookingDetailDto>.SuccessResponse("Hủy đơn thành công", result));
+    }
+
+    /// <summary>
+    /// Khách đánh giá phòng sau khi đã trả phòng.
+    /// Chỉ đơn `COMPLETED` của chính mình được đánh giá, và mỗi đơn chỉ một lần.
+    /// </summary>
+    /// <param name="code">Mã đơn dạng `HS-250930-4821`.</param>
+    /// <param name="request">Số sao + nhận xét.</param>
+    /// <param name="ct">Token huỷ.</param>
+    [HttpPost("{code}/review")]
+    [Authorize]
+    [ProducesResponseType(typeof(ApiResponse<MyReviewDto>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> DanhGia(
+        string code, [FromBody] CreateReviewRequest request, CancellationToken ct)
+    {
+        MyReviewDto result = await _reviewService.TaoDanhGiaAsync(
+            User.LayUserIdHienTai(), code, request, ct);
+
+        return StatusCode(
+            StatusCodes.Status201Created,
+            ApiResponse<MyReviewDto>.SuccessResponse(
+                "Cảm ơn bạn đã đánh giá. Ý kiến của bạn giúp chúng tôi phục vụ tốt hơn",
+                result));
     }
 }

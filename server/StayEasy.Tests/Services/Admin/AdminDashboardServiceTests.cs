@@ -41,8 +41,8 @@ public class AdminDashboardServiceTests : IDisposable
     public async Task TongQuan_DemDungDonKhachVaPhong()
     {
         await TaoCoSoVaPhongAsync(soPhong: 3);
-        await TaoDonAsync(BookingStatus.COMPLETED, soNgayA: -40, soNgayB: -38, tien: 900_000m);
-        await TaoDonAsync(BookingStatus.PENDING, soNgayA: -1, soNgayB: 1, tien: 500_000m);
+        await TaoDonAsync(BookingStatus.COMPLETED, nhan: NgayThangTruoc(5), tra: NgayThangTruoc(7), tien: 900_000m);
+        await TaoDonAsync(BookingStatus.PENDING, nhan: NgayTrongThangNay(3), tra: NgayTrongThangNay(5), tien: 500_000m);
 
         DashboardDto result = await _service.LaySoLieuAsync(6, 30, default);
 
@@ -67,16 +67,32 @@ public class AdminDashboardServiceTests : IDisposable
         Assert.Equal(1, result.TongQuan.PhongDangCoKhach);
     }
 
+    [Theory]
+    [InlineData(1)]
+    [InlineData(5)]
+    [InlineData(28)]
+    public void NgayTrongThangNay_LuonRoiTrongThangHienTai(int ngay)
+    {
+        DateTime thucTe = NgayTrongThangNay(ngay);
+
+        // Đây là hợp đồng mà cả nhóm test "doanh thu tháng này" dựa vào. Trước khi
+        // có hàm này, test dùng "hôm nay ± N ngày" và đỏ vào đêm cuối tháng —
+        // đúng cái đã xảy ra khi chuyển từ 30/09 sang 01/10.
+        Assert.Equal(DateTime.Now.Year, thucTe.Year);
+        Assert.Equal(DateTime.Now.Month, thucTe.Month);
+        Assert.Equal(ngay, thucTe.Day);
+    }
+
     // ---------------- Doanh thu ----------------
 
     [Fact]
     public async Task DoanhThu_ChiTinhDonCOMPLETED_KeDonChoVaBiHuy()
     {
         await TaoCoSoVaPhongAsync(soPhong: 1);
-        await TaoDonAsync(BookingStatus.COMPLETED, soNgayA: -5, soNgayB: -3, tien: 1_000_000m);
-        await TaoDonAsync(BookingStatus.PENDING, soNgayA: -2, soNgayB: 1, tien: 700_000m);
-        await TaoDonAsync(BookingStatus.CANCELLED, soNgayA: -2, soNgayB: 1, tien: 300_000m);
-        await TaoDonAsync(BookingStatus.REJECTED, soNgayA: -2, soNgayB: 1, tien: 200_000m);
+        await TaoDonAsync(BookingStatus.COMPLETED, nhan: NgayTrongThangNay(5), tra: NgayTrongThangNay(7), tien: 1_000_000m);
+        await TaoDonAsync(BookingStatus.PENDING, nhan: NgayTrongThangNay(4), tra: NgayTrongThangNay(6), tien: 700_000m);
+        await TaoDonAsync(BookingStatus.CANCELLED, nhan: NgayTrongThangNay(4), tra: NgayTrongThangNay(6), tien: 300_000m);
+        await TaoDonAsync(BookingStatus.REJECTED, nhan: NgayTrongThangNay(4), tra: NgayTrongThangNay(6), tien: 200_000m);
 
         DashboardDto result = await _service.LaySoLieuAsync(6, 30, default);
 
@@ -89,8 +105,8 @@ public class AdminDashboardServiceTests : IDisposable
     {
         await TaoCoSoVaPhongAsync(soPhong: 1);
         // Trả phòng tháng trước → dồn vào cột tháng trước, không phải tháng này.
-        await TaoDonAsync(BookingStatus.COMPLETED, soNgayA: -40, soNgayB: -38, tien: 800_000m);
-        await TaoDonAsync(BookingStatus.COMPLETED, soNgayA: -5, soNgayB: -3, tien: 1_200_000m);
+        await TaoDonAsync(BookingStatus.COMPLETED, nhan: NgayThangTruoc(5), tra: NgayThangTruoc(7), tien: 800_000m);
+        await TaoDonAsync(BookingStatus.COMPLETED, nhan: NgayTrongThangNay(5), tra: NgayTrongThangNay(7), tien: 1_200_000m);
 
         DashboardDto result = await _service.LaySoLieuAsync(3, 30, default);
 
@@ -102,7 +118,7 @@ public class AdminDashboardServiceTests : IDisposable
     public async Task DoanhThu_TheoThang_ThangRongVanCoMatDeBieuDoKhongTut()
     {
         await TaoCoSoVaPhongAsync(soPhong: 1);
-        await TaoDonAsync(BookingStatus.COMPLETED, soNgayA: -5, soNgayB: -3, tien: 500_000m);
+        await TaoDonAsync(BookingStatus.COMPLETED, nhan: NgayTrongThangNay(5), tra: NgayTrongThangNay(7), tien: 500_000m);
 
         DashboardDto result = await _service.LaySoLieuAsync(6, 30, default);
 
@@ -116,8 +132,8 @@ public class AdminDashboardServiceTests : IDisposable
     public async Task SoDonTheoThang_DemTheoThangTaoDon()
     {
         await TaoCoSoVaPhongAsync(soPhong: 1);
-        await TaoDonAsync(BookingStatus.CANCELLED, soNgayA: -2, soNgayB: 1, tien: 300_000m);
-        await TaoDonAsync(BookingStatus.PENDING, soNgayA: -1, soNgayB: 1, tien: 300_000m);
+        await TaoDonAsync(BookingStatus.CANCELLED, nhan: NgayTrongThangNay(4), tra: NgayTrongThangNay(6), tien: 300_000m);
+        await TaoDonAsync(BookingStatus.PENDING, nhan: NgayTrongThangNay(3), tra: NgayTrongThangNay(5), tien: 300_000m);
 
         DashboardDto result = await _service.LaySoLieuAsync(6, 30, default);
 
@@ -133,8 +149,8 @@ public class AdminDashboardServiceTests : IDisposable
     {
         await TaoCoSoVaPhongAsync(soPhong: 2);
         // 1 đơn 3 đêm (COMPLETED) + 1 đơn 2 đêm (CHECKED_IN) trong 30 ngày.
-        await TaoDonAsync(BookingStatus.COMPLETED, soNgayA: -10, soNgayB: -7, tien: 900_000m);
-        await TaoDonAsync(BookingStatus.CHECKED_IN, soNgayA: -5, soNgayB: -3, tien: 700_000m);
+        await TaoDonAsync(BookingStatus.COMPLETED, nhan: NgayTuHomNay(-10), tra: NgayTuHomNay(-7), tien: 900_000m);
+        await TaoDonAsync(BookingStatus.CHECKED_IN, nhan: NgayTuHomNay(-5), tra: NgayTuHomNay(-3), tien: 700_000m);
 
         DashboardDto result = await _service.LaySoLieuAsync(6, 30, default);
 
@@ -148,8 +164,8 @@ public class AdminDashboardServiceTests : IDisposable
     {
         await TaoCoSoVaPhongAsync(soPhong: 2);
         // Đơn PENDING / CONFIRMED: phòng còn trống, khách chưa ở.
-        await TaoDonAsync(BookingStatus.PENDING, soNgayA: -5, soNgayB: -2, tien: 900_000m);
-        await TaoDonAsync(BookingStatus.CONFIRMED, soNgayA: -4, soNgayB: -1, tien: 900_000m);
+        await TaoDonAsync(BookingStatus.PENDING, nhan: NgayTuHomNay(-5), tra: NgayTuHomNay(-2), tien: 900_000m);
+        await TaoDonAsync(BookingStatus.CONFIRMED, nhan: NgayTuHomNay(-4), tra: NgayTuHomNay(-1), tien: 900_000m);
 
         DashboardDto result = await _service.LaySoLieuAsync(6, 30, default);
 
@@ -163,7 +179,7 @@ public class AdminDashboardServiceTests : IDisposable
         await TaoCoSoVaPhongAsync(soPhong: 1);
         // Đơn 10 đêm (từ 10 ngày trước tới hôm nay) nhưng khoảng thống kê chỉ
         // 5 ngày cuối → chỉ tính phần nằm trong khoảng là 4 đêm, không phải 10.
-        await TaoDonAsync(BookingStatus.COMPLETED, soNgayA: -10, soNgayB: 0, tien: 900_000m);
+        await TaoDonAsync(BookingStatus.COMPLETED, nhan: NgayTuHomNay(-10), tra: NgayTuHomNay(0), tien: 900_000m);
 
         DashboardDto result = await _service.LaySoLieuAsync(6, 5, default);
 
@@ -234,10 +250,10 @@ public class AdminDashboardServiceTests : IDisposable
     {
         Location coSo = await TaoCoSoVaPhongAsync(soPhong: 2);
         // Phòng 1: 2 đơn hoàn thành. Phòng 2: 1 đơn hoàn thành + 1 đơn chờ.
-        await TaoDonAsync(BookingStatus.COMPLETED, soNgayA: -30, soNgayB: -28, tien: 500_000m, soPhong: 0);
-        await TaoDonAsync(BookingStatus.COMPLETED, soNgayA: -20, soNgayB: -18, tien: 400_000m, soPhong: 0);
-        await TaoDonAsync(BookingStatus.COMPLETED, soNgayA: -10, soNgayB: -8, tien: 1_000_000m, soPhong: 1);
-        await TaoDonAsync(BookingStatus.PENDING, soNgayA: -2, soNgayB: 1, tien: 9_000_000m, soPhong: 1);
+        await TaoDonAsync(BookingStatus.COMPLETED, nhan: NgayTuHomNay(-30), tra: NgayTuHomNay(-28), tien: 500_000m, soPhong: 0);
+        await TaoDonAsync(BookingStatus.COMPLETED, nhan: NgayTuHomNay(-20), tra: NgayTuHomNay(-18), tien: 400_000m, soPhong: 0);
+        await TaoDonAsync(BookingStatus.COMPLETED, nhan: NgayTuHomNay(-10), tra: NgayTuHomNay(-8), tien: 1_000_000m, soPhong: 1);
+        await TaoDonAsync(BookingStatus.PENDING, nhan: NgayTuHomNay(-2), tra: NgayTuHomNay(1), tien: 9_000_000m, soPhong: 1);
 
         DashboardDto result = await _service.LaySoLieuAsync(6, 30, default);
 
@@ -310,12 +326,52 @@ public class AdminDashboardServiceTests : IDisposable
     }
 
     /// <summary>
-    /// Tạo 1 khách mới + 1 đơn, thời gian tính tương đối so với hôm nay.
+    /// Ngày thứ <paramref name="ngay"/> của **tháng hiện tại**.
     /// </summary>
+    /// <remarks>
+    /// Vì sao không dùng `hôm nay ± N ngày`: ngày 1 tháng 10 thì "hôm nay − 5 ngày"
+    /// rơi vào tháng 9, mà quy tắc "doanh thu tháng này" thì theo tháng hiện tại ⇒ test
+    /// đỏ đúng vào đêm cuối tháng. Ô nhập 1..7 luôn nằm trong mọi tháng (tháng có ít
+    /// nhất 28 ngày), nên tháng nào chạy cũng cho kết quả như nhau.
+    /// </remarks>
+    private static DateTime NgayTrongThangNay(int ngay)
+    {
+        DateTime dauThang = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
+        return dauThang.AddDays(ngay - 1);
+    }
+
+    /// <summary>
+    /// Ngày cách <paramref name="soNgay"/> ngày so với hôm nay.
+    /// </summary>
+    /// <remarks>
+    /// Dùng cho các quy tắc **không** phụ thuộc tháng (ví dụ tỷ lệ lấp đầy trong
+    /// 30 ngày), nên lệch vài ngày sang tháng kề vẫn không đổi kết quả.
+    /// </remarks>
+    private static DateTime NgayTuHomNay(int soNgay)
+    {
+        return DateTime.Now.Date.AddDays(soNgay);
+    }
+
+    /// <summary>Ngày thứ <paramref name="ngay"/> của tháng trước tháng hiện tại.</summary>
+    private static DateTime NgayThangTruoc(int ngay)
+    {
+        DateTime dauThang = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1).AddMonths(-1);
+        return dauThang.AddDays(ngay - 1);
+    }
+
+    /// <summary>
+    /// Tạo 1 khách mới + 1 đơn.
+    /// </summary>
+    /// <remarks>
+    /// <paramref name="nhan"/> và <paramref name="tra"/> là **ngày tuyệt đối**, do
+    /// test truyền vào qua <see cref="NgayTrongThangNay"/> / <see cref="NgayThangTruoc"/>
+    /// chứ không tự tính từ hôm nay — lý do xem ở <see cref="NgayTrongThangNay"/>.
+    /// </remarks>
+
     private async Task<Booking> TaoDonAsync(
         BookingStatus trangThai,
-        int soNgayA,
-        int soNgayB,
+        DateTime nhan,
+        DateTime tra,
         decimal tien,
         int soPhong = 0)
     {
@@ -331,9 +387,6 @@ public class AdminDashboardServiceTests : IDisposable
         _db.Users.Add(khach);
 
         Entities.Room phong = _db.Rooms.Local.ElementAt(soPhong);
-
-        DateTime nhan = DateTime.Now.Date.AddDays(soNgayA);
-        DateTime tra = DateTime.Now.Date.AddDays(soNgayB);
 
         Booking don = new()
         {

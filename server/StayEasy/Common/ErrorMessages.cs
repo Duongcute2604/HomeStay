@@ -106,4 +106,15 @@ public static class ErrorMessages
     /// đang cần và đang có là đủ để Admin hiểu phải làm gì tiếp.
     /// </remarks>
     public const string SaiTrangThaiChoThaoTac = "Thao tác này chỉ áp dụng cho đơn đang \"{0}\". Đơn hiện ở trạng thái \"{1}\"";
+
+    // ----- Đánh giá & nhận xét (Bước 16) -----
+
+    /// <summary>
+    /// Khách cố đánh giá đơn đã có đánh giá. Cố tình **không** nói cho khả năng
+    /// sửa lại: hệ thống không cho khách sửa đánh giá của mình (tránh chấm 1 sao
+    /// rồi sửa thành 5 sao), nên hướng dẫn "sửa lại" sẽ dẫn tới chỗ không có.
+    /// </summary>
+    public const string DaDanhGiaDonRoi = "Bạn đã đánh giá đơn này rồi. Mỗi đơn chỉ được đánh giá một lần";
+
+    public const string KhongTimThayDanhGia = "Không tìm thấy đánh giá";
 }

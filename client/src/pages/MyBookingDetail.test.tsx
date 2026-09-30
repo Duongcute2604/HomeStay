@@ -1,4 +1,4 @@
-﻿import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -32,24 +32,10 @@ const chiTietMau: BookingDetail = {
   note: 'Đến muộn sau 22:00',
   cancelReason: null,
   createdAt: '2026-09-30T10:00:00',
-  pricePerHour: 120000,
-  pricePerDay: 900000,
-  roomNumber: '101',
+  roomNumber: 'A101',
   capacity: 4,
-  reviews: [
-    {
-      reviewerName: 'Trần Thị Mai',
-      rating: 5,
-      comment: 'Sạch sẽ, thoáng mát.',
-      createdAt: '2026-09-20T08:00:00',
-    },
-    {
-      reviewerName: 'Lê Hoàng Nam',
-      rating: 4,
-      comment: null,
-      createdAt: '2026-09-18T08:00:00',
-    },
-  ],
+  daDanhGia: false,
+  danhGiaCuaToi: null,
   history: [
     {
       fromStatus: null,
@@ -95,10 +81,13 @@ describe('MyBookingDetail - hien thi', () => {
 
     expect(await screen.findByText('HS-261005-4821')).toBeInTheDocument()
     expect(screen.getByText(/Phòng Hạnh Phúc/)).toBeInTheDocument()
-    // Component hiển thị giá giờ/ngày chứ không hiển thị totalAmount
-    // Text giá bị tách thành nhiều element nên dùng matcher linh hoạn
-    expect(screen.getByText(/120\.000/)).toBeInTheDocument()
-    expect(screen.getByText(/900\.000/)).toBeInTheDocument()
+    // Hiện TỔNG TIỀN của đơn. Trước đây trang này hiện `pricePerHour`/`pricePerDay`
+    // mà API chi tiết đơn không gửi, nên ra chữ "NaN" cạnh dấu ₫.
+    expect(screen.getByText('Tổng tiền')).toBeInTheDocument()
+    expect(screen.getByText('1.100.000 ₫')).toBeInTheDocument()
+    expect(screen.getByText(/Phòng A101/)).toBeInTheDocument()
+    // Không màn hình nào được hiện "NaN" — đây là chốt chặn hồi quy.
+    expect(document.body.textContent).not.toContain('NaN')
     // "Tạo đơn" xuất hiện 1 lần trong lịch sử
     expect(screen.getAllByText(/Tạo đơn/)).toHaveLength(1)
     // "Chờ xác nhận": 1 badge + 1 trong lịch sử = 2

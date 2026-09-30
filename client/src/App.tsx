@@ -8,6 +8,7 @@ import AdminBookings from './pages/admin/AdminBookings'
 import AdminCustomers from './pages/admin/AdminCustomers'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import AdminFacilities from './pages/admin/AdminFacilities'
+import AdminReviews from './pages/admin/AdminReviews'
 import AdminRooms from './pages/admin/AdminRooms'
 import Home from './pages/Home'
 import LocationDetail from './pages/LocationDetail'
@@ -46,6 +47,7 @@ export default function App(): JSX.Element {
           <Route path="admin" element={<AdminDashboard />} />
           <Route path="admin/bookings" element={<AdminBookings />} />
           <Route path="admin/facilities" element={<AdminFacilities />} />
+          <Route path="admin/reviews" element={<AdminReviews />} />
           <Route path="admin/rooms" element={<AdminRooms />} />
           <Route path="admin/customers" element={<AdminCustomers />} />
         </Route>

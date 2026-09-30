@@ -6,9 +6,11 @@ import type {
   AdminLocation,
   AdminRoom,
   Amenity,
+  AdminReview,
   Customer,
   CustomerPayload,
   Dashboard,
+  ReviewVisibilityResult,
   FacilityPayload,
   RoomPayload,
 } from '../types/admin'
@@ -120,7 +122,53 @@ export const adminService = {
     return bocDuLieu(response.data)
   },
 
-  // ----- Vong doi don -----
+  // ----- Đánh giá (Bước 16) -----
+
+  /**
+   * Danh sách đánh giá có phân trang, mới nhất trước.
+   *
+   * `anId` lọc theo trạng thái hiển thị (`true` = đang ẩn), `soSao` lọc theo
+   * số sao. Bỏ trống cả hai thì lấy tất cả.
+   */
+  async layDanhGia(
+    filter: { anId?: boolean; soSao?: number; page?: number; pageSize?: number } = {},
+  ): Promise<PagedResult<AdminReview>> {
+    const { anId, soSao, page = 1, pageSize = 20 } = filter
+    const query = new URLSearchParams({ page: String(page), pageSize: String(pageSize) })
+    if (anId !== undefined) query.set('anId', String(anId))
+    if (soSao !== undefined) query.set('soSao', String(soSao))
+
+    const response = await apiClient.get<ApiResponse<PagedResult<AdminReview>>>(
+      `/admin/reviews?${query.toString()}`,
+    )
+    return bocDuLieu(response.data)
+  },
+
+  /** Ẩn đánh giá vi phạm — bản ghi vẫn còn, chỉ không hiện ra trang phòng. */
+  async anDanhGia(id: number): Promise<ReviewVisibilityResult> {
+    const response = await apiClient.patch<ApiResponse<ReviewVisibilityResult>>(
+      `/admin/reviews/${id}/hide`,
+    )
+    return bocDuLieu(response.data)
+  },
+
+  /** Hiện lại một đánh giá đã bị ẩn. */
+  async hienDanhGia(id: number): Promise<ReviewVisibilityResult> {
+    const response = await apiClient.patch<ApiResponse<ReviewVisibilityResult>>(
+      `/admin/reviews/${id}/unhide`,
+    )
+    return bocDuLieu(response.data)
+  },
+
+  /** Xoá hẳn đánh giá — dành cho đánh giá rác. */
+  async xoaDanhGia(id: number): Promise<ReviewVisibilityResult> {
+    const response = await apiClient.delete<ApiResponse<ReviewVisibilityResult>>(
+      `/admin/reviews/${id}`,
+    )
+    return bocDuLieu(response.data)
+  },
+
+  // ----- Vòng đời đơn -----
   /**
    * Danh sách đơn có lọc theo trạng thái và từ khoá (mã đơn / tên / email khách).
    *

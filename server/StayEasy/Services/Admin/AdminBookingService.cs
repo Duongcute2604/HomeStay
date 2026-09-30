@@ -256,25 +256,12 @@ public class AdminBookingService : IAdminBookingService
                 HttpStatusCode.Conflict,
                 string.Format(
                     ErrorMessages.SaiTrangThaiChoThaoTac,
-                    TenTrangThai(tuTrangThai),
-                    TenTrangThai(hienTai)));
+                    BookingStatusLabels.Ten(tuTrangThai),
+                    BookingStatusLabels.Ten(hienTai)));
         }
     }
 
-    /// <summary>Tên tiếng Việt của trạng thái, dùng trong thông báo lỗi.</summary>
-    private static string TenTrangThai(BookingStatus trangThai)
-    {
-        return trangThai switch
-        {
-            BookingStatus.PENDING => "chờ xác nhận",
-            BookingStatus.CONFIRMED => "đã xác nhận",
-            BookingStatus.CHECKED_IN => "khách đang ở",
-            BookingStatus.COMPLETED => "đã hoàn tất",
-            BookingStatus.CANCELLED => "đã hủy",
-            BookingStatus.REJECTED => "đã từ chối",
-            _ => trangThai.ToString(),
-        };
-    }
+
 
     private static AdminBookingDto ChuyenDto(Entities.Booking don)
     {

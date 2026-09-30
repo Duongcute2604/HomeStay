@@ -1,14 +1,14 @@
-﻿import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 
 import { layThongBaoLoi } from '../api/client'
 import Button from '../components/common/Button'
 import FormMessage from '../components/common/FormMessage'
+import ReviewForm from '../components/ReviewForm'
 import { bookingService } from '../services/bookingService'
-import { BookingStatus, NHAN_TRANG_THAI_DON } from '../types/booking'
-import { NHAN_LOAI_PHONG, RoomType } from '../types/location'
-import { formatNgay, formatVnd, formatDiem } from '../utils/format'
+import { BookingStatus, NHAN_LOAI_THUE, NHAN_TRANG_THAI_DON } from '../types/booking'
+import { formatNgay, formatVnd } from '../utils/format'
 
 /**
  * Trang chi tiết một đơn của chính mình — tra cứu bằng `Code` trên URL.
@@ -23,6 +23,8 @@ export default function MyBookingDetail(): JSX.Element {
   const [lyDo, setLyDo] = useState('')
   const [xacNhanHuy, setXacNhanHuy] = useState(false)
   const [loiHuy, setLoiHuy] = useState<string | null>(null)
+  const [dangGuiDanhGia, setDangGuiDanhGia] = useState(false)
+  const [loiDanhGia, setLoiDanhGia] = useState<string | null>(null)
 
   const { data: don, isPending, isError, error } = useQuery({
     queryKey: ['bookings', 'detail', code],
@@ -49,6 +51,26 @@ export default function MyBookingDetail(): JSX.Element {
   }
 
   const duocHuy = don.status === BookingStatus.PENDING || don.status === BookingStatus.CONFIRMED
+
+  // Chỉ đơn đã trả phòng mới có mục đánh giá. Backend chặn lại 3 điều kiện này;
+  // ở đây kiểm để không hiện nút mà bấm xong mới nhận 409.
+  const duocDanhGia = don.status === BookingStatus.COMPLETED
+
+  const xuLyDanhGia = async (sao: number, nhanXet: string): Promise<void> => {
+    setDangGuiDanhGia(true)
+    setLoiDanhGia(null)
+
+    try {
+      await bookingService.danhGia(don.code, { rating: sao, comment: nhanXet })
+      // Tải lại chi tiết đơn để `daDanhGia` chuyển thành true và form đổi sang
+      // dòng "Đánh giá của bạn", thay vì tự cập nhật state ở nhiều chỗ.
+      await queryClient.invalidateQueries({ queryKey: ['bookings', 'detail', code] })
+    } catch (error) {
+      setLoiDanhGia(layThongBaoLoi(error))
+    } finally {
+      setDangGuiDanhGia(false)
+    }
+  }
 
   const xuLyHuy = async (): Promise<void> => {
     try {
@@ -83,26 +105,16 @@ export default function MyBookingDetail(): JSX.Element {
           {formatNgay(don.checkIn)} → {formatNgay(don.checkOut)}
         </p>
         <p className="mt-2 text-left text-sm text-gray-600">
-          {NHAN_LOAI_PHONG[don.bookingType as RoomType]} · Phòng {don.roomNumber} · Tối đa{' '}
-          {don.capacity} khách
-          {don.ratingCount && don.ratingCount > 0 && (
-            <> · ★ {formatDiem(don.ratingAvg!)} ({don.ratingCount} đánh giá)</>
-          )}
+          {NHAN_LOAI_THUE[don.bookingType]} · Phòng {don.roomNumber} · Tối đa {don.capacity} khách
         </p>
 
-        <div className="mt-3 flex items-baseline justify-end gap-4">
-          <span className="number-vn text-right text-gray-600">
-            {formatVnd(don.pricePerHour)}/giờ
-          </span>
-          <span className="number-vn text-right font-semibold text-amber-700">
-            {formatVnd(don.pricePerDay)}/ngày
+        <div className="mt-3 flex items-baseline justify-end gap-2">
+          <span className="text-sm text-gray-600">Tổng tiền</span>
+          <span className="number-vn text-right text-lg font-semibold text-amber-700">
+            {formatVnd(don.totalAmount)}
           </span>
         </div>
       </div>
-
-      {don.description && (
-        <p className="mt-3 text-left text-sm text-gray-600">{don.description}</p>
-      )}
 
       <section className="card mt-4 p-4">
         <h2 className="font-semibold text-gray-900">Lịch sử trạng thái</h2>
@@ -130,6 +142,16 @@ export default function MyBookingDetail(): JSX.Element {
       {don.note && <p className="mt-2 text-left text-sm text-gray-500">Ghi chú: {don.note}</p>}
       {don.cancelReason && (
         <p className="mt-1 text-left text-sm text-red-600">Lý do hủy: {don.cancelReason}</p>
+      )}
+
+      {duocDanhGia && (
+        <ReviewForm
+          daDanhGia={don.daDanhGia === true}
+          danhGiaCuaToi={don.danhGiaCuaToi ?? null}
+          dangGui={dangGuiDanhGia}
+          loi={loiDanhGia}
+          onSubmit={(sao, nhanXet) => void xuLyDanhGia(sao, nhanXet)}
+        />
       )}
 
       {duocHuy && (

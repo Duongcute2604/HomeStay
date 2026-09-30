@@ -77,25 +77,36 @@ export interface BookingHistory {
   changedAt: string
 }
 
+/** Một đánh giá của chính người đang xem (Bước 16). */
+export interface MyReview {
+  rating: number
+  comment: string | null
+  createdAt: string
+}
+
+/** Dữ liệu gửi lên khi khách đánh giá phòng đã ở. */
+export interface CreateReviewPayload {
+  rating: number
+  comment?: string
+}
+
 /** Chi tiết một đơn kèm lịch sử. */
 export interface BookingDetail extends MyBooking {
   note: string | null
   cancelReason: string | null
   history: BookingHistory[]
-  // Thông tin bổ sung từ API chi tiết phòng
-  description?: string
-  pricePerHour: number
-  pricePerDay: number
-  ratingAvg?: number
-  ratingCount?: number
+  // Bước 16: giao diện dựa vào 2 trường này để biết hiện form đánh giá
+  // hay hiện dòng "Bạn đã đánh giá", thay vì để khách bấm gửi xong mới nhận 409.
+  daDanhGia?: boolean
+  danhGiaCuaToi?: MyReview | null
+  // Số phòng + sức chứa lấy từ API chi tiết đơn (thêm ở Bước 16).
+  //
+  // KHÔNG khai `pricePerHour`/`pricePerDay`/`description`/`reviews` ở đây nữa:
+  // API chi tiết đơn không gửi các trường đó, nhưng kiểu cũ vẫn khai là bắt buộc
+  // nên TypeScript không bắt được, và giao diện hiện ra "NaN ₫/giờ".
+  // Khai đúng những gì API thực sự gửi là cách TypeScript giúp phát hiện lỗi.
   roomNumber: string
   capacity: number
-  reviews: Array<{
-    reviewerName: string
-    rating: number
-    comment: string | null
-    createdAt: string
-  }>
 }
 
 /** Nhãn tiếng Việt cho loại thuê (backend trả về số: 1=theo giờ, 2=theo ngày). */

@@ -1,6 +1,13 @@
 import { apiClient, bocDuLieu } from '../api/client'
 import type { ApiResponse } from '../types/auth'
-import type { BookingDetail, BookingResult, CreateBookingPayload, MyBooking } from '../types/booking'
+import type {
+  BookingDetail,
+  BookingResult,
+  CreateBookingPayload,
+  CreateReviewPayload,
+  MyBooking,
+  MyReview,
+} from '../types/booking'
 import type { PagedResult } from '../types/room'
 import { BookingType } from '../utils/pricing'
 
@@ -48,6 +55,21 @@ export const bookingService = {
   },
 
   /** Hủy đơn của chính mình. Lý do không bắt buộc. */
+  /**
+   * Ghi đánh giá cho đơn đã trả phòng (Bước 16).
+   *
+   * Chỉ đơn `COMPLETED` của chính mình mới được đánh giá, mỗi đơn 1 lần —
+   * hai điều kiện này do backend chặn, không kiểm tra lại ở giao diện để tránh
+   * hai nơi một quy tắc.
+   */
+  async danhGia(code: string, payload: CreateReviewPayload): Promise<MyReview> {
+    const response = await apiClient.post<ApiResponse<MyReview>>(
+      `/bookings/${code}/review`,
+      payload,
+    )
+    return bocDuLieu(response.data)
+  },
+
   async huyDon(code: string, reason?: string): Promise<BookingDetail> {
     const response = await apiClient.post<ApiResponse<BookingDetail>>(
       `/bookings/${encodeURIComponent(code)}/cancel`,
