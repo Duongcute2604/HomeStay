@@ -193,36 +193,15 @@ public class RoomService : IRoomService
         }
 
         // 6. Chỉ số phải trỏ đúng một phòng đang hiện cho khách.
-        Dictionary<int, int> chiSoDiaDiem = await LayChiSoDiaDiemAsync(ct);
-        Dictionary<(int LocationId, int RoomId), int> chiSoPhong = await LayChiSoPhongAsync(ct);
+        StayEasy.Entities.Room? phong = await TimPhongAsync(request.LocationIndex, request.RoomIndex, ct);
 
-        int? locationId = chiSoDiaDiem
-            .Where(x => x.Value == request.LocationIndex)
-            .Select(x => (int?)x.Key)
-            .FirstOrDefault();
-
-        int? roomId = null;
-        if (locationId.HasValue)
-        {
-            roomId = chiSoPhong
-                .Where(x => x.Key.LocationId == locationId.Value && x.Value == request.RoomIndex)
-                .Select(x => (int?)x.Key.RoomId)
-                .FirstOrDefault();
-        }
-
-        if (roomId is null)
+        if (phong is null)
         {
             throw new AppException(HttpStatusCode.NotFound, ErrorMessages.KhongTimThayPhong);
         }
 
         // 7. Phòng bảo trì thì không nhận đặt dù ngày còn trống.
-        RoomStatus trangThai = await _db.Rooms
-            .AsNoTracking()
-            .Where(phong => phong.Id == roomId.Value)
-            .Select(phong => phong.Status)
-            .FirstAsync(ct);
-
-        if (trangThai == RoomStatus.MAINTENANCE)
+        if (phong.Status == RoomStatus.MAINTENANCE)
         {
             return new AvailabilityResponse { IsAvailable = false, Reason = ErrorMessages.PhongBaoTri };
         }
@@ -232,7 +211,7 @@ public class RoomService : IRoomService
         // Chỉ PENDING/CONFIRMED/CHECKED_IN giữ phòng — huỷ/từ chối/trả rồi thì thôi.
         bool biTrung = await _db.Bookings
             .AsNoTracking()
-            .Where(don => don.RoomId == roomId.Value
+            .Where(don => don.RoomId == phong.Id
                 && (don.Status == BookingStatus.PENDING
                     || don.Status == BookingStatus.CONFIRMED
                     || don.Status == BookingStatus.CHECKED_IN)
@@ -246,6 +225,35 @@ public class RoomService : IRoomService
         }
 
         return new AvailabilityResponse { IsAvailable = true, Reason = null };
+    }
+
+    /// <inheritdoc />
+    public async Task<StayEasy.Entities.Room?> TimPhongAsync(int locationIndex, int roomIndex, CancellationToken ct)
+    {
+        Dictionary<int, int> chiSoDiaDiem = await LayChiSoDiaDiemAsync(ct);
+        Dictionary<(int LocationId, int RoomId), int> chiSoPhong = await LayChiSoPhongAsync(ct);
+
+        int? locationId = chiSoDiaDiem
+            .Where(x => x.Value == locationIndex)
+            .Select(x => (int?)x.Key)
+            .FirstOrDefault();
+
+        if (locationId is null)
+        {
+            return null;
+        }
+
+        int? roomId = chiSoPhong
+            .Where(x => x.Key.LocationId == locationId.Value && x.Value == roomIndex)
+            .Select(x => (int?)x.Key.RoomId)
+            .FirstOrDefault();
+
+        if (roomId is null)
+        {
+            return null;
+        }
+
+        return await _db.Rooms.FirstOrDefaultAsync(phong => phong.Id == roomId.Value, ct);
     }
 
     /// <summary>

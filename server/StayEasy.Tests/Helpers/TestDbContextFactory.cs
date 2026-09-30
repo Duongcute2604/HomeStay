@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using StayEasy.Data;
 
 namespace StayEasy.Tests.Helpers;
@@ -23,6 +24,11 @@ public static class TestDbContextFactory
         DbContextOptions<StayEasyDbContext> options =
             new DbContextOptionsBuilder<StayEasyDbContext>()
                 .UseInMemoryDatabase(name)
+                // InMemory không thực thi transaction thật — bỏ qua cảnh báo để code
+                // dùng `BeginTransaction` (như BookingService) vẫn chạy được trong test.
+                // Giới hạn phải nhớ: chống trùng đồng thời KHÔNG chứng minh được bằng
+                // InMemory, chỉ chứng minh bằng test tay 2 tab trên MySQL thật.
+                .ConfigureWarnings(w => w.Ignore(InMemoryEventId.TransactionIgnoredWarning))
                 .Options;
 
         return new StayEasyDbContext(options);

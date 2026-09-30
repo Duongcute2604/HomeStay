@@ -7,6 +7,7 @@ import LocationDetail from './pages/LocationDetail'
 import Locations from './pages/Locations'
 import Login from './pages/Login'
 import NotFound from './pages/NotFound'
+import Booking from './pages/Booking'
 import Profile from './pages/Profile'
 import Register from './pages/Register'
 import RoomDetail from './pages/RoomDetail'
@@ -38,6 +39,14 @@ export default function App(): JSX.Element {
           element={<RoomDetail />}
         />
         <Route path="/rooms" element={<Rooms />} />
+        <Route
+          path="/booking/:chiSoDiaDiem/:chiSoPhong"
+          element={
+            <ProtectedRoute>
+              <Booking />
+            </ProtectedRoute>
+          }
+        />
 
         <Route
           path="/profile"

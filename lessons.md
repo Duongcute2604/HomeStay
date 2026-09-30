@@ -1284,3 +1284,85 @@ phòng không tồn tại (404) mới là lỗi. Khi TẠO đơn trùng ở Bư�
 > 2. Quyết định này phải ghi vào `todo.md` TRƯỚC khi code (bảng quyết định #3),
 >    vì người đọc code sẽ thắc mắc "sao trùng mà không 409" — câu trả lời nằm ở
 >    kế hoạch, không nằm trong code.
+## 47. InMemory ném lỗi khi `BeginTransaction` — sửa ở factory test
+
+**Biểu hiện:** toàn bộ 12 test `BookingServiceTests` đỏ với:
+
+```
+System.InvalidOperationException: An error was generated for warning
+'...TransactionIgnoredWarning': Transactions are not supported by the
+in-memory store.
+```
+
+**Nguyên nhân:** provider InMemory không thực thi transaction thật, và mặc định
+cấu hình "cảnh báo thành lỗi" nên `BeginTransactionAsync` ném exception thay vì
+chạy tiếp.
+
+**Đã sửa** trong `TestDbContextFactory.Create()` (chỉ chạm test, không đụng
+production):
+
+```csharp
+.ConfigureWarnings(w => w.Ignore(InMemoryEventId.TransactionIgnoredWarning))
+```
+
+**Giới hạn phải nhớ (đã ghi trong comment của factory):** bỏ qua cảnh báo thì test
+chạy được, nhưng chống trùng ĐỒNG THỜI không chứng minh được bằng InMemory —
+hai transaction song song trong InMemory không khoá nhau như MySQL. Phần này
+chứng minh bằng test tay 2 tab trên DB thật (TAB1 201 + TAB2 409).
+
+**Bài học:**
+
+> 1. **Test infra cũng là code sản phẩm** — sửa factory một chỗ, 12 test xanh lại
+>    mà không phải đụng vào logic nào. Đừng sửa từng test để né lỗi hạ tầng.
+> 2. **Khi bỏ qua một cảnh báo, ghi rõ cái gì KHÔNG còn được bảo vệ.** Bỏ qua
+>    `TransactionIgnoredWarning` mà không ghi chú thì người sau tưởng transaction
+>    đã được test.
+> 3. **Mỗi tầng kiểm chứng có giới hạn riêng:** unit test chứng minh logic đúng
+>    từng bước; đồng thời chứng minh bằng tay trên môi trường thật. Không tầng
+>    nào thay được tầng nào.
+
+## 48. Schema Zod đóng băng giá trị lúc mount — kiểm động lúc submit
+
+**Biểu hiện:** 3 test `Booking.test.tsx` đỏ — bấm submit mà form im lặng, không
+lỗi, không gọi API. Điều tra: `zodResolver(schemaDatPhong(phong?.capacity ?? 1))`
+dựng MỘT LẦN lúc mount, khi phòng còn chưa tải xong nên `max` đóng băng ở 1.
+Nhập 2 khách (đúng) cũng bị loại, mà lỗi hiện dưới ô nên test tìm "không thấy gì".
+
+**Đã sửa:** schema chỉ giữ phần TĨNH (`guestCount ≥ 1`, ghi chú ≤ 500); sức chứa
+kiểm lúc submit trong `Booking.tsx` khi phòng chắc chắn đã có:
+
+```ts
+if (duLieu.guestCount > phong.capacity) {
+  setError('guestCount', { message: `Phòng chỉ chứa tối đa ${phong.capacity} khách` })
+  return
+}
+```
+
+**Bài học:**
+
+> 1. **Giá trị động (tải sau) không được đóng băng trong schema dựng lúc mount.**
+>    Quy tắc: cái gì có sẵn lúc mount thì cho vào schema; cái gì đến sau thì kiểm
+>    lúc submit. Vi phạm là người dùng nhập đúng vẫn bị chặn mà không hiểu vì sao.
+> 2. **Form im lặng sau khi bấm submit là dấu hiệu validation chặn mà lỗi không
+>    hiện.** Kiểm tra ngay: lỗi có render không, hay resolver nuốt mất.
+> 3. Đây là lỗi THẬT do test phát hiện (lần thứ ba trong dự án) — kiểm thử tay khó
+>    thấy vì tester thường nhập đúng sức chứa, không nhập thừa để thử.
+
+## 49. Nút submit `disabled` đến khi kiểm trống xong — test bấm quá sớm
+
+**Biểu hiện:** test bấm "Xác nhận đặt phòng" mà không có gì xảy ra. Vì nút
+`disabled={!duocDat}` — `duocDat` chỉ true khi query kiểm trống xong. Test bấm
+ngay khi tiêu đề hiện (query chưa về) nên bấm vào nút khoá.
+
+**Đã sửa:** đợi `findByText('Phòng còn trống trong khoảng đã chọn')` rồi mới bấm.
+Đây là hành vi ĐÚNG của app (không cho đặt khi chưa biết trống/bận), test phải
+tôn trọng chứ không được bỏ `disabled` để test cho dễ.
+
+**Bài học:**
+
+> 1. **Test phải đợi app sẵn sàng như người dùng đợi.** Người dùng nhìn thấy nút
+>    mở mới bấm; test cũng phải đợi tín hiệu đó. Bấm sớm là test sai thực tế.
+> 2. **Đừng sửa app để test dễ hơn** (ví dụ bỏ `disabled`). Chiều đúng là sửa
+>    test cho giống người dùng thật.
+> 3. Nút khoá khi chưa đủ điều kiện là mẫu tốt cho mọi form phụ thuộc API:
+>    chặn được cả bấm đúp gửi 2 request.

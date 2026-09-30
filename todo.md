@@ -557,16 +557,39 @@ từ query string) nên không có cách kích hoạt. Vẫn cần nói rõ vớ
 | 7 | Giao diện | Nối vào `RoomDateFrame`: chọn ngày hợp lệ → tự gọi API → hiện "Còn trống" / "Đã có người đặt" | Khung đã tách sẵn ở Bước 8 để dùng lại; Bước 9 làm nó "sống" |
 | 8 | Giờ máy khách sai? | Backend tự tính "hiện tại" bằng `DateTime.Now` của server | Không tin giờ máy khách cho quy tắc (2) |
 
-### [ ] BƯỚC 10 — Đặt phòng theo giờ / ngày ⭐
+### [x] BƯỚC 10 — Đặt phòng theo giờ / ngày ⭐ · **XONG 30/09/2026**
 - **Mục tiêu đo được:**
-  - Tính tiền đúng: theo giờ `số giờ × PricePerHour`, theo ngày `số ngày × PricePerDay` → **≥ 4 unit test**
+  - Tính tiền đúng: theo giờ `số giờ × PricePerHour`, theo ngày `số ngày × PricePerDay` → **≥ 4 unit test** (đã có 7 ở `BookingCalculatorTests`, thêm ca cho service)
   - Lưu `PricePerHourSnapshot` / `PricePerDaySnapshot` → **1 test** sửa giá phòng, đơn cũ giữ nguyên
   - Dùng **transaction** + ghi `BookingStatusHistory` → **1 test**
   - Đặt trùng trả HTTP **409**
   - Mã đơn `Code` dạng `HS-YYMMDD-XXXX`, giao diện **không hiển thị Id**
   - 3/3 test tay + 2 tab cùng đặt → chỉ 1 đơn được tạo
-- **Bằng chứng:** `dotnet test --filter "Booking"` → `Passed! 15/15`
+- **Kết quả đo được:**
+  - API: đặt ngày 201 (`HS-261030-4167`) · đặt giờ 201 · trùng 409 · không token 401 · vượt sức chứa 400 · ghi chú 501 ký tự 400 · **2 tab: 1×201 + 1×409**
+  - Test tay: **10/10 ca đạt** (HP 3 · EC 4 · AB 4, mục 6 `KIEM_THU_TAY.md`) — luồng trình duyệt ra mã `HS-261205-3031`, vượt sức chứa chặn ở form, chưa đăng nhập về `/login`, mobile 390px
+  - Unit test backend: `dotnet test --filter "Booking"` → **27/27**
+  - Unit test frontend: `npm test` → **160/160** (+17: bookingService 4 · bookingSchemas 5 · Booking 7 · RoomDateFrame callback 1)
+  - `dotnet build --no-incremental` → **0 error 0 warning** · `npm run build` sạch · `npm run lint` sạch
+  - Đơn test đã xoá sạch (kèm lịch sử) — CSDL: 15 đơn, 42 lịch sử, refresh treo 0
+- **Bằng chứng:** `dotnet test --filter "Booking"` → `Passed! 27/27`
 - **Ảnh chụp:** form đặt phòng theo ngày, theo giờ, kết quả tạo đơn
+
+#### Quyết định đã chốt (trước khi code)
+
+| # | Vấn đề | Chốt | Lý do |
+|---|--------|------|-------|
+| 1 | Endpoint | `POST /api/bookings` + `[Authorize]`, `userId` lấy từ token | Không tin id client gửi (mẫu `LayUserIdHienTai` ở `AuthController`) |
+| 2 | Phòng nào? | Body gửi `locationIndex` + `roomIndex` như availability | Response không có `Id`; nhất quán Bước 6–9 |
+| 3 | Tái kiểm quy tắc thế nào? | Trong transaction gọi `IRoomService.KiemTraTrongAsync`, bận → **409** kèm lý do; 400/404 lan tiếp | Không viết lại 6 quy tắc (DRY). Kiểm trống trả 200+false, nhưng khi TẠO thì "bận" là xung đột → 409 |
+| 4 | Chống 2 tab cùng đặt | Transaction `SERIALIZABLE` + kiểm trùng LẠI trong transaction rồi mới insert | InMemory không chứng minh được đồng thời — chứng minh bằng test tay 2 tab. Ghi rõ giới hạn này |
+| 5 | Mã đơn trùng ngẫu nhiên? | `HS-yyMMdd-XXXX` (4 số ngẫu nhiên), kiểm tồn tại rồi insert; unique index làm chốt chặn cuối | Xác suất trùng ~1/10000/ngày; vòng lặp tối đa 10 lần rồi báo lỗi hệ thống |
+| 6 | Giá | `BookingCalculator.TinhTien` + lưu snapshot 2 đơn giá | Admin sửa giá sau không làm đơn cũ đổi tiền |
+| 7 | Trạng thái phòng khi đặt? | **Không đổi** (vẫn `AVAILABLE`) | Phòng → `BOOKED` khi Admin xác nhận ở Bước 13, không phải lúc khách đặt |
+| 8 | Lịch sử | 1 dòng `FromStatus=null → PENDING`, `ChangedBy` = khách đặt | Entity cho phép `FromStatus` null ở lần tạo |
+| 9 | Sức chứa | `guestCount` 1..sức chứa, vượt → **400** | Yêu cầu không thể đáp ứng là lỗi quy tắc, không phải xung đột |
+| 10 | Giao diện | Route `/booking/:chiSoDiaDiem/:chiSoPhong?loai&checkIn&checkOut` (bọc `ProtectedRoute`) + form số khách/ghi chú + trang thành công hiện `Code` | Query param để F5 không mất. Chưa link "Đơn của tôi" — trang đó thuộc Bước 11, link chết bị cấm |
+| 11 | Nút "Tiếp tục đặt phòng" | Ở trang chi tiết, hiện khi khung báo trống; bấm → sang trang đặt kèm ngày đã chọn | Khung phát lựa chọn ra qua callback `onThayDoi` (Bước 8 đã tách khung để dùng lại) |
 
 ### [ ] BƯỚC 11 — Đơn của tôi, hủy đơn, lịch sử
 - **Mục tiêu đo được:** `/api/bookings/my` chỉ trả đơn của chính mình (lấy `userId` từ token) · hủy đơn `PENDING`/`CONFIRMED` đưa phòng về `AVAILABLE` · từ chối hủy đơn `CHECKED_IN` · xem lịch sử trạng thái · 3/3 test tay

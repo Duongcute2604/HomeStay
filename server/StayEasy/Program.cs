@@ -12,6 +12,7 @@ using StayEasy.Data;
 using StayEasy.Data.Seed;
 using StayEasy.Middleware;
 using StayEasy.Services.Auth;
+using StayEasy.Services.Bookings;
 using StayEasy.Services.Locations;
 using StayEasy.Services.Rooms;
 
@@ -135,6 +136,7 @@ builder.Services.AddAuthorization();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ILocationService, LocationService>();
 builder.Services.AddScoped<IRoomService, RoomService>();
+builder.Services.AddScoped<IBookingService, BookingService>();
 builder.Services.AddSingleton<IPasswordHasher, PasswordHasher>();
 builder.Services.AddSingleton<ITokenHasher, TokenHasher>();
 builder.Services.AddSingleton<IJwtTokenService, JwtTokenService>();

@@ -20,6 +20,16 @@ public interface IRoomService
     Task<PagedResultDto<RoomSearchItemDto>> SearchAsync(RoomSearchRequest request, CancellationToken ct);
 
     /// <summary>
+    /// Tìm phòng đang hiện cho khách theo cặp chỉ số (cùng thứ tự với
+    /// `GET /api/locations`). Trả null khi chỉ số sai hoặc đã ngừng hiện.
+    /// </summary>
+    /// <remarks>
+    /// Tách riêng để `BookingService` dùng lại thay vì đoán lại thứ tự —
+    /// hai nơi tự tính thứ tự là chờ một lần lệch nhau.
+    /// </remarks>
+    Task<StayEasy.Entities.Room?> TimPhongAsync(int locationIndex, int roomIndex, CancellationToken ct);
+
+    /// <summary>
     /// Kiểm tra phòng có đặt được trong khoảng đã chọn không.
     /// </summary>
     /// <exception cref="StayEasy.Common.AppException">

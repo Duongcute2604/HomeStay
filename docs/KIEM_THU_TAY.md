@@ -363,18 +363,40 @@
 
 ## 6. Đặt phòng (Bước 10) ⭐
 
-| # | Loại | Kịch bản | Kỳ vọng | Thực tế | Kết quả |
-|---|------|----------|---------|---------|---------|
-| 1 | HP | Đặt theo ngày 2 đêm, giá 1.200.000/ngày | Tạo đơn, tổng tiền `2.400.000 ₫` | | |
-| 2 | HP | Đặt theo giờ 5 tiếng, giá 200.000/giờ | Tạo đơn, tổng tiền `1.000.000 ₫` | | |
-| 3 | AB | Đặt trùng khung giờ có đơn khác | Bị từ chối, **không tạo đơn**, HTTP 409 | | |
-| 4 | AB | **2 tab trình duyệt cùng đặt 1 phòng cùng giờ** | Chỉ **1 đơn** được tạo, tab còn lại báo trùng | | |
-| 5 | EC | Sửa giá phòng sau khi đặt → xem lại đơn cũ | Tổng tiền đơn cũ **không đổi** (giá snapshot) | | |
-| 6 | HP | Xem đơn vừa đặt | Trạng thái `PENDING`, hiện mã `HS-...`, KHÔNG hiện Id | | |
-| 7 | AB | Khách chưa đăng nhập bấm Đặt phòng | Bị chuyển sang trang đăng nhập | | |
-| 8 | EC | Đặt phòng có ghi chú dài 500 ký tự | Lưu đúng, không lỗi | | |
+> Ngày chạy: 30/09/2026. API `POST /api/bookings` + trình duyệt thật
+> (đăng nhập `khach1@gmail.com`, đặt Phòng Xuân Hương A301).
+> **Kết quả: 10/10 ca đạt.**
 
----
+**Kịch bản 1 — Happy path**
+
+| # | Kịch bản | Kỳ vọng | Thực tế | Kết quả |
+|---|----------|---------|---------|---------|
+| 1.1 | Đặt theo ngày 2 đêm qua API | 201, tiền = 2 × giá ngày | 201, `HS-261030-4167`, 1.100.000 ₫, status 0 (PENDING) | ✅ |
+| 1.2 | Đặt theo giờ 3 tiếng qua API | 201, tiền = 3 × giá giờ | 201, `HS-261030-1930`, 255.000 ₫ | ✅ |
+| 1.3 | Luồng trình duyệt: chi tiết → chọn ngày → tiếp tục → xác nhận | Hiện mã `HS-...`, tiền đúng, không `Id` | `HS-261205-3031`, 3 khách, 2.500.000 ₫, chỉ hiện `Code` | ✅ |
+
+**Kịch bản 2 — Edge case**
+
+| # | Kịch bản | Kỳ vọng | Thực tế | Kết quả |
+|---|----------|---------|---------|---------|
+| 2.1 | Vượt sức chứa (9 khách, phòng 5) | Chặn ở form, không gọi API | "Phòng chỉ chứa tối đa 5 khách", API không nhận request | ✅ |
+| 2.2 | Vượt sức chứa qua API (6 khách) | 400 | 400 "Phòng chỉ chứa tối đa 5 khách" | ✅ |
+| 2.3 | Ghi chú 501 ký tự | 400 | 400 "Ghi chú không được vượt quá 500 ký tự" | ✅ |
+| 2.4 | Mobile 390px trang đặt | Không tràn ngang | Ô 325px, nút vừa màn hình | ✅ |
+
+**Kịch bản 3 — Bất thường**
+
+| # | Kịch bản | Kỳ vọng | Thực tế | Kết quả |
+|---|----------|---------|---------|---------|
+| 3.1 | Đặt trùng đơn vừa tạo | 409, không tạo đơn mới | 409 "Phòng đã có người đặt trong khoảng thời gian này" | ✅ |
+| 3.2 | **2 tab cùng đặt 1 phòng 1 khung giờ** | Chỉ 1 đơn, tab kia 409 | TAB1 201 (`HS-261109-4809`), TAB2 409 — transaction SERIALIZABLE giữ đúng | ✅ |
+| 3.3 | Không gửi token | 401 | 401 "Bạn chưa đăng nhập..." | ✅ |
+| 3.4 | Mở `/booking/...` khi chưa đăng nhập | Về `/login` | Tự chuyển về `/login` (ProtectedRoute) | ✅ |
+
+> Đơn của tôi ở ca 1.3 đã xoá sau test (kèm lịch sử). CSDL sau test: 15 đơn
+> (đúng seed), 42 dòng lịch sử (đúng seed), `RefreshTokenHash` treo = 0.
+> Console 0 warning 0 error.
+
 
 ## 7. Quản lý đơn của tôi (Bước 11)
 

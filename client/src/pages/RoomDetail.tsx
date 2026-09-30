@@ -1,10 +1,12 @@
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 
 import { layThongBaoLoi } from '../api/client'
 import Button from '../components/common/Button'
+import type { LuaChonThue } from '../components/RoomDateFrame'
 import RoomDateFrame from '../components/RoomDateFrame'
+import { BookingType } from '../utils/pricing'
 import { locationService } from '../services/locationService'
 import { NHAN_LOAI_PHONG, NHAN_TRANG_THAI_PHONG, RoomStatus } from '../types/location'
 import { formatDiem, formatNgay, formatVnd } from '../utils/format'
@@ -21,8 +23,16 @@ import { formatDiem, formatNgay, formatVnd } from '../utils/format'
  */
 export default function RoomDetail(): JSX.Element {
   const { chiSoDiaDiem, chiSoPhong } = useParams<{ chiSoDiaDiem: string; chiSoPhong: string }>()
+  const navigate = useNavigate()
   const [anhDangXem, setAnhDangXem] = useState(0)
   const [moAnhLon, setMoAnhLon] = useState(false)
+  const [luaChon, setLuaChon] = useState<LuaChonThue>({
+    loai: BookingType.DAY,
+    checkIn: null,
+    checkOut: null,
+    hopLe: false,
+    trong: null,
+  })
 
   const { data, isPending, isError, error, refetch } = useQuery({
     queryKey: ['locations'],
@@ -206,7 +216,25 @@ export default function RoomDetail(): JSX.Element {
         giaTheoNgay={phong.pricePerDay}
         locationIndex={soDiaDiem}
         roomIndex={soPhong}
+        onThayDoi={setLuaChon}
       />
+
+      {luaChon.hopLe && luaChon.trong === true && luaChon.checkIn && luaChon.checkOut && (
+        <button
+          type="button"
+          className="btn-primary mt-4 w-full"
+          onClick={() => {
+            const thamSo = new URLSearchParams({
+              loai: luaChon.loai,
+              checkIn: luaChon.checkIn?.toISOString() ?? '',
+              checkOut: luaChon.checkOut?.toISOString() ?? '',
+            })
+            navigate(`/booking/${soDiaDiem}/${soPhong}?${thamSo.toString()}`)
+          }}
+        >
+          Tiếp tục đặt phòng
+        </button>
+      )}
 
       {moAnhLon && anhChinh && (
         <div

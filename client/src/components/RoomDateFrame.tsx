@@ -1,9 +1,20 @@
 import { useQuery } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { roomService } from '../services/roomService'
 import { formatVnd } from '../utils/format'
 import { BookingType, kiemKhoangThoiGian, NHAN_CACH_THUE, tinhSoDonVi, uocTinhTien } from '../utils/pricing'
+
+/** Lựa chọn hiện tại của khung — phát ra ngoài để trang cha dùng (nút tiếp tục). */
+export interface LuaChonThue {
+  loai: BookingType
+  checkIn: Date | null
+  checkOut: Date | null
+  /** Ngày hợp lệ (trả sau nhận). */
+  hopLe: boolean
+  /** Phòng trống theo API. Null khi chưa kiểm (ngày sai hoặc đang tải/lỗi). */
+  trong: boolean | null
+}
 
 interface Props {
   /** Giá 1 giờ (VNĐ) của phòng đang xem. */
@@ -14,6 +25,11 @@ interface Props {
   locationIndex: number
   /** Chỉ số phòng trong địa điểm đó. */
   roomIndex: number
+  /**
+   * Nhận lựa chọn mỗi khi thay đổi. Trang chi tiết dùng để bật/tắt nút
+   * "Tiếp tục đặt phòng" — khung không tự có nút vì nút thuộc về trang.
+   */
+  onThayDoi?: (luaChon: LuaChonThue) => void
 }
 
 /**
@@ -32,6 +48,7 @@ export default function RoomDateFrame({
   giaTheoNgay,
   locationIndex,
   roomIndex,
+  onThayDoi,
 }: Props): JSX.Element {
   const [loai, setLoai] = useState<BookingType>(BookingType.DAY)
   const [gioNhan, setGioNhan] = useState('')
@@ -57,6 +74,33 @@ export default function RoomDateFrame({
     // nên không giữ lâu — qua lại là kiểm lại.
     staleTime: 30 * 1000,
   })
+
+  // Báo lựa chọn ra ngoài mỗi khi đổi. Gọi trong `useEffect` chứ không gọi
+  // trong lúc render (side-effect trong render bị React cấm và gọi nhiều lần).
+  //
+  // Hai chốt chặn vòng lặp:
+  // 1. Phụ thuộc theo chuỗi gốc `gioNhan/gioTra` — `checkIn/checkOut` là object
+  //    mới mỗi lần render, phụ thuộc theo chúng là vòng lặp vô hạn.
+  // 2. Chỉ gọi khi giá trị THẬT SỰ đổi (so bằng ref) — cha truyền callback inline
+  //    thì `onThayDoi` đổi identity mỗi render, gọi vô điều kiện sẽ setState cha
+  //    → render lại → gọi tiếp, mãi mãi.
+  const daBao = useRef<string>('')
+  useEffect(() => {
+    if (!onThayDoi) {
+      return
+    }
+
+    const trong = !ngayHopLe || dangKiem || loiKiem || !tinhTrang ? null : tinhTrang.isAvailable
+    const khoa = `${loai}|${gioNhan}|${gioTra}|${trong}`;
+
+    if (khoa === daBao.current) {
+      return
+    }
+
+    daBao.current = khoa
+    onThayDoi({ loai, checkIn, checkOut, hopLe: ngayHopLe, trong })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loai, gioNhan, gioTra, dangKiem, loiKiem, tinhTrang])
 
   const donVi = ngayHopLe && checkIn && checkOut ? tinhSoDonVi(loai, checkIn, checkOut) : 0
   const tamTinh =

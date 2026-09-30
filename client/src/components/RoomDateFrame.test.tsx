@@ -116,6 +116,39 @@ describe('RoomDateFrame - kiem phong trong', () => {
     )
   })
 
+  it('ThayDoi_PhatLuaChonRaNgoai_QuaCallback', async () => {
+    const daNhan: unknown[] = []
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false, staleTime: 0 } },
+    })
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <RoomDateFrame
+          giaTheoGio={90000}
+          giaTheoNgay={550000}
+          locationIndex={0}
+          roomIndex={2}
+          onThayDoi={(luaChon) => daNhan.push(luaChon)}
+        />
+      </QueryClientProvider>,
+    )
+    chonNgayNhanTra('2026-10-05T14:00', '2026-10-07T12:00')
+
+    await screen.findByText(/Tạm tính: 2 ngày/)
+    // Đợi kiểm trống xong rồi mới đọc lần phát cuối — đọc ngay thì trúng lần
+    // phát lúc đang tải (`trong: null`).
+    await screen.findByText('Phòng còn trống trong khoảng đã chọn')
+    const cuoi = daNhan[daNhan.length - 1] as {
+      loai: string
+      hopLe: boolean
+      trong: boolean | null
+    }
+    expect(cuoi.loai).toBe('day')
+    expect(cuoi.hopLe).toBe(true)
+    expect(cuoi.trong).toBe(true)
+  })
+
   it('ApiLoi_HienThongBaoLoi_KhongVoTrang', async () => {
     kiemTraTrongMock.mockRejectedValue(new Error('Không kết nối được máy chủ'))
     dungKhung()
