@@ -30,7 +30,7 @@ export default function AdminLayout(): JSX.Element {
   const { user, dangXuat } = useAuth()
 
   return (
-    <div className="min-h-screen bg-amber-50/40">
+    <div className="min-h-screen bg-amber-50">
       <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-6 lg:flex-row">
         <aside className="shrink-0 lg:w-60">
           <div className="card-phong p-4">

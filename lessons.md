@@ -2014,3 +2014,115 @@ Kết quả: **12/12 lần chạy liên tiếp đều trong** (trước đó h�
 >
 > Và khi dữ liệu đã bị bẩn từ những lần chạy trước, phải **dọn có chọn lọc** (theo `Note`/`Code`
 > của riêng test) chứ đừng `TRUNCATE` — nói thẳng là đã xoá bao nhiêu dòng của cái gì.
+---
+
+## 78. Nền trang bán trong suốt làm lộ "canvas" của trình duyệt — cả trang bị tối theo
+
+Trang quản trị hiện ra **tối xám** trong khi trang khách vẫn sáng. Rất dễ quy chụp nhầm
+cho lỗi chụp ảnh hoặc lỗi CSS.
+
+| Bước kiểm tra | Kết quả |
+|---------------|---------|
+| Chụp lại lần nữa | Vẫn tối ⇒ không phải lỗi chụp |
+| Chụp trang chủ | Vẫn sáng ⇒ cơ chế chụp ổn, vấn đề ở trang này |
+| `browser.inspect` vào `html` | `opacity: 1`, không có overlay |
+| …vào `div.min-h-screen` | `background-color: rgba(255, 251, 235, 0.4)` — CSS **đúng** |
+| …vào `body` | `rgba(0, 0, 0, 0)` — trong suốt |
+
+CSS đúng mà hình vẫn tối ⇒ chỉ còn một khả năng: **canvas của trình duyệt đang tối**, và
+nó lọt lên vì nền trang bán trong suốt.
+
+Đúng vậy. So sánh hai layout đã lộ ra khác biệt:
+
+| Layout | Nền | Kết quả |
+|--------|-----|---------|
+| `PageLayout` (khách) | `bg-gray-50` — **đục** | Phủ kín canvas, không sao |
+| `AdminLayout` (quản trị) | `bg-amber-50/**40**` — 40% đục | Canvas lọt lên ⇒ cả trang tối |
+
+Sửa: đổi thành `bg-amber-50` (đục). Trang sáng trở lại ngay.
+
+> **Quy tắc:** nền trang **luôn phải đục**. Hậu tố `/40`, `/50` của Tailwind rất dễ dùng
+> "cho nhẹ", nhưng nó biến trang thành lớp kính — màu hiển thị thành phối hợp giữa màu
+> của mình với màu canvas **do thiết bị quyết định**, không do mình kiểm soát.
+> Trên máy người dùng bật chế độ tối thì giao diện sáng sẽ bị méo màu.
+>
+> Kèm theo đó, khai báo `:root { color-scheme: light }` để canvas, thanh cuộn và các hộp
+> thoại gốc của trình duyệt theo đúng chủ đề sáng. (Riêng dòng này **không** sửa được
+> lỗi trên — canvas vẫn tối — nhưng nó vẫn đúng để có.)
+
+**Bài học về cách tìm lỗi:** triệu chứng "giao diện tối" rất dễ đẩy tôi đoán CSS sai,
+đoán lỗi chụp ảnh, thậm chí đoán chế độ tối của chính trang. Điều đưa đến đáp án là đo
+`background-color` **tính toán** rồi so với ảnh chụp: CSS nói màu kem nhạt, ảnh nói xám
+⇒ vấn đề nằm ngoài CSS. Có bằng chứng mới loại được phỏng đoán.
+
+---
+
+## 79. Chuỗi `*/` trong chú thích CSS làm hỏng cả bản build
+
+Sửa xong lỗi nền ở mục 78, tôi viết chú thích giải thích nguyên nhân có ghi class Tailwind
+bán trong suốt:
+
+```css
+/* … đừng để nền ở dạng bán trong suốt (`bg-*/40`) … */
+```
+
+`npm run build` **lỗi ngay**, nhưng thông báo lỗi không chỉ ra dòng nào:
+
+```
+error during build:
+  at Root._error (…\postcss-selector-parser\dist\parser.js:134:16)
+```
+
+Lý do: chuỗi `*/` **kết thúc chú thích CSS sớm**. Phần text còn lại sau nó bị parser đọc
+như CSS thật nên báo lỗi ở tận `postcss-selector-parser` — cách xa chỗ viết lắm.
+
+> **Quy tắc:** trong chú thích CSS, **không bao giờ** ghi một mẫu có `*/` (kiểu
+> `*/40`, `*/20`, `@*/`). Muốn nói "hậu tố pha trong suốt" thì viết bằng lời:
+> *"hậu tố `/40`"*, *"pha 40%"*.
+>
+> Nói chung: khi thông báo lỗi chỉ tới tận thư viện chứ không chỉ tới dòng code của mình,
+> hãy nghi ngờ cú pháp ở ngay **trước** chỗ đó — đặc biệt là chú thích.
+
+---
+
+## 80. 22 hình trong báo cáo: vẽ tay hay sinh bằng script?
+
+Bước 19 đòi đủ 22 hình. Trong đó có **15 sơ đồ** (biểu đồ tác nhân, 6 use case, kiến
+trúc, lớp, ERD, 5 tuần tự) và **7 ảnh giao diện**.
+
+7 ảnh giao diện thì chụp thẳng. 15 sơ đồ thì không thể chụp — phải **vẽ**. Có hai cách:
+
+| Cách | Đánh giá |
+|------|----------|
+| Vẽ tay bằng công cụ vẽ | Mỗi hình một kiểu, lệch nhau vài chỗ; code đổi thì phải vẽ lại từ đầu |
+| **Sinh bằng script từ dữ liệu** | Đồng bộ kiểu vẽ; sửa nội dung là sửa dữ liệu rồi chạy lại |
+
+Tôi chọn script, và viết nó theo kiểu **dữ liệu + vài hàm vẽ dùng chung**
+(`hop`, `bauDuc`, `muiTen`, `veUseCase`, `veSequence`, `veErd`…). Mỗi sơ đồ chỉ cần khai
+báo danh sách hộp / danh sách use case / danh sách thông điệp.
+
+Kết quả: `docs/anh/so-do/*.svg` (15 file, ~5–12 KB mỗi file) — nhỏ, **đọc được bằng mắt
+như code**, và sửa được khi lớp hay endpoint đổi.
+
+> **Quy tắc:** với sơ đồ kiểu lặp đi lặp lại (nhiều hình cùng dạng), **sinh bằng script**
+> thay vì vẽ tay — vừa đồng bộ, vừa sửa được.
+>
+> Điều chỉ quan trọng: sơ đồ phải lấy nội dung từ **dữ liệu thật của dự án** (tên lớp
+> thật trong `BookingService.cs`, tên bảng thật trong `HomeStayDbContext`, tên endpoint thật
+> trong controller). Sơ đồ vẽ theo trí nhớ thì sai, mà GV hỏi một câu là lộ.
+
+**Ba lỗi hình ảnh đã phát hiện và sửa** (đều nhờ **xem lại ảnh sau khi chụp**, không phải
+tin rằng script chạy xong là hình đẹp):
+
+1. Biểu đồ tác nhân: nhãn chồng lên nhau, hộp đè lên hình người → dựng lại từ đầu theo trục dọc
+2. Sơ đồ use case: chiều rộng **đặt cứng** 960 khi nội dung cần 1350 ⇒ cắt mất cột cuối và
+   tác nhân bên phải → tính chiều rộng từ nội dung
+3. Sơ đồ tuần tự: mũi tên dùng **chỉ số cột** thay vì toạ độ x ⇒ mọi mũi tên co về một điểm
+   ⇒ hỏng hoàn toàn mà script vẫn chạy không lỗi
+
+> **Quy tắc:** với ảnh sinh bằng code, **phải xem ảnh sau khi sinh**. Script chạy trơn tru
+> chỉ chứng minh cú pháp đúng, không chứng minh hình đẹp và đúng — ba lỗi trên đều là
+> script chạy sạch mà hình hỏng.
+>
+> Với sơ đồ có nét nối: **vẽ nét trước, hộp sau**. Hộp có nền đục sẽ che các đoạn nét chạy
+> qua, nhờ vậy không có nét nào cắt ngang chữ bên trong hộp.

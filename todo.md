@@ -845,11 +845,50 @@ Trang báo *"Unable to render this definition"* dù `swagger.json` hợp lệ. N
 | Kiểm thử tích hợp | **41/41** request · **115/115** kiểm chứng · **12/12** lần chạy liên tiếp |
 
 > **Bài học 75–77:** đọc `DbException.ErrorCode` cho lỗi MySQL là luôn sai (phải đọc `MySqlException.Number`) · package không dùng có thể phá chức năng của package khác · bộ test tích hợp tự làm bẩn dữ liệu thì không phải bộ test, chỉ chạy được đúng một lần.
-### [ ] BƯỚC 19 — 22 hình cho Chương 3 của báo cáo
-- **Mục tiêu đo được:** chèn đủ 22 hình (3.1–3.22), **không còn dòng "Hình 3.x" nào trống** · ảnh chụp phải là của hệ thống đang chạy
-- **Tiến độ:** ____ / 22 hình
-- **Bằng chứng:** ảnh chụp màn hình báo cáo
+### [x] BƯỚC 19 — 22 hình cho Chương 3 của báo cáo · **XONG 01/10/2026**
+- **Mục tiêu đo được:** chụp đủ 22 hình (3.1–3.22), **không được để trống "Hình 3.x" nào trong báo cáo** — ảnh chụp phải là của hệ thống đang chạy
+- **Kết quả:** **22/22 hình** trong `docs/anh/` — **7 ảnh giao diện** (3.16–3.22, chụp từ hệ thống chạy thật, khung 1440×900) + **15 sơ đồ** (3.1–3.15)
+- **Bằng chứng:** `docs/anh/*.jpg` (22 file) · `docs/anh/so-do/*.svg` (15 file) · `docs/anh/README.md` bảng đối chiếu 22 hình với mẫu báo cáo
+- **Chi tiết:** `docs/anh/README.md`
 
+#### Quyết định đã chốt (trước khi code)
+
+| # | Vấn đề | Chốt | Lý do |
+|---|--------|------|-------|
+| 1 | 15 sơ đồ vẽ tay hay sinh bằng script? | **Sinh bằng script** `docs/anh/ve-so-do.mjs` ra SVG | 15 hình cùng dạng — vẽ tay thì mỗi hình lệch kiểu, mà code đổi (thêm endpoint, đổi tên lớp) thì phải vẽ lại từ đầu. Script thì sửa dữ liệu rồi chạy lại |
+| 2 | Nội dung sơ đồ lấy từ đâu? | Từ **code thật**: tên lớp trong `BookingService.cs`, tên bảng trong `HomeStayDbContext`, tên endpoint trong controller | Sơ đồ vẽ theo trí nhớ thì sai, GV hỏi một câu là lộ |
+| 3 | Định dạng nộp báo cáo? | Nộp cả **.svg** (sắc nét, không vỡ khi phóng) | Word 2016 trở lới hỗ trợ SVG; ảnh chụp .jpg chỉ dùng khi cần |
+| 4 | Dữ liệu để chụp 7 ảnh giao diện? | Đưa về **đúng trạng thái seed**: 15 đơn, 10 phòng `AVAILABLE` | Chụp lúc còn 105 đơn rác ngày 2035–2044 thì ảnh rất khó đọc và không đại diện cho hệ thống |
+
+#### Lỗi thật phát hiện khi chụp (đã sửa)
+
+**Trang quản trị hiện ra tối xám trong khi trang khách vẫn sáng.** Đo style tính toán thấy CSS **đúng** (`rgba(255,251,235,0.4)`), hóa ra là nền trang bán trong suốt để lộ **canvas của trình duyệt** (canvas tối do thiết bị quyết định). `PageLayout` dùng `bg-gray-50` đục nên phủ kín canvas, còn `AdminLayout` dùng `bg-amber-50/40` nên lọt. Sửa thành `bg-amber-50` (đục) + khai báo `:root { color-scheme: light }`.
+
+> Đây là lỗi mà **ảnh chụp mới phát hiện được** — bước trước kiểm tra responsive chỉ đo bề rộng, không soi màu sắc.
+
+#### Ba lỗi hình ảnh phát hiện bằng cách xem lại ảnh
+
+| Lỗi | Nguyên nhân | Sửa |
+|------|-------------|------|
+| Biểu đồ tác nhân chồng chữ, hộp đè hình người | Dựng lưới không đủ chỗ | Dựng lại theo trục dọc, mỗi bước cách nhau 66px |
+| Use case mất cột cuối + tác nhân bên phải | Chiều rộng **đặt cứng** 960 trong khi nội dung cần 1350 | Tính chiều rộng từ nội dung |
+| Sơ đồ tuần tự hỏng toàn bộ — mọi mũi tên co về một điểm | Mũi tên dùng **chỉ số cột** thay vì toạ độ x | Đổi qua hàm `cx()`; thêm 100px hở bên phải cho hộp tên |
+| Nét nối cắt ngang chữ trong bầu dục / hộp | Vẽ nét **sau** hộp | Đảo thứ tự: nét trước, hộp sau — hộp nền đục che nét |
+
+> Cả ba lỗi đầu đều **không làm script báo lỗi** — script chạy trơn tru, chỉ hình mới hỏng. Không xem lại ảnh thì sẽ nộp báo cáo có hình vỡ mà không biết.
+
+#### ⚠️ Việc còn lại của bước này
+
+Mẫu báo cáo `.docx` vẫn ghi **"Hình 3.8. Kiến trúc hệ thống StayEasy"** — tên cũ. Sửa thành **HomeStay** khi ghép báo cáo (đã ghi trong `docs/anh/README.md`).
+
+| Hạng mục | Kết quả |
+|----------|---------|
+| Ảnh giao diện | **7/7** — trang chủ, tìm kiếm, chi tiết phòng, đặt phòng, quản lý đơn, thống kê, quản lý phòng |
+| Sơ đồ | **15/15** — tác nhân, 6 use case, kiến trúc, lớp, ERD, 5 tuần tự |
+| Tổng | **22/22** — không còn ô "Hình 3.x" nào bị trống |
+| Frontend | **264/264** test · `npm run build` 0 error |
+
+> **Bài học 78–80:** nền trang bán trong suốt làm lộ canvas của trình duyệt, cả trang bị tối theo · chuỗi `*/` trong chú thích CSS làm hỏng cả bản build · 22 hình trong báo cáo thì sinh bằng script, và phải xem ảnh sau khi sinh vì script chạy sạch không bảo đảm hình đẹp.
 ### [ ] BƯỚC 20 — Viết Chương 4
 - **Mục tiêu đo được:** đủ 17 ảnh chức năng + bảng 18 test case + phần đóng gói & triển khai · **xong trước ngày 15/10**
 - **Tiến độ:** ____ / 17 mục

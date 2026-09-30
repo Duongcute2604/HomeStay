@@ -4,6 +4,21 @@
 
 @layer base {
   /*
+   * Giao diện này CHỈ có nền sáng — khai báo để trình duyệt lấy nền, thanh cuộn
+   * và các hộp thoại gốc theo đúng chủ đề sáng.
+   *
+   * Lưu ý khi sửa giao diện: đừng để nền trang ở dạng bán trong suốt (hậu tố
+   * `/40` của Tailwind). Nền bán trong suốt để lộ màu canvas của trình duyệt — và
+   * canvas thì do thiết bị quyết định, không phải do mình. Máy bật chế độ tối thì
+   * canvas xám đậm, trang quản trị bị tối theo trong khi CSS tính toán vẫn đúng
+   * (đã gặp đúng lỗi này: AdminLayout dùng nền `bg-amber-50` pha 40% nên cả trang
+   * quản trị bị tối). Nền trang phải luôn đục.
+   */
+  :root {
+    color-scheme: light;
+  }
+
+  /*
    * Quy tắc bất biến (AGENTS.md mục 7.3): mọi số / tiền / diện tích đều căn phải
    * và dùng chữ số đều nhau (tabular-nums) để cột dọc thẳng hàng, không nhảy dọc.
    */
