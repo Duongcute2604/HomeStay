@@ -1,4 +1,4 @@
-# StayEasy — Hệ thống đặt phòng & quản lý Homestay
+# HomeStay — Hệ thống đặt phòng & quản lý Homestay
 
 Web app cho phép **khách** tìm kiếm homestay và đặt phòng theo **giờ** hoặc theo **ngày**; **Admin** quản lý danh mục, vòng đời đơn đặt phòng và xem thống kê.
 
@@ -63,7 +63,7 @@ docker compose up -d
 
 # Bước 2 — Chạy API
 cd server
-dotnet run --project StayEasy
+dotnet run --project HomeStay
 # → http://localhost:5080/swagger
 
 # Bước 3 — Chạy web (terminal khác)
@@ -77,7 +77,7 @@ npm run dev
 
 | Vai trò | Email | Mật khẩu |
 |---|---|---|
-| Admin | `admin@stayeasy.vn` | `123456` |
+| Admin | `admin@homestay.vn` | `123456` |
 | Khách | `khach1@gmail.com` | `123456` |
 
 ---
@@ -87,8 +87,8 @@ npm run dev
 ```
 Homestay/
 ├── server/                 ASP.NET Core Web API
-│   ├── StayEasy/           Code chính (Controllers, Services, Entities, DTOs...)
-│   └── StayEasy.Tests/     Unit test xUnit
+│   ├── HomeStay/           Code chính (Controllers, Services, Entities, DTOs...)
+│   └── HomeStay.Tests/     Unit test xUnit
 ├── client/                 React + TS + Vite
 │   └── src/                (api, components, pages, services, types, utils...)
 ├── docs/                   Báo cáo tiến độ, kiểm thử tay

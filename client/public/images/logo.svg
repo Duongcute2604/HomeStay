@@ -1,6 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Logo StayEasy">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Logo HomeStay">
   <!--
-    Logo StayEasy: mái nhà màu hổ phách trên nền kem, cửa tròn xanh mát.
+    Logo HomeStay: mái nhà màu hổ phách trên nền kem, cửa tròn xanh mát.
     Vẽ bằng SVG thay vì ảnh bitmap để (1) không lo bản quyền ảnh chụp,
     (2) luôn sắc nét mọi kích thước, (3) đổi màu theo theme chỉ sửa 1 chỗ.
     Màu khớp `client/src/index.css`: amber-600 #d97706, amber-50 #fffbeb,

@@ -1,5 +1,5 @@
 # ============================================================
-#  StayEasy — MySQL 8.0 chạy bằng Docker
+#  HomeStay — MySQL 8.0 chạy bằng Docker
 #  Nguyễn Hải Nam — 12523W.1
 #
 #  CỔNG 3307: cổng 3306 đang bị container `cookbook-mysql`
@@ -11,18 +11,18 @@
 services:
   mysql:
     image: mysql:8.0
-    container_name: stayeasy-mysql
+    container_name: homestay-mysql
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: root123456
-      MYSQL_DATABASE: stayeasy
-      MYSQL_USER: stayeasy
-      MYSQL_PASSWORD: stayeasy123
+      MYSQL_DATABASE: homestay
+      MYSQL_USER: homestay
+      MYSQL_PASSWORD: homestay123
       TZ: Asia/Ho_Chi_Minh
     ports:
       - "3307:3306"
     volumes:
-      - stayeasy-mysql-data:/var/lib/mysql
+      - homestay-mysql-data:/var/lib/mysql
     # utf8mb4 là bắt buộc: tiếng Việt có dấu + emoji trong mô tả phòng
     command: >
       --character-set-server=utf8mb4
@@ -35,5 +35,5 @@ services:
       start_period: 30s
 
 volumes:
-  stayeasy-mysql-data:
-    name: stayeasy-mysql-data
+  homestay-mysql-data:
+    name: homestay-mysql-data

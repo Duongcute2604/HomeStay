@@ -19,7 +19,7 @@
 ## 0. Cơ sở dữ liệu — 9 bảng (Bước 3)
 
 > Bước này không có giao diện nên kiểm thử tay chạy **trực tiếp SQL trên MySQL**.
-> Cách mở: `docker exec -it stayeasy-mysql mysql -ustayeasy -pstayeasy123 -D stayeasy`
+> Cách mở: `docker exec -it homestay-mysql mysql -uhomestay -phomestay123 -D homestay`
 
 | STT | Chức năng | Kịch bản | Kỳ vọng | Thực tế | Kết quả |
 |-----|----------|----------|---------|---------|---------|
@@ -42,7 +42,7 @@
 
 > Bước này cũng không có giao diện nên kiểm thử tay chạy **bằng cách khởi động app thật**
 > rồi xem log `dotnet run` + truy vấn SQL trên MySQL.
-> Lệnh: `dotnet run --project server\StayEasy\StayEasy.csproj`
+> Lệnh: `dotnet run --project server\HomeStay\HomeStay.csproj`
 
 ### Kịch bản 1 — Database rỗng → chạy app lần 1 (Happy path)
 
@@ -174,7 +174,7 @@
 | 1.3 | Mở `/profile`, sửa họ tên rồi bấm "Lưu thay đổi" | Thông báo thành công, tên mới hiện | Hiện "Đã cập nhật hồ sơ thành công.", header đổi sang tên mới | ✅ |
 | 1.4 | Đổi mật khẩu (nhập đúng mật khẩu hiện tại) | Thành công, buộc đăng nhập lại | Thành công, tự chuyển về `/login`, header mất tên + nút Đăng xuất | ✅ |
 | 1.5 | F5 lại trang `/profile` khi đang đăng nhập | Vẫn giữ phiên | Vẫn ở `/profile`, dữ liệu hồ sơ đầy đủ | ✅ |
-| 1.6 | Đăng nhập bằng `admin@stayeasy.vn` | Nhận đúng quyền quản trị | Trang chủ hiện "Xin chào Nguyễn Minh Quân **(Quản trị viên)**" | ✅ |
+| 1.6 | Đăng nhập bằng `admin@homestay.vn` | Nhận đúng quyền quản trị | Trang chủ hiện "Xin chào Nguyễn Minh Quân **(Quản trị viên)**" | ✅ |
 
 **Kịch bản 2 — Edge case**
 
@@ -426,7 +426,7 @@
 | 9 | HP | Đổi trạng thái phòng sang `MAINTENANCE` | Chỉ đổi trạng thái, không đụng tên/giá | `status: 4`, `name` và `pricePerHour` giữ nguyên | ✅ |
 | 10 | AB | Xoá phòng đã có đơn | Bị từ chối, giữ nguyên phòng | HTTP 400 `"Không thể xoá phòng đã có đơn đặt. Vui lòng chuyển phòng sang bảo trì"`; kiểm CSDL phòng vẫn còn | ✅ |
 | 11 | AB | Tạo khách với email đã tồn tại | 409 Conflict | HTTP 409 `"Email này đã được đăng ký. Vui lòng đăng nhập hoặc dùng email khác"` | ✅ |
-| 12 | HP | Tạo khách mới + danh sách khách | Không lẫn tài khoản Admin | 4 khách, `totalBookings` lần lượt 6/4/5/0 — không có dòng nào là `admin@stayeasy.vn` | ✅ |
+| 12 | HP | Tạo khách mới + danh sách khách | Không lẫn tài khoản Admin | 4 khách, `totalBookings` lần lượt 6/4/5/0 — không có dòng nào là `admin@homestay.vn` | ✅ |
 | 13 | GIAO DIỆN | `/admin/facilities` — 3 cơ sở, 10 phòng | Bảng hiển thị đúng, STT tự tính | Header "Tổng 3 cơ sở · 10 phòng"; STT 1, 2, 3; **không hiển thị Id** | ✅ |
 | 14 | GIAO DIỆN | Mở form "Thêm cơ sở", bấm Lưu khi tên rỗng | Chặn ngay, chưa gọi API | Hiện đỏ "Vui lòng nhập tên cơ sở" trong form, danh sách không đổi | ✅ |
 | 15 | GIAO DIỆN | Bấm "Xoá" cơ sở đang có phòng | Bấm 1 lần hỏi lại, bấm 2 lần mới xoá | Nút đổi thành "Chắc chắn xoá?"; sau cú bấm 2 hiện đỏ "Không thể xoá cơ sở đang có phòng…" | ✅ |
@@ -452,7 +452,7 @@
 | 9 | AB | Mã đơn không tồn tại | 404 | HTTP 404 `"Không tìm thấy đơn đặt phòng"` | ✅ |
 | 10 | EC | Lọc `status=0` (PENDING) | Chỉ trả đơn chờ xác nhận | `totalItems: 1` sau khi đã xử lý 2 đơn PENDING | ✅ |
 | 11 | EC | Tìm từ khoá `HS-2610` / `khach1` | Lọc theo mã và theo email khách | `HS-2610` → 4 đơn; `khach1` → 6 đơn | ✅ |
-| 12 | AB | Lịch sử trạng thái ghi đúng người thực hiện | Dòng `PENDING→CONFIRMED` ghi Admin, không phải khách | CSDL: `NULL→PENDING` bởi `khach1@gmail.com`; `PENDING→CONFIRMED` bởi `admin@stayeasy.vn` | ✅ |
+| 12 | AB | Lịch sử trạng thái ghi đúng người thực hiện | Dòng `PENDING→CONFIRMED` ghi Admin, không phải khách | CSDL: `NULL→PENDING` bởi `khach1@gmail.com`; `PENDING→CONFIRMED` bởi `admin@homestay.vn` | ✅ |
 | 13 | GIAO DIỆN | `/admin/bookings` — 15 đơn đủ 6 trạng thái | Bảng gọn, cột "Thao tác" không bị đẩy khỏi màn hình | Mã đơn 1 dòng, tiền 1 dòng (`520.000 ₫`), phân trang "Trang 1 / 2" | ✅ |
 | 14 | GIAO DIỆN | Bấm "Xác nhận" trên đơn PENDING | Toast + bảng tự tải lại, nút đổi thành "Nhận phòng" | Đơn `HS-261029-0015` chuyển "Chờ xác nhận" → "Đã xác nhận"; nút đổi đúng | ✅ |
 | 15 | GIAO DIỆN | Bấm "Từ chối" rồi submit khi chưa nhập lý do | Chặn tại giao diện, **không gọi API** | Hiện đỏ "Vui lòng nhập lý do để khách biết vì sao đơn bị từ chối"; đơn vẫn "Chờ xác nhận" | ✅ |
@@ -570,7 +570,7 @@
 
 ### 11A. Đối chiếu số liệu với SQL trực tiếp (bắt buộc)
 
-Lệnh: `docker exec -i stayeasy-mysql mysql -ustayeasy -p****** stayeasy`
+Lệnh: `docker exec -i homestay-mysql mysql -uhomestay -p****** homestay`
 Ngày chạy: **30/09/2026** · Cửa sổ tỷ lệ lấp đầy: `2026-09-01` → `2026-09-30`
 
 | # | Loại | Số liệu | API trả về | SQL truy vấn trực tiếp | Kết quả |

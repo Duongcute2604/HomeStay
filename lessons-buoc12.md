@@ -3,10 +3,10 @@
 ## 1. `edit` tool KHÔNG được dùng để "thêm" dòng khi `newString` chứa chính `oldString`
 
 **Sai ở đâu:** Tôi lặp lại ~30 lần cùng một lệnh `edit` với
-`oldString = "using StayEasy.DTOs;"` và
-`newString = "using StayEasy.DTOs;\nusing StayEasy.Services.Admin;"`.
+`oldString = "using HomeStay.DTOs;"` và
+`newString = "using HomeStay.DTOs;\nusing HomeStay.Services.Admin;"`.
 
-Kết quả: file có **70 dòng `using StayEasy.Services.Admin;`** trùng nhau, và tôi
+Kết quả: file có **70 dòng `using HomeStay.Services.Admin;`** trùng nhau, và tôi
 cứ lặp lại y hệt vì đọc log lỗi không ra nguyên nhân thật.
 
 **Vì sao sai:** Mỗi lần gọi `edit` thành công (1 dòng cũ → 2 dòng mới). Lần sau
@@ -35,11 +35,11 @@ file bị hỏng, **thêm cả BOM** vào đầu file.
 - Gỡ BOM nếu lỡ dính: `WriteAllBytes($p, $bytes[3..($bytes.Length-1)])` khi 3 byte
   đầu là `239,187,191`.
 
-## 3. Namespace `ApiResponse` là `StayEasy.Common`, KHÔNG phải `StayEasy.DTOs`
+## 3. Namespace `ApiResponse` là `HomeStay.Common`, KHÔNG phải `HomeStay.DTOs`
 
-File `server/StayEasy/DTOs/ApiResponse.cs` nằm trong thư mục `DTOs` nhưng khai báo
-`namespace StayEasy.Common`. Dùng `using StayEasy.DTOs;` là **không đủ** — thiếu
-`using StayEasy.Common;`.
+File `server/HomeStay/DTOs/ApiResponse.cs` nằm trong thư mục `DTOs` nhưng khai báo
+`namespace HomeStay.Common`. Dùng `using HomeStay.DTOs;` là **không đủ** — thiếu
+`using HomeStay.Common;`.
 
 **Bài học:** Đừng suy namespace từ vị trí file. Khi build báo `CS0246` cho một
 loại, hãy `grep "class TenLoai"` rồi mở file ra đọc dòng `namespace` — 10 giây

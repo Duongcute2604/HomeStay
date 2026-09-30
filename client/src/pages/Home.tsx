@@ -198,9 +198,9 @@ export default function Home(): JSX.Element {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
             <div>
               <div className="flex items-center gap-2 mb-4">
-                <img src="/images/logo.svg" alt="StayEasy" className="h-10 w-10" />
+                <img src="/images/logo.svg" alt="HomeStay" className="h-10 w-10" />
                 <div>
-                  <h4 className="text-lg font-bold text-white">StayEasy</h4>
+                  <h4 className="text-lg font-bold text-white">HomeStay</h4>
                   <p className="text-xs text-amber-300">Homestay</p>
                 </div>
               </div>
@@ -211,7 +211,7 @@ export default function Home(): JSX.Element {
             <div>
               <h4 className="font-bold text-white mb-4">Thông tin liên hệ</h4>
               <div className="space-y-2 text-sm text-amber-200">
-                <p>📧 Email: stayeasy@gmail.com</p>
+                <p>📧 Email: homestay@gmail.com</p>
                 <p>📞 Điện thoại: 0901 234 567</p>
                 <p>📍 Cơ sở 1: Đường Lê Văn Lương, phường Hưng Yên, Hưng Yên</p>
                 <p>📍 Cơ sở 2: Đường Đặng Thùy Trâm, phường 3, Đà Lạt</p>
@@ -237,7 +237,7 @@ export default function Home(): JSX.Element {
             </div>
           </div>
           <div className="border-t border-amber-800 pt-6 text-center text-sm text-amber-300">
-            <p>© 2026 StayEasy — Hệ thống đặt phòng &amp; quản lý homestay</p>
+            <p>© 2026 HomeStay — Hệ thống đặt phòng &amp; quản lý homestay</p>
           </div>
         </div>
       </footer>

@@ -32,7 +32,7 @@ Lý do: `[ApiController]` kiểm tra ModelState **trước khi** gọi Service. 
 Kèm theo: 9 chỗ số thô trong attribute đã đổi sang tham chiếu `AuthRules.*`
 (100/150/15/255/6).
 
-Đã thêm `server/StayEasy.Tests/DTOs/AuthDtoValidationTests.cs` (13 ca) gọi đúng
+Đã thêm `server/HomeStay.Tests/DTOs/AuthDtoValidationTests.cs` (13 ca) gọi đúng
 thứ framework gọi: `Validator.TryValidateObject`. Chi tiết: `lessons.md` mục 34.
 
 ## 2. Các mục đã sửa

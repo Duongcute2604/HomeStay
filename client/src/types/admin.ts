@@ -1,7 +1,7 @@
 /**
  * Kiểu dữ liệu phía giao diện cho trang quản trị (Bước 12).
  *
- * Nguồn là `server/StayEasy/DTOs/AdminDtos.cs`.
+ * Nguồn là `server/HomeStay/DTOs/AdminDtos.cs`.
  *
  * Khác với kiểu phía khách, các kiểu ở đây CÓ `id`. Lý do: trang quản trị
  * cần gọi `PUT /api/admin/rooms/{id}` — không có khoá thì không sửa được.
@@ -81,7 +81,7 @@ export interface Customer {
 /**
  * Một đơn trong trang quản trị (Bước 13).
  *
- * Nguồn là `server/StayEasy/DTOs/AdminBookingDtos.cs`. `status` là SỐ — dùng
+ * Nguồn là `server/HomeStay/DTOs/AdminBookingDtos.cs`. `status` là SỐ — dùng
  * `NHAN_TRANG_THAI_DON` từ `types/booking` để hiện nhãn tiếng Việt, đừng so
  * sánh chuỗi.
  */
@@ -131,7 +131,7 @@ export interface Amenity {
 /**
  * So lieu tong quan o dau trang thong ke (Buoc 15).
  *
- * Nguon la `server/StayEasy/DTOs/DashboardDtos.cs`. Ba dinh nghia quan trong
+ * Nguon la `server/HomeStay/DTOs/DashboardDtos.cs`. Ba dinh nghia quan trong
  * da chot o backend va phai giu nguyen khi hien thi:
  * - `doanhThuThangNay` chi gom don `COMPLETED` (da tra phong).
  * - `donThangNay` dem moi trang thai, theo thang TAO don.

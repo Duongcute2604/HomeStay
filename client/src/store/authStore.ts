@@ -51,7 +51,7 @@ export const useAuthStore = create<AuthState>()(
       xoaPhien: () => set({ accessToken: null, refreshToken: null, user: null }),
     }),
     {
-      name: 'stayeasy.auth',
+      name: 'homestay.auth',
     },
   ),
 )

@@ -23,7 +23,7 @@ import { z } from 'zod'
  * thông báo khác của server.
  */
 
-/** Giới hạn độ dài, khớp với DTO bên server (`server/StayEasy/DTOs/AuthDtos.cs`). */
+/** Giới hạn độ dài, khớp với DTO bên server (`server/HomeStay/DTOs/AuthDtos.cs`). */
 export const GIOI_HAN = {
   hoTen: 100,
   email: 150,

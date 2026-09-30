@@ -1,7 +1,7 @@
 /**
  * Kiểu dữ liệu phía giao diện cho phần tài khoản.
  *
- * Nguồn của mọi kiểu ở đây là `server/StayEasy/DTOs/AuthDtos.cs`. Khi sửa DTO
+ * Nguồn của mọi kiểu ở đây là `server/HomeStay/DTOs/AuthDtos.cs`. Khi sửa DTO
  * bên server phải sửa lại file này — nếu không, TypeScript vẫn xanh trong khi
  * dữ liệu thật sai. Vì vậy tên thuộc tính giữ nguyên dạng camelCase như JSON
  * trả về, và không dùng `any` ở bất kỳ chỗ nào (AGENTS.md mục 7.2).

@@ -1,7 +1,7 @@
 /**
  * Kiểu dữ liệu phía giao diện cho phần địa điểm.
  *
- * Nguồn là `server/StayEasy/DTOs/LocationDtos.cs`. Quy tắc bất biến AGENTS.md 6.3:
+ * Nguồn là `server/HomeStay/DTOs/LocationDtos.cs`. Quy tắc bất biến AGENTS.md 6.3:
  * danh sách KHÔNG có `Id` — giao diện điều hướng chi tiết bằng chỉ số trong danh
  * sách, STT = chỉ số + 1. Không dùng `any` ở bất kỳ chỗ nào.
  */

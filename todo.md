@@ -42,13 +42,13 @@ git --version            git version 2.53.0.windows.1
 - **Mục tiêu đo được:** `docker compose ps` có MySQL `running` · `dotnet build` thành công · `npm run build` thành công · có git repo riêng với 1 commit
 - **Ghi chú thực hiện:**
   - `git init` riêng trong `Homestay` (không dùng repo cha `bai-tap-lon` vì đang lẫn đồ án 3).
-  - Xóa container `stayeasy-mysql` cũ (đã `Exited(255)` từ hôm qua, tạo bằng `docker run` tay) để nhường tên + cổng 3307 cho dự án mới. **Không đụng `cookbook-mysql`** (dự án khác) vẫn chiếm 3306.
+  - Xóa container `homestay-mysql` cũ (đã `Exited(255)` từ hôm qua, tạo bằng `docker run` tay) để nhường tên + cổng 3307 cho dự án mới. **Không đụng `cookbook-mysql`** (dự án khác) vẫn chiếm 3306.
   - Dùng `create-vite@5.5.3` (không phải `@latest`) để sinh đúng React 18 + Vite 5 — tránh bẫy phiên bản.
   - API cổng **5080**; Vite proxy `/api` → 5080 để khỏi lỗi CORS.
 - **Kết quả:** Khung chạy được. API trả HTTP 200, build sạch 0 warning.
 - **Bằng chứng:**
 ```
-docker ps (stayeasy-mysql)     Up (healthy)   0.0.0.0:3307->3306/tcp
+docker ps (homestay-mysql)     Up (healthy)   0.0.0.0:3307->3306/tcp
 dotnet build                   Build succeeded.  0 Warning(s)  0 Error(s)
 dotnet test                    Passed!  Failed: 0, Passed: 1, Total: 1
 npm run build                  built in 3.59s
@@ -63,7 +63,7 @@ Phiên bản thực tế đã cài: React 18.3.1 · Vite 5.4.21 · TS 5.9.3 · T
 ## Giai đoạn 1 — Cơ sở dữ liệu
 
 ### [x] BƯỚC 3 — 9 bảng + project test
-- **Mục tiêu đo được:** database `stayeasy` có đủ 9 bảng; index trên `bookings(RoomId)`, `bookings(CheckIn,CheckOut)`, `bookings(Status)`; `dotnet test` xanh
+- **Mục tiêu đo được:** database `homestay` có đủ 9 bảng; index trên `bookings(RoomId)`, `bookings(CheckIn,CheckOut)`, `bookings(Status)`; `dotnet test` xanh
 - **Ghi chú thực hiện:**
   - **3 quyết định đã hỏi và được duyệt:** enum lưu **dạng chữ** (`varchar(20)`) · tên bảng **PascalCase số nhiều** (`RoomImages`) · **không** thêm cột `is_deleted` (xoá thật).
   - Cột tiền dùng `decimal(18,2)`; `RatingAvg` dùng `decimal(3,2)`.
@@ -100,14 +100,14 @@ dotnet run            Now listening on: http://localhost:5080  (không có fail/
 | 3d | Bất thường | Gán cùng 1 tiện nghi cho 1 phòng 2 lần | ✅ `ERROR 1062 Duplicate entry '1-1' for key 'RoomAmenities.PRIMARY'` |
 
 > **27 unit test chia làm 2 nhóm** (tách file theo trách nhiệm):
-> - `StayEasyDbContextModelTests` — 22 test kiểm tra **cấu hình**: đủ 9 bảng, tên bảng, 6 enum lưu dạng `varchar(20)`, unique index (Email/Code/BookingId), index chống trùng lịch, khoá chính ghép, 6 CHECK constraint.
-> - `StayEasyDbContextDataTests` — 5 test kiểm tra **ghi/đọc dữ liệu**: lưu đồ thị quan hệ đầy đủ, cascade delete, tự điền mốc thời gian.
+> - `HomeStayDbContextModelTests` — 22 test kiểm tra **cấu hình**: đủ 9 bảng, tên bảng, 6 enum lưu dạng `varchar(20)`, unique index (Email/Code/BookingId), index chống trùng lịch, khoá chính ghép, 6 CHECK constraint.
+> - `HomeStayDbContextDataTests` — 5 test kiểm tra **ghi/đọc dữ liệu**: lưu đồ thị quan hệ đầy đủ, cascade delete, tự điền mốc thời gian.
 >
 > **Hai file dùng lại cho mọi test sau:** `Helpers/TestDbContextFactory.cs` + `Common/TestDataBuilder.cs`.
 > Dữ liệu test trong MySQL đã dọn sạch sau khi kiểm thử (3 bảng đếm 0).
 
 ### [x] BƯỚC 4 — Seed data
-- **Mục tiêu đo được:** seed thành công 4 user · 3 location · 10 room · 8 amenity · 15 booking (đủ 6 trạng thái, rải nhiều tháng) · 6 review. Đăng nhập được `admin@stayeasy.vn` / `123456`
+- **Mục tiêu đo được:** seed thành công 4 user · 3 location · 10 room · 8 amenity · 15 booking (đủ 6 trạng thái, rải nhiều tháng) · 6 review. Đăng nhập được `admin@homestay.vn` / `123456`
 - **Kế hoạch thực hiện (ghi trước khi code):**
   1. **Thêm package `BCrypt.Net-Next` 4.2.1** — bắt buộc, vì `AGENTS.md` mục 6.6 bắt buộc mật khẩu lưu dạng BCrypt hash, seed phải tạo ra hash thật chứ không phải chuỗi giả. Bản 5.0.0 chỉ là prerelease → không dùng.
   2. **Tạo 8 ảnh SVG** trong `client/public/images/` (4 loại phòng + 3 địa điểm + 1 ảnh nội thất chung) vì máy không có sẵn ảnh phòng thật. SVG sinh bằng code ⇒ không tốn dung lượng, không lẫn file nhị phân vào git.
@@ -123,7 +123,7 @@ dotnet run            Now listening on: http://localhost:5080  (không có fail/
   5. 8 ảnh SVG sinh bằng code, UTF-8 có dấu, đặt đúng chỗ: `client/public/images/rooms/` (5 ảnh) + `locations/` (3 ảnh).
   6. Dữ liệu: 4 user (1 ADMIN + 3 CUSTOMER, trong đó 1 tài khoản `LOCKED`) · 3 địa điểm · 8 tiện nghi · 10 phòng (đủ 4 loại + đủ 5 trạng thái) · 59 liên kết tiện nghi · 20 ảnh phòng · 15 đơn (đủ 6 trạng thái) · 42 dòng lịch sử trạng thái · 6 đánh giá (1 đánh giá bị ẩn) · điểm phòng tính lại từ đánh giá chưa ẩn.
   7. Ngày tháng **tương đối so với `DateTime.Now`** thay vì ghi cứng ⇒ dữ liệu demo luôn "sống" dù GVHD chạy demo vào ngày nào.
-  8. Tài khoản demo: `admin@stayeasy.vn` · `khach1@gmail.com` · `khach2@gmail.com` · `khach3@gmail.com` — mật khẩu đều `123456`.
+  8. Tài khoản demo: `admin@homestay.vn` · `khach1@gmail.com` · `khach2@gmail.com` · `khach3@gmail.com` — mật khẩu đều `123456`.
 - **Bằng chứng:**
   | Loại | Kết quả |
   |------|---------|
@@ -221,7 +221,7 @@ dotnet run            Now listening on: http://localhost:5080  (không có fail/
 | # | File | Vai trò | Ghi chú |
 |---|------|---------|---------|
 | 1 | `types/auth.ts` | Kiểu dữ liệu + `UserRole = { CUSTOMER: 0, ADMIN: 1 }` | BE serialize enum thành **số** (`role: 0`), FE tuyệt đối không so sánh chuỗi |
-| 2 | `store/authStore.ts` | Zustand + persist `stayeasy.auth` | Token là dữ liệu phiên |
+| 2 | `store/authStore.ts` | Zustand + persist `homestay.auth` | Token là dữ liệu phiên |
 | 3 | `api/client.ts` | axios + interceptor + refresh 401 đúng 1 lần | Đọc token qua `useAuthStore.getState()` để không tạo vòng import |
 | 4 | `services/authService.ts` | 7 hàm gọi API, không chứa JSX | Tách `bocDuLieu` / `kiemTraThanhCong` |
 | 5 | `hooks/useAuth.ts` | Bọc store + service cho component | — |
@@ -439,7 +439,7 @@ từ query string) nên không có cách kích hoạt. Vẫn cần nói rõ vớ
 | 2 | `Services/Locations/ILocationService.cs` + `LocationService.cs` | `GetLocationsAsync(ct)`: chỉ `IsActive`, `Include Rooms + Images`, `AsNoTracking`, `Select` thẳng ra DTO |
 | 3 | `Controllers/LocationsController.cs` | `GET /api/locations`, public, trả `ApiResponse<List<...>>` |
 | 4 | *Sửa* `Program.cs` | Đăng ký DI |
-| 5 | `StayEasy.Tests/Services/LocationServiceTests.cs` | ≥ 8 test: 3 địa điểm · loại `IsActive=false` · số phòng đúng · thumbnail là ảnh chính · thứ tự ổn định · DB rỗng → list rỗng · DTO không có `Id` (biên dịch đã đảm bảo, test khẳng định hành vi) |
+| 5 | `HomeStay.Tests/Services/LocationServiceTests.cs` | ≥ 8 test: 3 địa điểm · loại `IsActive=false` · số phòng đúng · thumbnail là ảnh chính · thứ tự ổn định · DB rỗng → list rỗng · DTO không có `Id` (biên dịch đã đảm bảo, test khẳng định hành vi) |
 | 6 | `types/location.ts` | `Location`, `RoomSummary`, `RoomType`/`RoomStatus` số + nhãn tiếng Việt |
 | 7 | `services/locationService.ts` | `layDanhSachDiaDiem()` qua `apiClient`, dùng `bocDuLieu` chung |
 | 8 | `utils/format.ts` + `format.test.ts` | `formatVnd`: `500.000 ₫`, số âm, số 0 |
@@ -490,7 +490,7 @@ từ query string) nên không có cách kích hoạt. Vẫn cần nói rõ vớ
 | 2 | `Services/Rooms/IRoomService.cs` + `RoomService.cs` | `SearchAsync`: lọc → đếm → sắp → Skip/Take, `AsNoTracking`, `Select` ra DTO |
 | 3 | `Controllers/RoomsController.cs` | `GET /api/rooms/search`, public |
 | 4 | *Sửa* `Program.cs` | Đăng ký DI |
-| 5 | `StayEasy.Tests/Services/RoomSearchTests.cs` | ≥ 10 test: từng bộ lọc · sắp xếp · phân trang · min>max 400 · type sai 400 · index vượt phạm vi rỗng · pageSize chặn 50 |
+| 5 | `HomeStay.Tests/Services/RoomSearchTests.cs` | ≥ 10 test: từng bộ lọc · sắp xếp · phân trang · min>max 400 · type sai 400 · index vượt phạm vi rỗng · pageSize chặn 50 |
 | 6 | `types/room.ts` | `RoomSearchItem`, `PagedResult<T>`, `SortOption`, `SearchFilters` — dùng lại `RoomType/RoomStatus` từ `location.ts` |
 | 7 | `schemas/roomSchemas.ts` + test | Schema form lọc: số ép kiểu, `minPrice<=maxPrice`, giá trị mặc định |
 | 8 | `services/roomService.ts` + test | `timKiem(filters)` dựng query string, mock `apiClient` |

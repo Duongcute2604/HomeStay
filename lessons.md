@@ -207,7 +207,7 @@ npm warn install-scripts  esbuild@0.21.5 (postinstall: node install.js) chưa đ
 ## 12. Tiếng Việt hiện lỗi trong terminal ≠ file hỏng
 
 **Ngày:** 29/09/2026
-**Triệu chứng:** đọc `<title>` trong `index.html` ra `StayEasy � �?t ph?ng Homestay` — tưởng file bị hỏng encoding, sắp sửa lại cả dự án.
+**Triệu chứng:** đọc `<title>` trong `index.html` ra `HomeStay � �?t ph?ng Homestay` — tưởng file bị hỏng encoding, sắp sửa lại cả dự án.
 
 **Nguyên nhân gốc:** **console Windows dùng codepage 437/850, không có nét dấu tiếng Việt.** Chỉ là hỏng ở tầng hiển thị, file trên đĩa vẫn UTF-8 đúng.
 
@@ -279,7 +279,7 @@ room.ToTable("Rooms", table => table.HasCheckConstraint("CK_Rooms_Capacity", "`C
 ## 15. Pomelo 8.0.2 kéo EFCore 8.0.2, nhưng Design/InMemory cài 8.0.10 → warning MSB3277
 
 **Ngày:** 29/09/2026
-**Sai ở đâu:** `StayEasy.csproj` dùng `EFCore.Design 8.0.10`, test project dùng `EFCore.InMemory 8.0.10`, còn Pomelo `8.0.2` kéo theo `EFCore.Relational 8.0.2`.
+**Sai ở đâu:** `HomeStay.csproj` dùng `EFCore.Design 8.0.10`, test project dùng `EFCore.InMemory 8.0.10`, còn Pomelo `8.0.2` kéo theo `EFCore.Relational 8.0.2`.
 
 **Vì sao nguy hiểm:** build vẫn **thành công**, chạy vẫn được — nhưng có **2 assembly cùng tên khác phiên bản** nằm trong output. Hôm nào cần đọc metadata (`GetValueConverter`, `GetColumnType`) thì có thể nạp nhầm bản → lỗi khó hiểu. Với đồ án bị GVHD hỏi "sao log của em lúc nào cũng có dòng MSB3277" thì mất điểm ngay.
 
@@ -342,7 +342,7 @@ Cách này kiểm chứng đúng thứ cần biết: **MySQL sẽ lưu cột nà
 
 **Đã sửa — ghi log đầy đủ ra file, lọc *sau*:**
 ```powershell
-dotnet run --project server\StayEasy\StayEasy.csproj *>&1 | Out-File -FilePath $log -Encoding UTF8
+dotnet run --project server\HomeStay\HomeStay.csproj *>&1 | Out-File -FilePath $log -Encoding UTF8
 # đợi app lên rồi đọc:
 $n = Get-Content $log -Encoding UTF8
 ($n | Select-String 'INSERT INTO').Count     # kịch bản 2 phải ra 0
@@ -673,14 +673,14 @@ người dùng nhớ lại **repo từng là public** — tức khoá đó đã 
 **Sai ở đâu:** tưởng `git rm --cached` là đủ. Thực tế:
 
 ```powershell
-git log --all --oneline -- server/StayEasy/appsettings.Development.json
+git log --all --oneline -- server/HomeStay/appsettings.Development.json
 # 18245ab feat: them chuc nang tai khoan ...
-# 947ebde chore: khoi tao khung du an StayEasy (Moc 1)
-# 2ba48b8 chore: khoi tao khung du an StayEasy (Moc 1)
+# 947ebde chore: khoi tao khung du an HomeStay (Moc 1)
+# 2ba48b8 chore: khoi tao khung du an HomeStay (Moc 1)
 ```
 
 Ba commit vẫn chứa đầy đủ khoá. Bất kỳ ai cũng lấy được bằng
-`git show 2ba48b8:server/StayEasy/appsettings.Development.json`.
+`git show 2ba48b8:server/HomeStay/appsettings.Development.json`.
 
 **Đã sửa — 3 việc, theo đúng thứ tự:**
 
@@ -715,7 +715,7 @@ Ba commit vẫn chứa đầy đủ khoá. Bất kỳ ai cũng lấy được b�
 **Kèm theo — dọn nốt bí mật còn sót trong file đang được commit:**
 
 `appsettings.json` (file NÀY được commit) chứa
-`Password=stayeasy***` của MySQL trong Docker. Đã chuyển cả chuỗi kết nối sang
+`Password=homestay***` của MySQL trong Docker. Đã chuyển cả chuỗi kết nối sang
 `appsettings.Development.json`, để lại trong `appsettings.json` một dòng chú thích
 hướng dẫn, và thêm giá trị mẫu vào `appsettings.Development.example.json`.
 
@@ -1026,7 +1026,7 @@ Khi quét code, phát hiện:
 | `User.RefreshTokenExpiresAt` — ghi 3 chỗ, **đọc 0 chỗ** (hết hạn thật do claim `exp` trong JWT quyết định) | **Giữ**, nhưng sửa comment. Cột này hữu ích khi cần tra cứu mà không muốn giải mã token. Comment cũ ghi *"Thời điểm refresh token hiện hành hết hạn"* khiến người đọc tưởng sửa ở đây là sửa được luật hết hạn → ghi rõ "không tham gia quyết định" |
 | `JwtTokenService.RoleClaimType` — ký claim quyền vào access token, **chưa nơi nào đọc** | **Giữ**. Sẽ dùng cho `[Authorize(Roles = ...)]` ở Bước 14. Xoá bây giờ thì Bước 14 phải làm lại |
 | `BookingRules.CleaningHoursAfterCheckout` — khai báo, **không ai dùng, kể cả test** | **Xoá**. `AGENTS.md` 3.4 cấm code thừa cho tương lai. Ghi chú trong file rằng sẽ thêm lại ở Bước 10 kèm unit test |
-| `AuthRules.RefreshTokenHashLength` — khai báo, **không ai dùng** (`StayEasyDbContext` viết thẳng `100`) | **Xoá** |
+| `AuthRules.RefreshTokenHashLength` — khai báo, **không ai dùng** (`HomeStayDbContext` viết thẳng `100`) | **Xoá** |
 | `Common/ErrorCodes.cs` — 30 dòng, **0 tham chiếu** | **Xoá cả file**. Quy tắc 400 vs 409 mà nó ghi lại đã nằm ở `AGENTS.md` mục 6.5 — giữ hai bản sao là tự tạo nguồn sự thật thứ hai |
 
 **Bài học — phân biệt ba loại "không ai dùng":**
@@ -1626,3 +1626,53 @@ Y hệt vậy ở `XoaAsync`: `Remove()` rồi đếm ⇒ dòng vừa xoá vẫn
 
 > **Quy tắc:** khi một thao tác **tính lại** số liệu từ dữ liệu vừa thay đổi bằng truy vấn, phải **ghi thay đổi trước, đọc sau**. Cùng nguyên tắc với mục 55: không được đọc CSDL rồi mới kịp ghi.
 > Ngoài ra giữ cả 2 lần `SaveChanges` trong **cùng một transaction** — tách ra thì điểm phòng lệch với danh sách đánh giá trong khoảnh khắc giữa.
+---
+
+## 62. Đổi tên hàng loạt: quét theo **phần mở rộng file** thì sót — phải quét theo **nội dung**
+
+**Sai ở đâu:** đổi `StayEasy` → `HomeStay` bằng vòng lặp chỉ nhận `.cs .ts .tsx .json .html .md .css .csproj .props .yml`.
+Kết quả còn sót: **`logo.svg`** (chữ trong `aria-label` và comment), **`.http`** (file REST client của VS), và các file `.svg` địa điểm.
+
+**Vì sao dễ sót:** danh sách phần mở rộng là do mình **tự nghĩ ra**, nên nó chỉ đúng với những loại file mình đang nghĩ tới. `.svg` thì có SVG (vector) nên không nghĩ tới.
+
+**Cách sửa / quy tắc:**
+- Quét theo **nội dung**, không theo tên: lấy tất cả file trừ `node_modules/ bin/ obj/ dist/ .git/`, rồi `Select-String`. Cách này bắt được mọi loại file kể cả loại mình chưa biết có.
+- Chỉ dùng danh sách phần mở rộng khi cần **giữ nguyên** file nhị phân (`.jpg`, `.ico`) — trường hợp này thì kiểm tra lại bằng quét nội dung sau khi thay.
+- Quét lại **không phân biệt hoa thường** trước khi commit. Lần này bắt được `STAYEASY` viết in hoa toàn bộ trong `JwtTokenServiceTests.cs` mà 2 vòng trước đều bỏ sót.
+
+---
+
+## 63. MySQL 8 **không có** `RENAME DATABASE` — và `RENAME USER` + `GRANT` làm hỏng đăng nhập
+
+Hai lỗi liên tiếp khi đổi tên database trong dự án này.
+
+**Lỗi 1 — cú pháp sai:**
+```sql
+RENAME DATABASE stayeasy TO homestay;   -- ERROR 1064
+```
+`RENAME DATABASE` là cú pháp của **MariaDB**, MySQL 8 không có. Cách đúng là tạo database mới rồi `RENAME TABLE db.cua TO db.moi.cua` cho từng bảng — nhanh, giữ nguyên dữ liệu, không cần dump/restore.
+
+**Lỗi 2 — mất khả năng đăng nhập:**
+```sql
+RENAME USER 'stayeasy'@'%' TO 'homestay'@'%';
+GRANT ALL PRIVILEGES ON homestay.* TO 'homestay'@'%';
+```
+Sau đó app báo `Access denied for user 'homestay'@'172.19.0.1'`. Cần thêm:
+```sql
+ALTER USER 'homestay'@'%' IDENTIFIED BY 'matkhau';
+GRANT ALL PRIVILEGES ON homestay.* TO 'homestay'@'%';
+```
+
+> **Quy tắc:** đổi tên user/database trong MySQL thì **luôn kèm `ALTER USER ... IDENTIFIED BY`** và kiểm chứng bằng `mysql -u<TenMoi> -p<TMK Moi> -e "SELECT 1"` **trước khi** chạy app. Không kiểm thì lúc chạy app mới biết, mà lúc đó lỗi nằm ở tầng hạ tầng chứ không phải code.
+
+---
+
+## 64. Đừng kết luận "file không tồn tại" khi mới tìm ở **một** chỗ
+
+**Sai ở đâu:** ở Bước 15 mình kết luận và ghi vào commit message rằng *"thư mục `server/` chưa có file `.sln`, nên `dotnet test` không chạy được"*. Thực tế `.sln` **có tồn tại**, nhưng nằm ở **gốc repo** chứ không phải trong `server/` — mình chỉ chạy `Get-ChildItem -Filter *.sln` trong `server/`.
+
+Hậu quả: một ghi chú sai bị đưa vào lịch sử git và vào commit message — thứ mà người khác đọc lại sẽ tin.
+
+**Đã sửa ở lượt này:** chuyển `HomeStay.sln` **vào** `server/` cho khớp sơ đồ ở `AGENTS.md` mục 5.1, và giờ `cd server; dotnet test` chạy đúng như tài liệu viết (đã kiểm: 361/361).
+
+> **Quy tắc:** trước khi viết "cái này không có", tìm ở **tối thiểu 2 nơi** (thư mục con + gốc), hoặc dùng lệnh tìm toàn bộ repo. Và câu "không có" phải kèm bằng đường dẫn đã tìm — không thì không ai kiểm chứng được.

@@ -3,7 +3,7 @@ import type { RoomSummary, RoomType } from './location'
 /**
  * Kiểu dữ liệu phía giao diện cho phần tìm kiếm phòng.
  *
- * Nguồn là `server/StayEasy/DTOs/RoomDtos.cs`. `RoomType`/`RoomStatus` dùng lại
+ * Nguồn là `server/HomeStay/DTOs/RoomDtos.cs`. `RoomType`/`RoomStatus` dùng lại
  * từ `types/location.ts` để không có hai nguồn sự thật cho cùng một enum.
  * Không có `Id` ở bất kỳ chỗ nào (AGENTS.md 6.3).
  */

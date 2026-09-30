@@ -1,4 +1,4 @@
-# AGENTS.md — Bộ quy tắc làm việc cho dự án StayEasy
+# AGENTS.md — Bộ quy tắc làm việc cho dự án HomeStay
 
 > **Tài liệu này là bất biến.** Mọi code viết ra phải tuân thủ.
 > Đọc file này **trước khi viết bất kỳ dòng code nào**.
@@ -422,9 +422,9 @@ Quy tắc thêm:
 ### 5.1 Cấu trúc project test
 ```text
 server/
-├── StayEasy.sln
-├── StayEasy/                 ← code chính
-└── StayEasy.Tests/           ← project test xUnit
+├── HomeStay.sln
+├── HomeStay/                 ← code chính
+└── HomeStay.Tests/           ← project test xUnit
     ├── Services/
     │   ├── BookingServiceTests.cs
     │   ├── RoomSearchTests.cs

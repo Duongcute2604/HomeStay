@@ -1,5 +1,5 @@
 # BẢN KẾ HOẠCH CHI TIẾT — TỪNG BƯỚC LÀM
-## Đồ án 4: Hệ thống đặt phòng và quản lý homestay (StayEasy)
+## Đồ án 4: Hệ thống đặt phòng và quản lý homestay (HomeStay)
 
 > SV: Nguyễn Hải Nam — 12523W.1 · GVHD: TS. Hồng Quốc Việt
 > Lập ngày 29/09/2026 · Hạn bảo vệ dự kiến ~20/10/2026
@@ -167,8 +167,8 @@ git init
 ```powershell
 mkdir server
 cd server
-dotnet new webapi -n StayEasy
-cd StayEasy
+dotnet new webapi -n HomeStay
+cd HomeStay
 dotnet add package Pomelo.EntityFrameworkCore.MySql --version 8.0.2
 dotnet add package Microsoft.EntityFrameworkCore.Design --version 8.0.10
 dotnet add package Microsoft.AspNetCore.Authentication.JwtBearer --version 8.0.10
@@ -191,11 +191,11 @@ npm install -D tailwindcss @tailwindcss/vite recharts
 services:
   mysql:
     image: mysql:8.0
-    container_name: stayeasy-mysql
+    container_name: homestay-mysql
     environment:
       MYSQL_ROOT_PASSWORD: "123456"
-      MYSQL_DATABASE: stayeasy
-      MYSQL_USER: stayeasy
+      MYSQL_DATABASE: homestay
+      MYSQL_USER: homestay
       MYSQL_PASSWORD: "123456"
     ports: ["3306:3306"]
     volumes:
@@ -205,7 +205,7 @@ volumes:
 ```
 ```powershell
 docker compose up -d
-docker compose ps          # phải thấy stayeasy-mysql là running
+docker compose ps          # phải thấy homestay-mysql là running
 ```
 
 **(e) `.gitignore`** phải có: `node_modules/`, `bin/`, `obj/`, `dist/`, `.env`, `uploads/`, `*.tsbuildinfo`
@@ -234,7 +234,7 @@ cd ..\client && npm run build                       # build thành công
 ```
 
 ### 2.4 Kết quả bàn giao
-Cả 3 lệnh trên chạy được. Commit lần đầu: `git commit -m "chore: khoi tao khung project StayEasy"`.
+Cả 3 lệnh trên chạy được. Commit lần đầu: `git commit -m "chore: khoi tao khung project HomeStay"`.
 
 ---
 
@@ -311,17 +311,17 @@ Thêm unique index `(BookingId)` trong `reviews` để chặn đánh giá 2 lầ
 
 ### 3.4 Chi tiết kỹ thuật
 - Tạo file `Entities/User.cs`, `Room.cs`, ... trong `server/Entities/`
-- Tạo `Data/StayEasyDbContext.cs`, khai báo `DbSet<T>` và quan hệ
+- Tạo `Data/HomeStayDbContext.cs`, khai báo `DbSet<T>` và quan hệ
 - `Program.cs` — đăng ký `DbContext`:
 ```csharp
-builder.Services.AddDbContext<StayEasyDbContext>(options =>
+builder.Services.AddDbContext<HomeStayDbContext>(options =>
     options.UseMySql(builder.Configuration.GetConnectionString("DefaultConnection"),
                      ServerVersion.AutoDetect(conn)));
 ```
 - `appsettings.json` — chuỗi kết nối:
 ```json
 "ConnectionStrings": {
-  "DefaultConnection": "Server=localhost;Port=3306;Database=stayeasy;User=stayeasy;Password=123456;"
+  "DefaultConnection": "Server=localhost;Port=3306;Database=homestay;User=homestay;Password=123456;"
 }
 ```
 - Chạy migration:
@@ -332,7 +332,7 @@ dotnet ef database update
 ```
 
 ### 3.5 Cách kiểm tra
-Mở Swagger → xem danh sách bảng; hoặc mở DBeaver/Workbench → thấy 9 bảng trong database `stayeasy`.
+Mở Swagger → xem danh sách bảng; hoặc mở DBeaver/Workbench → thấy 9 bảng trong database `homestay`.
 
 ### 3.6 Kết quả bàn giao
 Database có đủ 9 bảng, backend kết nối được MySQL. Commit: `feat(DB): them 9 bang co ban`.
@@ -340,11 +340,11 @@ Database có đủ 9 bảng, backend kết nối được MySQL. Commit: `feat(D
 ### 3.7 Tạo project kiểm thử (làm ngay ở bước này, đừi để cuối)
 ```powershell
 cd server
-dotnet new xunit -n StayEasy.Tests
-dotnet sln add StayEasy.Tests
-dotnet add StayEasy.Tests reference StayEasy
-dotnet add StayEasy.Tests package Microsoft.EntityFrameworkCore.InMemory
-dotnet add StayEasy.Tests package Moq
+dotnet new xunit -n HomeStay.Tests
+dotnet sln add HomeStay.Tests
+dotnet add HomeStay.Tests reference HomeStay
+dotnet add HomeStay.Tests package Microsoft.EntityFrameworkCore.InMemory
+dotnet add HomeStay.Tests package Moq
 ```
 Tạo sẵn `Helpers/TestDbContextFactory.cs` và `Common/TestDataBuilder.cs` — 2 file này dùng lại cho **mọi** test sau đó (đúng tinh thần DRY trong `AGENTS.md`).
 Xem thêm `AGENTS.md` mục 5.1–5.3.
@@ -364,7 +364,7 @@ Tạo `Data/SeedData.cs`, gọi tự động trong `Program.cs` khi app khởi �
 
 | Loại | Số lượng | Chi tiết |
 |------|----------|----------|
-| Tài khoản | 4 | `admin@stayeasy.vn` / `123456` (ADMIN)<br>`khach1@gmail.com`, `khach2@gmail.com`, `khach3@gmail.com` / `123456` (CUSTOMER) |
+| Tài khoản | 4 | `admin@homestay.vn` / `123456` (ADMIN)<br>`khach1@gmail.com`, `khach2@gmail.com`, `khach3@gmail.com` / `123456` (CUSTOMER) |
 | Địa điểm | 3 | Hà Nội, Hưng Yên, Sa Pa |
 | Tiện nghi | 8 | WiFi, Máy lạnh, Tủ lạnh, Bồn tắm, Ban công, Bãi đỗ xe, TV, Bàn ăn |
 | Phòng | 10 | Mỗi phòng 3–4 ảnh, 3–5 tiện nghi, giá 150.000–1.200.000/giờ và 700.000–3.500.000/ngày |
@@ -377,7 +377,7 @@ Tạo `Data/SeedData.cs`, gọi tự động trong `Program.cs` khi app khởi �
 ```powershell
 dotnet run
 ```
-→ đăng nhập `admin@stayeasy.vn` / `123456` được, database có 10 phòng, 15 đơn.
+→ đăng nhập `admin@homestay.vn` / `123456` được, database có 10 phòng, 15 đơn.
 
 ### 4.4 Kết quả bàn giao
 App chạy được với dữ liệu mẫu. **Đây là dữ liệu dùng cho toàn bộ phần demo.**
@@ -425,7 +425,7 @@ App chạy được với dữ liệu mẫu. **Đây là dữ liệu dùng cho t
 1. Đăng ký tài khoản mới → thông báo thành công, tự đăng nhập
 2. Đăng ký lại cùng email → báo "Email đã tồn tại"
 3. Đăng nhập sai mật khẩu → báo lỗi rõ ràng
-4. Đăng nhập `admin@stayeasy.vn` → thấy menu Admin; đăng nhập `khach1@gmail.com` → không thấy menu Admin
+4. Đăng nhập `admin@homestay.vn` → thấy menu Admin; đăng nhập `khach1@gmail.com` → không thấy menu Admin
 5. Gõ thẳng đường dẫn `/admin` khi đang đăng nhập bằng khách → bị chặn
 6. Đổi mật khẩu → đăng nhập lại bằng mật khẩu mới
 
@@ -1061,7 +1061,7 @@ Giữ 10 tài liệu đã có, kiểm tra lại ngày truy cập, bổ sung tài
 - [ ] Không còn chỗ nào ghi "nhân viên" trong báo cáo
 - [ ] SQL Server / MySQL đã thống nhất
 - [ ] Chạy `docker compose up --build` từ máy sạch → hệ thống lên được
-- [ ] Có tài khoản demo ghi rõ trong README: `admin@stayeasy.vn` / `123456`
+- [ ] Có tài khoản demo ghi rõ trong README: `admin@homestay.vn` / `123456`
 - [ ] Có 18 test case với kết quả thật, có ảnh
 - [ ] Slide 15–20 trang, luyện nói **≥ 3 lần**, **≤ 15 phút**
 - [ ] Git có lịch sử đều đặn, đẩy lên GitHub
