@@ -38,10 +38,16 @@ export const bookingService = {
     return bocDuLieu(response.data)
   },
 
-  /** Danh sách đơn của chính người đang đăng nhập, mới nhất trước. */
-  async layCuaToi(page = 1, pageSize = 20): Promise<PagedResult<MyBooking>> {
+  /**
+   * Danh sách đơn của chính người đang đăng nhập, mới nhất trước.
+   *
+   * `status` là số trạng thái (xem `BookingStatus`). `undefined` = không lọc,
+   * lúc đó không gửi tham số lên — để URL sạch và giữ nguyên hành vi cũ.
+   */
+  async layCuaToi(page = 1, pageSize = 20, status?: number): Promise<PagedResult<MyBooking>> {
+    const boLoc = status === undefined ? '' : `&status=${status}`
     const response = await apiClient.get<ApiResponse<PagedResult<MyBooking>>>(
-      `/bookings/my?page=${page}&pageSize=${pageSize}`,
+      `/bookings/my?page=${page}&pageSize=${pageSize}${boLoc}`,
     )
     return bocDuLieu(response.data)
   },

@@ -53,14 +53,16 @@ public class BookingsController : ControllerBase
     /// <summary>
     /// Danh sách đơn của chính người đang đăng nhập, mới nhất trước.
     /// </summary>
+    /// status loc theo trang thai (0-5). Khong truyen hoac tron bien thi tra tat ca.
     [HttpGet("my")]
     [Authorize]
     [ProducesResponseType(typeof(ApiResponse<PagedResultDto<MyBookingDto>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> LayCuaToi(
-        [FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken ct = default)
+        [FromQuery] int page = 1, [FromQuery] int pageSize = 20,
+        [FromQuery] int? status = null, CancellationToken ct = default)
     {
         PagedResultDto<MyBookingDto> result =
-            await _bookingService.LayCuaToiAsync(User.LayUserIdHienTai(), page, pageSize, ct);
+            await _bookingService.LayCuaToiAsync(User.LayUserIdHienTai(), page, pageSize, status, ct);
 
         return Ok(ApiResponse<PagedResultDto<MyBookingDto>>.SuccessResponse("Lấy danh sách đơn thành công", result));
     }

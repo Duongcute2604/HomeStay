@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -101,7 +101,9 @@ describe('MyBookings - danh sach va huy', () => {
     dungTrang()
 
     expect(await screen.findByText('HS-261005-4821')).toBeInTheDocument()
-    expect(screen.getByText('Chờ xác nhận')).toBeInTheDocument()
+    // Nhãn trạng thái xuất hiện ở **hai** nơi: badge trên thẻ đơn và một option
+    // trong ô lọc. Cả hai cùng lấy từ `NHAN_TRANG_THAI_DON` nên phải đúng 2.
+    expect(screen.getAllByText('Chờ xác nhận')).toHaveLength(2)
     expect(screen.getByText('1.100.000 ₫')).toBeInTheDocument()
   })
 
@@ -154,5 +156,112 @@ describe('MyBookings - danh sach va huy', () => {
     ).toBeInTheDocument()
     // Danh sách vẫn còn — lỗi không làm mất dữ liệu đang hiện.
     expect(screen.getByText('HS-261005-4821')).toBeInTheDocument()
+  })
+})
+
+describe('MyBookings - loc theo trang thai', () => {
+  it('MacDinh_KhongTruyenThamSoLocLenAPI', async () => {
+    layCuaToiMock.mockResolvedValue(trangMau([donMau('HS-261005-4821', BookingStatus.PENDING)]))
+
+    dungTrang()
+    await screen.findByText('HS-261005-4821')
+
+    // `undefined` = không lọc. Truyen `0` o day se sai, vi 0 la PENDING - mot
+    // trang thai hop le, va se lam mat don "Cho xac nhan" khi nguoi dung chon no.
+    expect(layCuaToiMock).toHaveBeenCalledWith(1, 20, undefined)
+  })
+
+  it('ChonTrangThai_TruyenDungSoLenAPI', async () => {
+    layCuaToiMock.mockResolvedValue(trangMau([]))
+
+    dungTrang()
+    await screen.findByLabelText('Lọc theo trạng thái')
+
+    fireEvent.change(screen.getByLabelText('Lọc theo trạng thái'), {
+      target: { value: String(BookingStatus.CHECKED_IN) },
+    })
+
+    await waitFor(() =>
+      expect(layCuaToiMock).toHaveBeenCalledWith(1, 20, BookingStatus.CHECKED_IN),
+    )
+  })
+
+  it('ChonTrangThaiKhong_ChonDungGiaTriKhong', async () => {
+    // Nhãn trong ô lọc lấy từ cùng nguồn với nhãn trên thẻ đơn: đổi chữ ở
+    // `NHAN_TRANG_THAI_DON` là cả hai cùng đổi, không thể lệch nhau.
+    layCuaToiMock.mockResolvedValue(trangMau([donMau('HS-261005-4821', BookingStatus.PENDING)]))
+
+    dungTrang()
+    const oLoc = await screen.findByLabelText('Lọc theo trạng thái')
+    const nhan = Array.from(oLoc.querySelectorAll('option')).map((o) => o.textContent)
+
+    expect(nhan).toEqual([
+      'Tất cả trạng thái',
+      'Chờ xác nhận',
+      'Đã xác nhận',
+      'Đang ở',
+      'Hoàn thành',
+      'Đã hủy',
+      'Bị từ chối',
+    ])
+  })
+
+  it('LocKhongCoDonKhop_HienThongBaoDungVaNutXemTatCa', async () => {
+    layCuaToiMock.mockResolvedValue(trangMau([]))
+
+    dungTrang()
+    const oLoc = await screen.findByLabelText('Lọc theo trạng thái')
+    fireEvent.change(oLoc, { target: { value: String(BookingStatus.CANCELLED) } })
+
+    expect(
+      await screen.findByText('Không có đơn nào ở trạng thái này'),
+    ).toBeInTheDocument()
+    // Không dẫn tới "Tìm phòng ngay": người dùng đang lọc đơn cũ, không phải
+    // chưa từng đặt phòng. Bấm nhầm nút kia là đi sai hướng.
+    expect(screen.queryByRole('link', { name: 'Tìm phòng ngay' })).not.toBeInTheDocument()
+  })
+
+  it('BamXemTatCaDon_BoLocVaTaiLai', async () => {
+    layCuaToiMock.mockResolvedValue(trangMau([]))
+
+    dungTrang()
+    const oLoc = await screen.findByLabelText('Lọc theo trạng thái')
+    fireEvent.change(oLoc, { target: { value: String(BookingStatus.CANCELLED) } })
+    await screen.findByText('Không có đơn nào ở trạng thái này')
+
+    layCuaToiMock.mockResolvedValue(trangMau([donMau('HS-261005-4821', BookingStatus.PENDING)]))
+    fireEvent.click(screen.getByRole('button', { name: 'Xem tất cả đơn' }))
+
+    expect(await screen.findByText('HS-261005-4821')).toBeInTheDocument()
+    await waitFor(() => expect(layCuaToiMock).toHaveBeenLastCalledWith(1, 20, undefined))
+  })
+
+  it('HuyDon_MatDinhLoc_TheoDungBoLocDangXem', async () => {
+    // Thứ tự các lần gọi: (1) mới vào trang chưa lọc, (2) đã chọn PENDING,
+    // (3) sau khi hủy. Đơn bị hủy nên không còn thuộc nhóm PENDING ⇒ lần 3 rỗng.
+    const coDon = trangMau([donMau('HS-261005-4821', BookingStatus.PENDING)])
+    layCuaToiMock
+      .mockResolvedValueOnce(coDon)
+      .mockResolvedValueOnce(coDon)
+      .mockResolvedValue(trangMau([]))
+    huyDonMock.mockResolvedValue({
+      code: 'HS-261005-4821',
+      status: BookingStatus.CANCELLED,
+    } as unknown as import('../types/booking').BookingDetail)
+
+    dungTrang()
+    const oLoc = await screen.findByLabelText('Lọc theo trạng thái')
+    fireEvent.change(oLoc, { target: { value: String(BookingStatus.PENDING) } })
+    await screen.findByText('HS-261005-4821')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Hủy đơn' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Chắc chắn hủy' }))
+
+    // Hủy xong đơn biến mất khỏi nhóm PENDING nên danh sách phải trống, **không**
+    // phải còn đơn cũ. Đây cũng là lý do `invalidateQueries` dùng theo tiền tố
+    // `['bookings','my']` thay vì kèm luôn trạng thái.
+    expect(
+      await screen.findByText('Không có đơn nào ở trạng thái này'),
+    ).toBeInTheDocument()
   })
 })

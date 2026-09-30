@@ -591,11 +591,11 @@ từ query string) nên không có cách kích hoạt. Vẫn cần nói rõ vớ
 | 10 | Giao diện | Route `/booking/:chiSoDiaDiem/:chiSoPhong?loai&checkIn&checkOut` (bọc `ProtectedRoute`) + form số khách/ghi chú + trang thành công hiện `Code` | Query param để F5 không mất. Chưa link "Đơn của tôi" — trang đó thuộc Bước 11, link chết bị cấm |
 | 11 | Nút "Tiếp tục đặt phòng" | Ở trang chi tiết, hiện khi khung báo trống; bấm → sang trang đặt kèm ngày đã chọn | Khung phát lựa chọn ra qua callback `onThayDoi` (Bước 8 đã tách khung để dùng lại) |
 
-### [x] BƯỚC 11 — Đơn của tôi, hủy đơn, lịch sử · **XONG 30/09/2026**
+### [x] BƯỚC 11 — Đơn của tôi, hủy đơn, lịch sử · **XONG 30/09/2026, bổ sung lọc trạng thái 01/10**
 - **Mục tiêu đo được:** `GET /api/bookings/my` chỉ đơn của chính mình · hủy `PENDING`/`CONFIRMED`, từ chối hủy `CHECKED_IN` trở đi · xem lịch sử · 3/3 test tay · **≥ 10 unit test backend** + **≥ 10 unit test frontend**
 - **Bằng chứng:** **Backend 238/238** · **Frontend 177/177** · API **8/8** kịch bản · console sạch · đã kiểm tra ở khung mobile 390px (chi tiết ở `docs/KIEM_THU_TAY.md` mục 7)
 - **Ảnh chụp:** ✅ `.openchamber/screenshots/buoc11-*.jpg`
-- ⚠️ **Bổ sung 01/10: 7/8 kịch bản đạt, 1 chưa làm** — xem mục "Lỗ hổng tìm ra 01/10" bên dưới. Bước này **chưa xong trọn vẹn**.
+- ⚠️ **Bổ sung 01/10: 14/14 kịch bản đạt.** Đã làm nốt tính năng lọc theo trạng thái và sửa lỗi ô lọc biến mất khi lọc ra danh sách rỗng. Bằng chứng ở bảng bên dưới.
 
 #### Quyết định đã chốt (trước khi code)
 
@@ -613,11 +613,34 @@ từ query string) nên không có cách kích hoạt. Vẫn cần nói rõ vớ
 
 | # | Vấn đề | Mức độ | Trạng thái |
 |---|--------|--------|------------|
-| 1 | **Lọc đơn theo trạng thái chưa làm.** Bảng kiểm thử mục 7 có dòng này nhưng cột "Thực tế" để trống — tức hồi đóng bước này **chưa hề kiểm**. Chạy thật: `GET /api/bookings/my` chỉ nhận `page`/`pageSize`, **không có** tham số trạng thái; giao diện cũng không có ô lọc. Thử `?status=0,1,2,3,4,99` → **đều trả đủ 7 đơn** | Trung bình — tính năng nhỏ, khoảng 30 dòng backend + 1 `<select>` | ❌ **Chưa làm** — cần quyết định có làm không |
+| 1 | **Lọc đơn theo trạng thái chưa làm.** Bảng kiểm thử mục 7 có dòng này nhưng cột "Thực tế" để trống — tức hồi đóng bước này **chưa hề kiểm**. Chạy thật: `GET /api/bookings/my` chỉ nhận `page`/`pageSize`, **không có** tham số trạng thái; giao diện cũng không có ô lọc. Thử `?status=0,1,2,3,4,99` → **đều trả đủ 7 đơn** | Trung bình — tính năng nhỏ, khoảng 30 dòng backend + 1 `<select>` | ✅ **Đã làm 01/10** — xem bảng kết quả bên dưới |
 | 2 | Dòng 4 của bảng ghi kỳ vọng "403" nhưng hệ thống trả **404** | Không phải lỗi | ✅ Đã sửa kỳ vọng cho khớp thực tế (404 là quyết định chốt ở Bước 16, xem bảng quyết định dòng 2 ở trên) |
+
+#### Kết quả làm 01/10 — lọc đơn theo trạng thái
+
+| # | Vấn đề | Chốt | Lý do |
+|---|--------|------|-------|
+| 1 | Lọc ở server hay ở client? | **Server** | API đã phân trang. Lọc client chỉ đúng với trang 1 — sang trang 2 là sai, và tải cả 50 đơn về bỏ đi thì lãng phí |
+| 2 | Truyền `status` dạng gì? | **Số** (0–5) | Khớp enum backend serialize ra số, và khớp `AdminBookings` đang dùng `?status=0` — một kiểu tham số cho cả hai phía |
+| 3 | `status` sai (ví dụ 99)? | **Coi như không lọc**, trả tất cả | Đây là bộ lọc tuỳ chọn do chính giao diện gửi, không phải dữ liệu người dùng nhập tay → sai thì bỏ qua còn hơn báo lỗi |
+| 4 | Ràng giá trị hợp lệ ở đâu? | Trong **service** | Controller chỉ tiếp nhận/trả response (AGENTS 6.1). Ràng ở service thì unit test được |
+| 5 | Kiểm "có truyền `status` không" bằng gì? | `status is int v` — **không** dùng `status > 0` | `PENDING` có giá trị **0**. Kiểm `> 0` sẽ coi 0 là "không truyền" ⇒ chọn "Chờ xác nhận" ra danh sách tất cả |
+| 6 | Cần bảng đếm số đơn theo trạng thái? | **Không** (YAGNI) | Ô chọn đã hiện tên trạng thái; thêm số đếm là thêm endpoint + DTO + bảng mà không ai dùng |
+| 7 | `queryKey` của TanStack Query? | Có kèm `status` | Không có nó thì đổi bộ lọc sẽ lấy nhầm cache của bộ lọc cũ — lỗi rất khó thấy bằng mắt |
+| 8 | Trạng thái rỗng khi lọc mà không ra đơn? | Tái dùng thẻ **"không có đơn nào ở trạng thái này"** + nút "Xem tất cả đơn" | Đã có sẵn, không thêm nhánh mới |
+
+| Hạng mục | Kết quả |
+|----------|---------|
+| Backend | `?status=N` lọc đúng cả 6 trạng thái (`0`→0, `1`→1, `2`→1, `3`→3, `4`→2, `5`→0 đơn, tổng **7** khớp) · `99`/`6`/`-1`/rỗng → bỏ qua lọc, **không lỗi** · lọc **không** rò rỉ đơn người khác · unit test **369/369** (thêm 8) |
+| Giao diện | `<select>` **7 lựa chọn**, nhãn lấy chung từ `NHAN_TRANG_THAI_DON` nên không lệch chữ với badge trên thẻ đơn · 375px không tràn ngang |
+| Lỗi tìm ra khi làm | **1** — ô lọc nằm sau `return` của nhánh rỗng ⇒ lọc ra danh sách rỗng thì **ô lọc biến mất**, người dùng bị kẹt không đổi được bộ lọc. Chạy thử tay không bắt được vì tài khoản kiểm thử luôn có đơn ở mọi trạng thái |
+| Bằng chứng | `docs/KIEM_THU_TAY.md` mục 7 — **14** kịch bản, tất cả PASS. Tỉ lệ đạt toàn hệ thống: **267/267 = 100%** |
 
 > **Vì sao lọt lưới:** bước này được tick `[x]` khi *code đã chạy được*, mà chưa đối chiếu với chính bảng kiểm thử.
 > Bài học ở `lessons.md` mục 70 — trước khi tick `[x]` phải mở bảng kiểm thử và kiểm không còn dòng nào trống.
+>
+> **Thêm 3 bài học 72–74:** bộ điều khiển không được đặt sau `return` của nhánh rỗng · `int?` không kiểm
+> `> 0` để biết "có truyền" (giết mất `PENDING` = 0) · test đỏ thì hỏi "test sai hay code sai" trước khi sửa.
 
 ---
 

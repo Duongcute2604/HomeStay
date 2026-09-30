@@ -26,7 +26,12 @@ public interface IBookingService
     /// Danh sách đơn của chính khách, mới nhất trước, có phân trang.
     /// `userId` lấy từ token — không bao giờ lẫn đơn người khác.
     /// </summary>
-    Task<PagedResultDto<MyBookingDto>> LayCuaToiAsync(int userId, int page, int pageSize, CancellationToken ct);
+    /// <param name=""status"">
+    /// Loc theo trang thai. `null` hoac ngoai khoang 0-5 thi **khong loc** (tra tat ca):
+    /// day la bo loc tuy chon do giao dien gui len, sai thi bo qua con hon bao loi.
+    /// </param>
+    Task<PagedResultDto<MyBookingDto>> LayCuaToiAsync(
+        int userId, int page, int pageSize, int? status, CancellationToken ct);
 
     /// <summary>
     /// Chi tiết một đơn của chính khách kèm lịch sử trạng thái.

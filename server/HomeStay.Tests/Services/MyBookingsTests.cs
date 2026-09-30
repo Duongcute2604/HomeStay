@@ -73,7 +73,7 @@ public class MyBookingsTests
         await using (db)
         {
             PagedResultDto<MyBookingDto> result =
-                await service.LayCuaToiAsync(khach1.Id, 1, 20, CancellationToken.None);
+                await service.LayCuaToiAsync(khach1.Id, 1, 20, null, CancellationToken.None);
 
             Assert.Equal(1, result.TotalItems);
             Assert.All(result.Items, don => Assert.Equal(khach1.Id, db.Bookings.Single(d => d.Code == don.Code).UserId));
@@ -98,7 +98,7 @@ public class MyBookingsTests
             }, CancellationToken.None);
 
             PagedResultDto<MyBookingDto> result =
-                await service.LayCuaToiAsync(khach1.Id, 1, 20, CancellationToken.None);
+                await service.LayCuaToiAsync(khach1.Id, 1, 20, null, CancellationToken.None);
 
             Assert.Equal(2, result.TotalItems);
             Assert.True(result.Items[0].CreatedAt >= result.Items[1].CreatedAt);
@@ -114,7 +114,153 @@ public class MyBookingsTests
             BookingService service = new(db, new RoomService(db));
 
             PagedResultDto<MyBookingDto> result =
-                await service.LayCuaToiAsync(9999, 1, 20, CancellationToken.None);
+                await service.LayCuaToiAsync(9999, 1, 20, null, CancellationToken.None);
+
+            Assert.Equal(0, result.TotalItems);
+            Assert.Empty(result.Items);
+        }
+    }
+
+    /// <summary>
+    /// Dựng DB có 1 địa điểm + 3 phòng + 1 khách có sẵn 3 đơn ở 3 trạng thái khác nhau
+    /// (PENDING, CONFIRMED, CHECKED_IN) để kiểm bộ lọc. REJECTED và CANCELLED cố ý
+    /// **không** có đơn nào, dùng để kiểm lọc ra kết quả rỗng.
+    ///
+    /// Vì sao dựng riêng: <c>TaoDbHaiKhachAsync</c> tạo đơn qua <c>TaoDonAsync</c> nên
+    /// cả 2 đơn đều PENDING — lọc thì ra kết quả giống nhau, test sẽ xanh
+    /// dù bộ lọc có hoạt động hay không. Test lọc mà dữ liệu mẫu đồng nhất là test vô dụng.
+    /// </summary>
+    private static async Task<(HomeStayDbContext Db, BookingService Service, User Khach)> TaoDbNhieuTrangThaiAsync()
+    {
+        HomeStayDbContext db = TestDbContextFactory.Create();
+        Location location = TestDataBuilder.CreateLocation();
+        db.Locations.Add(location);
+        db.Rooms.AddRange(
+            TestDataBuilder.CreateRoom(location, "201"),
+            TestDataBuilder.CreateRoom(location, "202"),
+            TestDataBuilder.CreateRoom(location, "203"));
+        User khach = TestDataBuilder.CreateCustomer("khachloc@gmail.com");
+        db.Users.Add(khach);
+        await db.SaveChangesAsync();
+
+        // 3 phòng, 3 khung ngày khác nhau => 3 đơn cùng tồn tại được.
+        for (int i = 0; i < 3; i++)
+        {
+            DateTime nhan = DateTime.Now.Date.AddDays(5 + i).AddHours(14);
+            db.Bookings.Add(new Booking
+            {
+                Code = $"HS-261001-{1000 + i}",
+                UserId = khach.Id,
+                RoomId = (await db.Rooms.ToListAsync())[i].Id,
+                BookingType = BookingType.DAY,
+                CheckIn = nhan,
+                CheckOut = nhan.AddDays(1),
+                GuestCount = 1,
+                TotalAmount = 500000m,
+                Status = (BookingStatus)i,
+                CreatedAt = DateTime.Now.AddMinutes(-i),
+            });
+        }
+
+        await db.SaveChangesAsync();
+        return (db, new BookingService(db, new RoomService(db)), khach);
+    }
+
+    // ---------------- Lọc theo trạng thái ----------------
+
+    [Fact]
+    public async Task LayCuaToiAsync_LocTheoTrangThai_ChiTraVeDungNhomDon()
+    {
+        var (db, service, khach) = await TaoDbNhieuTrangThaiAsync();
+        await using (db)
+        {
+            PagedResultDto<MyBookingDto> result =
+                await service.LayCuaToiAsync(khach.Id, 1, 20, (int)BookingStatus.CONFIRMED, CancellationToken.None);
+
+            Assert.Equal(1, result.TotalItems);
+            Assert.Equal(BookingStatus.CONFIRMED, Assert.Single(result.Items).Status);
+        }
+    }
+
+    /// <summary>
+    /// Ràng của bộ lọc: <c>status</c> là <c>int?</c> nên <c>0</c> (PENDING) là giá trị
+    /// **hợp lệ**, không được xem như "không truyền". Nếu viết <c>if (status.HasValue)</c>
+    /// thì vẫn đúng, nhưng nếu viết <c>if (status &gt; 0)</c> thì PENDING biến mất khỏi
+    /// danh sách — đúng cái lỗi mà test này chặn.
+    /// </summary>
+    [Fact]
+    public async Task LayCuaToiAsync_LocStatusKhong_ChonDungPENDING()
+    {
+        var (db, service, khach) = await TaoDbNhieuTrangThaiAsync();
+        await using (db)
+        {
+            PagedResultDto<MyBookingDto> result =
+                await service.LayCuaToiAsync(khach.Id, 1, 20, 0, CancellationToken.None);
+
+            Assert.Equal(1, result.TotalItems);
+            Assert.Equal(BookingStatus.PENDING, Assert.Single(result.Items).Status);
+        }
+    }
+
+    [Fact]
+    public async Task LayCuaToiAsync_KhongTruyenStatus_TraVeTatCa()
+    {
+        var (db, service, khach) = await TaoDbNhieuTrangThaiAsync();
+        await using (db)
+        {
+            PagedResultDto<MyBookingDto> result =
+                await service.LayCuaToiAsync(khach.Id, 1, 20, null, CancellationToken.None);
+
+            Assert.Equal(3, result.TotalItems);
+        }
+    }
+
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(6)]
+    [InlineData(99)]
+    public async Task LayCuaToiAsync_StatusNgoaiKhoangEnum_ThoiNoLoc_TraVeTatCa(int status)
+    {
+        var (db, service, khach) = await TaoDbNhieuTrangThaiAsync();
+        await using (db)
+        {
+            // Bộ lọc là tuỳ chọn do giao diện gửi lên, không phải dữ liệu người
+            // dùng nhập tay — sai thì bỏ qua còn hơn trả lỗi làm trang trắng.
+            PagedResultDto<MyBookingDto> result =
+                await service.LayCuaToiAsync(khach.Id, 1, 20, status, CancellationToken.None);
+
+            Assert.Equal(3, result.TotalItems);
+        }
+    }
+
+    [Fact]
+    public async Task LayCuaToiAsync_LocTheoTrangThai_KhongLeakDonNguoiKhac()
+    {
+        var (db, service, khach) = await TaoDbNhieuTrangThaiAsync();
+        await using (db)
+        {
+            User khachKhac = TestDataBuilder.CreateCustomer("khachkhac@gmail.com", "Nguyễn Văn B");
+            db.Users.Add(khachKhac);
+            Booking donNguoiKhac = db.Bookings.First();
+            donNguoiKhac.UserId = khachKhac.Id;
+            await db.SaveChangesAsync();
+
+            PagedResultDto<MyBookingDto> result =
+                await service.LayCuaToiAsync(khach.Id, 1, 20, (int)BookingStatus.CANCELLED, CancellationToken.None);
+
+            // Lọc phải áp SAU điều kiện "của tôi" — lọc trước thì lộ đơn người khác.
+            Assert.Equal(0, result.TotalItems);
+        }
+    }
+
+    [Fact]
+    public async Task LayCuaToiAsync_LocKhongCoDonKhop_TraVeRong()
+    {
+        var (db, service, khach) = await TaoDbNhieuTrangThaiAsync();
+        await using (db)
+        {
+            PagedResultDto<MyBookingDto> result =
+                await service.LayCuaToiAsync(khach.Id, 1, 20, (int)BookingStatus.REJECTED, CancellationToken.None);
 
             Assert.Equal(0, result.TotalItems);
             Assert.Empty(result.Items);

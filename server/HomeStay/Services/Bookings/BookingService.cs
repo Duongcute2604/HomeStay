@@ -178,35 +178,33 @@ public class BookingService : IBookingService
 
     /// <inheritdoc />
     public async Task<PagedResultDto<MyBookingDto>> LayCuaToiAsync(
-        int userId, int page, int pageSize, CancellationToken ct)
+        int userId, int page, int pageSize, int? status, CancellationToken ct)
     {
         page = Math.Max(page, 1);
         pageSize = Math.Clamp(pageSize, 1, 50);
 
         IQueryable<Entities.Booking> query = _db.Bookings
             .AsNoTracking()
-            .Where(don => don.UserId == userId)
+            .Where(don => don.UserId == userId);
+
+        // Chi loc khi gia tri nam trong khoang enum. Phai kiem `is int` chu khong
+        // dung `HasValue` vi tham so la `int?`: truyen `status=0` la PENDING
+        // - hop le - nen 0 phai duoc giu nguyen, khac voi khong truyen tham so.
+        if (status is int maTrangThai && Enum.IsDefined(typeof(BookingStatus), maTrangThai))
+        {
+            query = query.Where(don => don.Status == (BookingStatus)maTrangThai);
+        }
+
+        // Sap xep truoc roi moi phan trang, va dem tren cung bo loc dang ap dung
+        // nen tongSo khop voi so dong tra ve.
+        query = query
             .OrderByDescending(don => don.CreatedAt)
             .ThenByDescending(don => don.Id);
 
         int tongSo = await query.CountAsync(ct);
-
-        List<MyBookingDto> items = await query
+        List<MyBookingDto> items = await ChonDonCuaToi(query)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .Select(don => new MyBookingDto
-            {
-                Code = don.Code,
-                RoomName = don.Room.Name,
-                LocationName = don.Room.Location.Name,
-                BookingType = don.BookingType,
-                CheckIn = don.CheckIn,
-                CheckOut = don.CheckOut,
-                GuestCount = don.GuestCount,
-                TotalAmount = don.TotalAmount,
-                Status = don.Status,
-                CreatedAt = don.CreatedAt,
-            })
             .ToListAsync(ct);
 
         return new PagedResultDto<MyBookingDto>
@@ -217,6 +215,30 @@ public class BookingService : IBookingService
             TotalItems = tongSo,
             TotalPages = tongSo == 0 ? 0 : (int)Math.Ceiling(tongSo / (double)pageSize),
         };
+    }
+
+    /// <summary>
+    /// Chuyển đơn thành DTO. Tách riêng để `LayCuaToiAsync` không vượt quá 40 dòng
+    /// và để ánh xạ chỉ nằm ở một chỗ.
+    ///
+    /// Dùng `Select` thẳng ra DTO (AGENTS 6.4) nên không có N+1 query: tên phòng
+    /// và tên địa điểm được lấy ngay trong SQL.
+    /// </summary>
+    private static IQueryable<MyBookingDto> ChonDonCuaToi(IQueryable<Entities.Booking> query)
+    {
+        return query.Select(don => new MyBookingDto
+        {
+            Code = don.Code,
+            RoomName = don.Room.Name,
+            LocationName = don.Room.Location.Name,
+            BookingType = don.BookingType,
+            CheckIn = don.CheckIn,
+            CheckOut = don.CheckOut,
+            GuestCount = don.GuestCount,
+            TotalAmount = don.TotalAmount,
+            Status = don.Status,
+            CreatedAt = don.CreatedAt,
+        });
     }
 
     /// <inheritdoc />

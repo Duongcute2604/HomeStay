@@ -409,13 +409,19 @@
 | 4 | AU | Khách khác sửa URL để xem đơn của người khác | Bị chặn, không lộ đơn có tồn tại | HTTP **404** — **không phải 403**. Đúng chủ ý đã chốt ở Bước 16: trả 403 sẽ lộ ra là đơn đó *có thật* | ✅ (kỳ vọng cũ ghi 403, đã sửa) |
 | 4b | AU | Khách khác sửa URL để **hủy** đơn của người khác | Bị chặn | HTTP **404** | ✅ |
 | 5 | HP | Xem lịch sử trạng thái | Hiện đủ các bước với thời gian + ai thực hiện | `HS-261002-0011` có **2** dòng: `"" → 0` bởi *Trần Thị Mai* (khách tạo) và `0 → 1` bởi *Nguyễn Minh Quân* (Admin xác nhận) — phân biệt được người khách với Admin | ✅ |
-| 6 | EC | Lọc đơn theo trạng thái | Danh sách đúng | ❌ **Chưa có trong hệ thống.** `GET /api/bookings/my` chỉ nhận `page`/`pageSize`, không có tham số trạng thái; giao diện cũng không có ô lọc. Thử `?status=0`, `1`, `2`, `3`, `4`, `99` → **đều trả đủ 7 đơn** | ❌ Chưa làm |
+| 6 | EC | Lọc đơn theo trạng thái | Danh sách đúng | `?status=0..5`: lọc đúng từng nhóm — `0`→0, `1`→1, `2`→1, `3`→3, `4`→2, `5`→0 đơn (tổng **7** = đúng số đơn của khách) | ✅ *(làm 01/10)* |
+| 6b | EC | Không truyền `status` | Trả tất cả, URL không đổi | `?page=1&pageSize=50` → **7** đơn, không có tham số thừa | ✅ |
+| 6c | AB | `status` sai: `99`, `6`, `-1`, rỗng | Không lỗi, coi như không lọc | `99`/`6`/`-1`/rỗng → đều HTTP **200**, **7** đơn | ✅ |
+| 6d | AB | Lọc `COMPLETED` rồi mở trang 2 | Trang rỗng, không phải lỗi | `?status=3&page=2&pageSize=3` → 200, `items: []`, `totalItems: 3`, `totalPages: 1` | ✅ |
+| 6e | AU | Lọc có rò rỉ đơn người khác không? | Không | `khach1` lọc `CONFIRMED` → 1 đơn; `khach2` lọc `COMPLETED` → 3 đơn; **0 mã trùng** giữa hai tài khoản | ✅ |
+| 6f | GIAO DIỆN | Trang `/bookings` ở 375px | Ô lọc xếp dọc, không tràn ngang | Nhãn "Lọc theo trạng thái" + `<select>` **7 lựa chọn** (Tất cả + 6 trạng thái) chiếm 1 hàng; `html` rộng 375px, **không tràn ngang** | ✅ |
+| 6g | GIAO DIỆN | Lọc mà không ra đơn nào | Ô lọc **vẫn còn**, có lối thoát | Hiện thẻ *"Không có đơn nào ở trạng thái này"* + nút "Xem tất cả đơn"; **không** hiện "Tìm phòng ngay" (sai hướng khi người dùng chỉ đang lọc đơn cũ) | ✅ |
 
-> **Phát hiện khi kiểm thử mục này (01/10):** dòng 6 là bằng chứng Bước 11 **chưa thực sự xong** —
+> **Phát hiện 01/10, đã sửa:** dòng 6 lúc đầu là bằng chứng Bước 11 **chưa thực sự xong** —
 > tính năng lọc theo trạng thái chưa tồn tại ở cả API lẫn giao diện, nhưng `todo.md` lại đánh dấu Bước 11 là `[x]`.
-> Đây là dòng duy nhất trong toàn bộ tài liệu kiểm thử chưa đạt. Xem "Việc còn lại" ở `todo.md`.
+> Đã làm ở Bước 11 vây (01/10) và giờ đạt **12/12**. Bài học ở `lessons.md` mục 70.
 >
-> **Thêm nữa:** dòng 4 ghi kỳ vọng "403" nhưng hệ thống trả **404**. Đây **không phải lỗi** mà là quyết định
+> **Sửa thêm 01/10:** dòng 4 ghi kỳ vọng "403" nhưng hệ thống trả **404**. Đây **không phải lỗi** mà là quyết định
 > chốt từ Bước 16 (không để lộ sự tồn tại của đơn người khác). Đã sửa lại kỳ vọng cho khớp thực tế.
 
 ---
@@ -701,13 +707,32 @@ Unit test lại **chắc hơn bấm tay** ở đúng chỗ này: toast tự tắ
 
 **Toast không có `role` → trình đọc màn hình im lặng.** Toast tự hiện lên chứ không phải do người dùng bấm, nên người mù không biết thao tác của mình đã thành công hay thất bại. Đã thêm `role="status"` + `aria-live="polite"` (thành công) và `role="alert"` + `aria-live="assertive"` (lỗi).
 
-### ⚠️ Phần CHƯA kiểm được bằng mắt
+### 6 trang Admin ở khung 375px — đã kiểm bằng mắt (01/10, bổ sung)
 
-**6 trang Admin ở khung 375px** — cần đăng nhập nên không vào được.
-Đã kiểm **bằng đọc code**: `AdminLayout` dùng `flex-col` + `lg:flex-row` ⇒ sidebar xếp trên nội dung ở màn hình nhỏ; cả **6/6** bảng đã bọc trong `overflow-x-auto` kèm `min-w-[...]` ⇒ bảng rộng cuộn ngang **trong riêng nó**, không làm vỡ trang.
+Lúc đầu mục này ghi "chưa kiểm được vì công cụ trình duyệt lỗi khi nhập ô mật khẩu". Sau đó công cụ đã
+hoạt động lại, đã đăng nhập Admin và kiểm đủ **6/6** trang.
 
-⚠️ Cần xác nhận bằng mắt trước khi đưa vào báo cáo:
-`/admin` · `/admin/bookings` · `/admin/facilities` · `/admin/rooms` · `/admin/customers` · `/admin/reviews` ở khung 375px.
+Cách kiểm không phải "nhìn có vỡ không" mà **đo**: `html` phải có bề rộng đúng bằng khung chụp. Nếu trang
+tràn ngang thì bề rộng `html` sẽ **lớn hơn** 375px.
+
+| Trang | Bề rộng `html` | Kết luận |
+|-------|----------------|----------|
+| `/admin` | 375px | Không tràn |
+| `/admin/bookings` | 375px | Không tràn |
+| `/admin/facilities` | 375px | Không tràn |
+| `/admin/rooms` | 375px | Không tràn |
+| `/admin/reviews` | 375px | Không tràn |
+| `/admin/customers` | 375px | Không tràn |
+
+**Bảng rộng vẫn cuộn ngang — và đó là đúng.** Ở `/admin/rooms`, các ô cột "Trạng thái" và "Thao tác" nằm ở
+x ≈ 639–900px, tức bảng rộng gấp đôi khung chụp. Nhưng chúng nằm trong khung `overflow-x-auto`, nên
+**trang** không tràn — chỉ bảng tự cuộn trong chỗ của nó. Đây là cách làm đúng cho bảng nhiều cột trên
+điện thoại: thay vì ép bảng nhỏ lại (chữ 6px, không đọc được) hoặc làm cả trang tràn ngang.
+
+Trang `/admin/locations` **không tồn tại** — route thật là `/admin/facilities` (menu ghi "Cơ sở"). Gõ sai
+URL thì ra trang 404, cũng không tràn ngang.
+
+⚠️ Lưu ý thấy khi kiểm: còn tài khoản rác `khachdienthoai@gmail.com` (0 đơn, tạo lúc kiểm thử Bước 5).
 
 | Hạng mục | Kết quả |
 |----------|---------|
@@ -734,18 +759,19 @@ Unit test lại **chắc hơn bấm tay** ở đúng chỗ này: toast tự tắ
 | 8 | Chi tiết phòng | 8 | 8 | 0 |
 | 9 | Kiểm tra phòng trống | 8 | 8 | 0 |
 | 10 | Đặt phòng | 11 | 11 | 0 |
-| 11 | Quản lý đơn của tôi | 8 | 7 | **1** |
+| 11 | Quản lý đơn của tôi (gồm lọc trạng thái) | 14 | 14 | 0 |
 | 12 | Admin quản lý danh mục | 17 | 17 | 0 |
 | 13 | Admin vòng đời đơn & phòng (+ khoảng vệ sinh) | 22 | 22 | 0 |
 | 14 | Admin khoá tài khoản | 6 | 6 | 0 |
 | 15 | Dashboard thống kê | 21 | 21 | 0 |
 | 16 | Đánh giá & nhận xét | 34 | 34 | 0 |
 | 17 | Giao diện & trải nghiệm | 7 | 7 | 0 |
-| **Tổng** | | **261** | **260** | **1** |
+| **Tổng** | | **267** | **267** | **0** |
 
-**Tỉ lệ đạt: 260/261 = 99,6%.**
+**Tỉ lệ đạt: 267/267 = 100%.**
 
-Dòng chưa đạt duy nhất là **mục 7 — "Lọc đơn theo trạng thái"**: tính năng chưa tồn tại ở cả API lẫn giao diện, dù `todo.md` từng đánh dấu Bước 11 là xong. Chi tiết ở mục 7.
+Dòng chưa đạt đã hết từ 01/10: **"Lọc đơn theo trạng thái"** (mục 7) — lúc đầu phát hiện là tính năng
+chưa tồn tại dù `todo.md` đã đánh dấu Bước 11 là xong. Đã làm xong, nay mục 7 đạt **14/14**. Chi tiết ở mục 7.
 
 ### Ghi chú về cách đếm
 
@@ -757,6 +783,5 @@ Dòng chưa đạt duy nhất là **mục 7 — "Lọc đơn theo trạng thái"
 
 | # | Việc | Vì sao còn |
 |---|------|-----------|
-| 1 | **Lọc đơn theo trạng thái** ở trang "Đơn của tôi" | Tính năng chưa làm, đã ghi ở mục 7 |
-| 2 | Xác nhận bằng mắt 6 trang Admin ở 375px | Công cụ trình duyệt lỗi khi nhập ô mật khẩu |
-| 3 | Trang chủ hiện 3 phòng "nổi bật" viết cứng trong code | Hôm nay khớp CSDL, nhưng đổi tên phòng là trang chủ hiện sai |
+| 1 | Xoá tài khoản rác `khachdienthoai@gmail.com` | Tạo lúc kiểm thử Bước 5, 0 đơn. Hệ thống **không có** chức năng xoá khách (xoá sẽ mất lịch sử đơn — chốt ở Bước 12) |
+| 2 | Trang chủ hiện 3 phòng "nổi bật" viết cứng trong code | Hôm nay khớp CSDL, nhưng đổi tên phòng là trang chủ hiện sai |

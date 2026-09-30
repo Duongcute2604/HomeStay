@@ -1824,3 +1824,84 @@ Tưởng lỗi. Nhưng Bước 16 đã chốt: trả 403 sẽ **lộ ra là đơ
 > Sửa nhầm code theo bảng kiểm thử là phá vỡ một quyết định đã chốt để "cho khớp giấy".
 >
 > Dấu hiệu nhận ra: sự lệch nằm ở **mã lỗi bảo mật** (403/404) — đó là chỗ hay có quyết định nghiệp vụ ẩn sau.
+---
+
+## 72. Ô lọc đặt **sau** `return` của nhánh rỗng → người dùng bị kẹt không đổi được bộ lọc
+
+Viết xong tính năng "lọc đơn theo trạng thái", tôi đặt tiêu đề + `<select>` **sau** nhánh
+`if (danhSach.length === 0) return ...`:
+
+```
+isPending → return
+isError   → return
+danhSach.length === 0 → return      ← ô lọc nằm SAU chỗ này
+return (tiêu đề + select + danh sách)
+```
+
+Nhìn thì đúng là "không có dữ liệu thì đừng vẽ bộ lọc vô nghĩa". Nhưng thực tế thì ngược lại:
+
+> Người dùng bấm "Đã hủy" → không có đơn nào ở trạng thái đó → **ô lọc biến mất**.
+> Họ bị kẹt trên một màn hình không có cách đổi bộ lọc, chỉ còn nút "Xem tất cả đơn" nằm trong thẻ rỗng.
+
+Unit test bắt được ngay (`findByLabelText('Lọc theo trạng thái')` không tìm thấy trong nhánh rỗng).
+**Chạy thử tay thì không bắt được** — vì khi kiểm thử, tài khoản luôn có sẵn đơn ở mọi trạng thái,
+nên nhánh rỗng không bao giờ xảy ra.
+
+Sửa: tách phần tiêu đề + ô lọc thành biến JSX, dùng ở **cả hai** nhánh.
+
+> **Quy tắc:** một **bộ điều khiển** (lọc, sắp xếp, tìm kiếm, chuyển trang) **không được nằm sau**
+> `return` của nhánh "không có dữ liệu". Người dùng đến nhánh đó **vì chính bộ điều khiển đó**
+> — mất nó nghĩa là mất lối thoát.
+>
+> Nghĩ ngược lại: nhánh rỗng chỉ nên thay **nội dung danh sách**, không thay cả **thanh điều khiển**.
+>
+> Và nhớ: test bắt được, mắt không bắt được — vì dữ liệu thật của người kiểm thử có đầy đủ dữ liệu.
+
+---
+
+## 73. `int?` + kiểm tra `> 0` sẽ **giết chính** giá trị 0
+
+Bộ lọc trạng thái đơn: `PENDING` có giá trị **0**. Tham số là `int?` (`status`) nên có ba trạng thái:
+`null` (không truyền), `0` (PENDING), `1..5` (còn lại).
+
+| Cách viết | `null` | `0` | Hậu quả |
+|-----------|--------|-----|---------|
+| `if (status > 0)` | bỏ lọc | **bỏ lọc** | ❌ chọn "Chờ xác nhận" ra danh sách **tất cả** |
+| `if (status != null)` | bỏ lọc | lọc PENDING | ✅ |
+| `if (status is int v && ...)` | bỏ lọc | lọc PENDING | ✅ rõ ràng nhất |
+
+Đã dùng `status is int maTrangThai && Enum.IsDefined(typeof(BookingStatus), maTrangThai)` —
+vừa phân biệt được `null` với `0`, vừa loại được giá trị ngoài khoảng enum.
+
+Có test riêng chặn đúng lỗi này (`LayCuaToiAsync_LocStatusKhong_ChonDungPENDING`), vì nó **không** làm
+hỏng test cũ — chỉ làm sai hành vi khi người dùng chọn đúng trạng thái đó.
+
+> **Quy tắc:** khi tham số là số **có thể bằng 0** (chỉ số mảng, enum bắt đầu từ 0, số lượng), tuyệt đối
+> không kiểm `if (x > 0)` để biết "có truyền không". Dùng `x is not null` / `x.HasValue`.
+>
+> Dấu hiệu: enum hoặc ID bắt đầu từ 0 mà tham số lại là nullable. Hỏi "0 là giá trị hợp lệ không?"
+> — nếu có, `> 0` là bug chờ người dùng báo.
+
+---
+
+## 74. Khi test đỏ, hỏi **"test sai hay code sai"** trước — rồi mới sửa
+
+Viết test cho ô lọc, 5 test đỏ. Trong đó có **hai loại** nguyên nhân hoàn toàn khác nhau:
+
+| Test đỏ vì | Ví dụ | Sửa ở đâu |
+|-----------|-------|-----------|
+| **Code sai** | `findByLabelText` không thấy ô lọc trong nhánh rỗng | Sửa **component** (mục 72) |
+| **Test sai** | `getByText('Chờ xác nhận')` trùng 2 phần tử vì giờ có cả badge lẫn `<option>` | Sửa **test**, dùng `getAllByText` |
+| **Test sai** | mock trả cùng dữ liệu cho mọi lần gọi nên đơn cũ không biến mất | Sửa **test**, dùng `mockResolvedValueOnce` |
+| **Test sai** | `mockResolvedValueOnce` bị dùng mất ở lần gọi đầu (lúc mới vào trang, chưa lọc) | Sửa **test**, cần **3** lần gọi |
+
+Nếu sửa hết theo hướng "làm cho test xanh" thì sẽ **xoá** luôn cái lỗi thật ở mục 72 — và mất bằng chứng
+cho một bug người dùng gặp thật.
+
+> **Quy tắc:** test đỏ là thông tin, không phải lệnh. Trước khi sửa, hỏi:
+> 1. Test này đang khẳng định điều gì?
+> 2. Thực tế có đúng là sai không, hay chỉ **khác cách diễn đạt**?
+> 3. Sửa test hay sửa code — và **ghi lại lý do** trong comment.
+>
+> Dấu hiệu test sai: thông báo lỗi là *trùng phần tử*, *mock chưa khớp*, *chưa tìm thấy nhãn* —
+> chứ không phải *giá trị thực tế lệch kỳ vọng*. Xem `lessons.md` mục 40 và 42.
