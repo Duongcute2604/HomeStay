@@ -19,13 +19,13 @@ export default function Home(): JSX.Element {
         className="relative py-20 bg-cover bg-center"
         style={{
           backgroundImage:
-            'linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url(/images/rooms/cozy/cozy-1.jpg)',
+            'linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url(/images/rooms/cozy/cozy-2.jpg)',
         }}
       >
         <div className="mx-auto max-w-6xl px-4 text-center text-white">
           <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full mb-6">
             <span>📍</span>
-            <span className="text-sm">111/2 Phạm Văn Bạch, Phường Tân Sơn, Tp. HCM</span>
+            <span className="text-sm">Hưng Yên · Đà Lạt · Hội An</span>
           </div>
           <h2 className="text-4xl md:text-5xl font-bold mb-4">
             Góc nhỏ, nơi bạn thuộc về
@@ -198,7 +198,7 @@ export default function Home(): JSX.Element {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
             <div>
               <div className="flex items-center gap-2 mb-4">
-                <img src="/images/logo.jpg" alt="StayEasy" className="h-10 w-10 rounded-xl object-cover" />
+                <img src="/images/logo.svg" alt="StayEasy" className="h-10 w-10" />
                 <div>
                   <h4 className="text-lg font-bold text-white">StayEasy</h4>
                   <p className="text-xs text-amber-300">Homestay</p>
@@ -213,9 +213,9 @@ export default function Home(): JSX.Element {
               <div className="space-y-2 text-sm text-amber-200">
                 <p>📧 Email: stayeasy@gmail.com</p>
                 <p>📞 Điện thoại: 0901 234 567</p>
-                <p>📍 Cơ sở 1: 111/2 Phạm Văn Bạch, Phường Tân Sơn, Tp. HCM</p>
-                <p>📍 Cơ sở 2: 456 Đường Đặng Thùy Trâm, Đà Lạt</p>
-                <p>📍 Cơ sở 3: 789 Phố cổ Hội An, Quảng Nam</p>
+                <p>📍 Cơ sở 1: Đường Lê Văn Lương, phường Hưng Yên, Hưng Yên</p>
+                <p>📍 Cơ sở 2: Đường Đặng Thùy Trâm, phường 3, Đà Lạt</p>
+                <p>📍 Cơ sở 3: Phố cổ, Hội An, Quảng Nam</p>
               </div>
             </div>
             <div>

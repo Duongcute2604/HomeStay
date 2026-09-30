@@ -49,15 +49,10 @@ desktop.ini
 # cuộc trò chuyện, không phải tài liệu của đồ án nên không commit.
 .openchamber/
 
-# ===== Ảnh tạm chưa dùng =====
-# 22 ảnh trong các thư mục dưới đây KHÔNG phải ảnh phòng homestay mà là poster
-# quảng cáo của một dự án khác ("Nhà Ở Hẻm"). Không commit để tránh đưa tài
-# sản của người khác vào repo đồ án. Sẽ bỏ dòng này khi thay bằng ảnh thật.
-client/public/images/rooms/cozy/
-client/public/images/rooms/japandi/
-client/public/images/rooms/signature/
-
-# Thư mục ảnh minh hoạ tải về. Pattern cố tình KHÔNG ghi dấu tiếng Việt
+# ===== Ảnh tải về để tham khảo =====
+# Ảnh phòng trong `client/public/images/rooms/` là CC0 nên commit bình thường.
+# Chỉ thư mục ảnh minh hoạ tải về bị loại.
+# Pattern cố tình KHÔNG ghi dấu tiếng Việt
 # (dùng `*` thay cho ký tự có dấu) vì Git so khớp theo byte, ghi sai dấu là
 # không khớp và ảnh lọt vào commit.
 *nh minh h*a/

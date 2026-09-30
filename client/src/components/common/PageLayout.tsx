@@ -23,7 +23,7 @@ export default function PageLayout({ children }: { children: React.ReactNode }):
       <header className="border-b border-amber-100 bg-white/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-3">
           <Link to="/" className="flex items-center gap-2">
-            <img src="/images/logo.jpg" alt="StayEasy" className="h-9 w-9 rounded-lg object-cover" />
+            <img src="/images/logo.svg" alt="StayEasy" className="h-9 w-9" />
             <div>
               <span className="text-lg font-bold text-amber-700">StayEasy</span>
               <p className="text-xs text-amber-500 -mt-0.5">Homestay</p>

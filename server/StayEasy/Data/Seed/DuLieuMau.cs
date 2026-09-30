@@ -201,26 +201,36 @@ public static class DuLieuMau
         ];
     }
 
-    /// <summary>Ảnh đại diện theo loại phòng — mỗi loại một ảnh để phân biệt ngay khi lưới danh sách.</summary>
-    /// <summary>Ảnh chính và ảnh phụ của từng concept, theo thứ tự giá trị `RoomType`.
-    /// Mảng đánh số nên thêm concept mới chỉ cần thêm một dòng, không sửa hàm bên dưới.</summary>
-    private static readonly (string Chinh, string Phu)[] DuongDanAnhTheoLoai =
+    /// <summary>
+    /// Ảnh của từng concept, theo thứ tự giá trị `RoomType` (COZY = 0).
+    /// Mỗi concept có 4 ảnh thật, nguồn CC0 (xem docs/NGUON_ANH.md).
+    /// Mảng đánh số nên thêm concept mới chỉ cần thêm một dòng.
+    /// </summary>
+    private static readonly string[][] DuongDanAnhTheoLoai =
     {
-        ("/images/rooms/cozy/cozy-1.jpg", "/images/rooms/cozy/cozy-2.jpg"),
-        ("/images/rooms/japandi/japandi-1.jpg", "/images/rooms/japandi/japandi-2.jpg"),
-        ("/images/rooms/signature/signature-1.jpg", "/images/rooms/signature/signature-2.jpg"),
+        ["/images/rooms/cozy/cozy-1.jpg", "/images/rooms/cozy/cozy-2.jpg",
+         "/images/rooms/cozy/cozy-3.jpg", "/images/rooms/cozy/cozy-4.jpg"],
+        ["/images/rooms/japandi/japandi-1.jpg", "/images/rooms/japandi/japandi-2.jpg",
+         "/images/rooms/japandi/japandi-3.jpg", "/images/rooms/japandi/japandi-4.jpg"],
+        ["/images/rooms/signature/signature-1.jpg", "/images/rooms/signature/signature-2.jpg",
+         "/images/rooms/signature/signature-3.jpg", "/images/rooms/signature/signature-4.jpg"],
     };
 
     /// <summary>
-    /// Ảnh đại diện + ảnh phụ theo concept. Ảnh đầu là ảnh khách thấy trước nên
-    /// thứ tự trong mảng có ý nghĩa, không được đảo.
+    /// Chọn ảnh chính và ảnh phụ cho một phòng dựa trên concept của phòng đó.
     /// </summary>
-    private static (string Chinh, string Phu) DuongDanAnhChinh(RoomType loai)
+    private static (string Chinh, string Phu) DuongDanAnhChinh(RoomType loai, int viTriPhong)
     {
-        // Mảng đánh số theo đúng thứ tự giá trị của `RoomType` (COZY = 0).
-        return (int)loai < DuongDanAnhTheoLoai.Length
-            ? DuongDanAnhTheoLoai[(int)loai]
-            : throw new ArgumentOutOfRangeException(nameof(loai), loai, "Loại phòng chưa có ảnh đại diện.");
+        if ((int)loai >= DuongDanAnhTheoLoai.Length)
+        {
+            throw new ArgumentOutOfRangeException(nameof(loai), loai, "Loại phòng chưa có ảnh đại diện.");
+        }
+
+        string[] bo = DuongDanAnhTheoLoai[(int)loai];
+
+        // Ảnh thứ hai lấy theo vị trí phòng để các phòng cùng concept không bị
+        // trùng ảnh — 10 phòng chia cho 3 ảnh phụ thì không chia hết.
+        return (bo[0], bo[1 + viTriPhong % (bo.Length - 1)]);
     }
 
     /// <summary>Mỗi phòng có 1 ảnh chính và 1 ảnh phụ, đều theo concept của phòng.</summary>
@@ -228,9 +238,10 @@ public static class DuLieuMau
     {
         List<RoomImage> anhList = [];
 
-        foreach (Room phong in phongList)
+        for (int i = 0; i < phongList.Count; i++)
         {
-            (string chinh, string phu) = DuongDanAnhChinh(phong.RoomType);
+            Room phong = phongList[i];
+            (string chinh, string phu) = DuongDanAnhChinh(phong.RoomType, i);
 
             anhList.Add(new RoomImage
             {

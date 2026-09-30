@@ -46,9 +46,9 @@ const motDiaDiem: Location[] = [
         ratingAvg: 4.5,
         ratingCount: 2,
         status: RoomStatus.AVAILABLE,
-        thumbnailUrl: '/images/rooms/phong-tieu-chuan.svg',
+        thumbnailUrl: '/images/rooms/cozy/cozy-1.jpg',
         description: 'Phòng thoáng mát nhìn ra vườn.',
-        images: ['/images/rooms/phong-tieu-chuan.svg', '/images/rooms/noi-that-chung.svg'],
+        images: ['/images/rooms/cozy/cozy-1.jpg', '/images/rooms/cozy/cozy-2.jpg'],
         amenities: ['WiFi miễn phí', 'Máy lạnh'],
         reviews: [
           {
@@ -147,7 +147,7 @@ describe('RoomDetail - thu vien anh', () => {
     const anhChinh = screen.getByRole('button', { name: /Xem lớn ảnh/ })
     expect(anhChinh.querySelector('img')).toHaveAttribute(
       'src',
-      '/images/rooms/noi-that-chung.svg',
+      '/images/rooms/cozy/cozy-2.jpg',
     )
   })
 
