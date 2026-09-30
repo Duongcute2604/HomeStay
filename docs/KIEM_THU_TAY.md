@@ -402,12 +402,21 @@
 
 | # | Loại | Kịch bản | Kỳ vọng | Thực tế | Kết quả |
 |---|------|----------|---------|---------|---------|
-| 1 | HP | Xem danh sách đơn của tôi | Chỉ thấy đơn của chính mình | | |
-| 2 | HP | Hủy đơn `PENDING` | Thành `CANCELLED`, phòng về `AVAILABLE` | | |
-| 3 | AB | Cố hủy đơn `CHECKED_IN` | Bị từ chối, báo lý do | | |
-| 4 | AU | Khách khác sửa URL để xem đơn của người khác | Bị chặn 403 | | |
-| 5 | HP | Xem lịch sử trạng thái | Hiện đủ các bước với thời gian + ai thực hiện | | |
-| 6 | EC | Lọc đơn theo trạng thái | Danh sách đúng | | |
+| 1 | HP | Xem danh sách đơn của tôi | Chỉ thấy đơn của chính mình | `khach1` thấy **7** đơn, `khach2` thấy **4** đơn; **0 mã đơn nào trùng** giữa hai tài khoản | ✅ |
+| 2 | HP | Hủy đơn `PENDING` | Thành `CANCELLED`, phòng về `AVAILABLE` | `HS-261101-2186`: HTTP 200, `status` **0 → 4**, lưu `cancelReason`; lịch sử ghi `0 → 4`; phòng **A102** trở lại `AVAILABLE` | ✅ |
+| 3 | AB | Cố hủy đơn `CHECKED_IN` | Bị từ chối, báo lý do | HTTP **409** — *"Chỉ có thể hủy đơn đang 'chờ xác nhận' hoặc 'đã xác nhận'"* | ✅ |
+| 3b | AB | Cố hủy đơn `COMPLETED` | Bị từ chối | HTTP **409**, cùng thông báo | ✅ |
+| 4 | AU | Khách khác sửa URL để xem đơn của người khác | Bị chặn, không lộ đơn có tồn tại | HTTP **404** — **không phải 403**. Đúng chủ ý đã chốt ở Bước 16: trả 403 sẽ lộ ra là đơn đó *có thật* | ✅ (kỳ vọng cũ ghi 403, đã sửa) |
+| 4b | AU | Khách khác sửa URL để **hủy** đơn của người khác | Bị chặn | HTTP **404** | ✅ |
+| 5 | HP | Xem lịch sử trạng thái | Hiện đủ các bước với thời gian + ai thực hiện | `HS-261002-0011` có **2** dòng: `"" → 0` bởi *Trần Thị Mai* (khách tạo) và `0 → 1` bởi *Nguyễn Minh Quân* (Admin xác nhận) — phân biệt được người khách với Admin | ✅ |
+| 6 | EC | Lọc đơn theo trạng thái | Danh sách đúng | ❌ **Chưa có trong hệ thống.** `GET /api/bookings/my` chỉ nhận `page`/`pageSize`, không có tham số trạng thái; giao diện cũng không có ô lọc. Thử `?status=0`, `1`, `2`, `3`, `4`, `99` → **đều trả đủ 7 đơn** | ❌ Chưa làm |
+
+> **Phát hiện khi kiểm thử mục này (01/10):** dòng 6 là bằng chứng Bước 11 **chưa thực sự xong** —
+> tính năng lọc theo trạng thái chưa tồn tại ở cả API lẫn giao diện, nhưng `todo.md` lại đánh dấu Bước 11 là `[x]`.
+> Đây là dòng duy nhất trong toàn bộ tài liệu kiểm thử chưa đạt. Xem "Việc còn lại" ở `todo.md`.
+>
+> **Thêm nữa:** dòng 4 ghi kỳ vọng "403" nhưng hệ thống trả **404**. Đây **không phải lỗi** mà là quyết định
+> chốt từ Bước 16 (không để lộ sự tồn tại của đơn người khác). Đã sửa lại kỳ vọng cho khớp thực tế.
 
 ---
 
@@ -464,116 +473,7 @@
 
 ---
 
-## 9. Admin — vòng đời đơn & phòng (Bước 13) ⭐
-
-> Chạy trọn vẹn 1 vòng đời, quan sát từng bước:
-
-| # | Loại | Kịch bản | Kỳ vọng | Thực tế | Kết quả |
-|---|------|----------|---------|---------|---------|
-| 1 | HP | Khách đặt phòng | Đơn `PENDING`, phòng `BOOKED` | | |
-| 2 | HP | Admin xác nhận đơn | `CONFIRMED` | | |
-| 3 | AB | Admin xác nhận đơn đã hủy | Bị từ chối | | |
-| 4 | HP | Admin check-in | `CHECKED_IN`, phòng `OCCUPIED` | | |
-| 5 | AB | Khách khác đặt phòng đó trong lúc đang ở | Bị từ chối | | |
-| 6 | HP | Admin check-out | `COMPLETED`, phòng `CLEANING` | | |
-| 7 | AB | **Đặt phòng đó trong 2 giờ vệ sinh** | **Bị từ chối** | | |
-| 8 | HP | Sau 2 giờ | Phòng tự về `AVAILABLE` | | |
-| 9 | HP | Admin từ chối đơn kèm lý do | `REJECTED`, phòng về `AVAILABLE`, lưu lý do | | |
-| 10 | HP | Xem lịch sử trạng thái | Có đủ 4 bước + người thực hiện + thời điểm | | |
-| 11 | EC | Admin đổi trạng thái phòng thủ công sang `MAINTENANCE` | Không nhận đặt mới | | |
-
----
-
-## 10. Dashboard & đánh giá (Bước 15, 16)
-
-| # | Loại | Kịch bản | Kỳ vọng | Thực tế | Kết quả |
-|---|------|----------|---------|---------|---------|
-| 1 | HP | Mở Dashboard | Số liệu khớp với database | | |
-| 2 | HP | Biểu đồ doanh thu | Đúng các tháng có đơn `COMPLETED` | | |
-| 3 | EC | Phân trang danh sách đơn ở Admin | STT liên tục qua các trang | | |
-| 4 | AB | Đánh giá đơn chưa `COMPLETED` | Bị từ chối | | |
-| 5 | AB | Đánh giá 2 lần cùng 1 đơn | Lần 2 bị từ chối | | |
-| 6 | HP | Đánh giá 5 sao | Rating trung bình trên trang phòng thay đổi | | |
-| 7 | AU | Admin ẩn đánh giá vi phạm | Không hiện nữa trên trang phòng | | |
-
----
-
-### Kết quả kiểm thử tay (01/10/2026)
-
-| # | Kịch bản | Kỳ vọng | Thực tế | Kết quả |
-|---|----------|---------|---------|---------|
-| 1 | Thu nhỏ cửa sổ điện thoại (375px) | Mọi trang dùng được, không tràn ngang | **Trang chủ vỡ**: logo chồng lên menu, menu bị xuống dòng thành "Trang/chủ", nút "Đăng ký" bị cắt ở mép phải, **có thanh cuộn ngang** dưới cùng. → Đã sửa: thêm nút 3 gạch, ở dưới `sm` menu xếp dọc, chữ logo ẩn. Kiểm lại: sạch, không tràn ngang | ✅ PASS (sau khi sửa) |
-| 2 | Tải trang chậm | Hiện spinner / skeleton | Các trang có dữ liệu đều hiện dòng "Đang tải..." (`isPending`). Trang chủ là trang tĩnh, không gọi API nên không cần | ✅ PASS |
-| 3 | Danh sách không có dữ liệu | Hiện thông báo "Chưa có dữ liệu", không trang trắng | Tìm "zzzzkhongco" → hiện thẻ **"Không tìm thấy phòng nào / Thử nới rộng khoảng giá, giảm số khách hoặc bỏ bớt điều kiện lọc"** — có cả gợi ý hành động, không phải trang trắng | ✅ PASS |
-| 4 | Gọi API lỗi | Hiện thông báo lỗi thân thiện, không lộ stack trace | **Tìm ra lỗi thật ở trang đặt phòng**: khi API địa điểm hỏng, `diaDiemList` rỗng ⇒ rơi vào nhánh *"không tìm thấy phòng"* và báo **"Đường dẫn trỏ sai phòng"** — người dùng tưởng mình gõ sai trong khi hệ thống đang lỗi. Đã tách nhánh lỗi riêng: *"Không tải được danh sách phòng / Hệ thống đang không phản hồi"* + nút Thử lại. Trang 404 không lộ stack trace | ✅ PASS (sau khi sửa) |
-| 5 | Thao tác thành công | Hiện toast xanh | Toast `success` hiện lớp `toast-success`, tự tắt sau **3 giây**. **Kiểm bằng unit test** với đồng hồ giả (7 test, xem bên dưới) | ✅ PASS |
-| 6 | Thao tác thất bại | Hiện toast đỏ | Toast `error` hiện lớp `toast-error`, tự tắt sau 3 giây. Kiểm bằng unit test | ✅ PASS |
-| 7 | Gõ URL không tồn tại | Hiện trang 404 | `/khong-ton-tai-abc` → trang **404** "Không tìm thấy trang bạn yêu cầu. Đường dẫn có thể đã bị đổi hoặc bị gõ sai." + nút "Về trang chủ". Không lộ stack trace, không tràn ngang ở 375px | ✅ PASS |
-
-### Bổ sung phát hiện khi kiểm thử
-
-**Toast không có `role` nên trình đọc màn hình im lặng.**
-Toast là thứ *tự xuất hiện*, không phải do người dùng bấm — nếu không khai vai trò thì người mù hoàn toàn không biết thao tác của mình đã thành công hay thất bại.
-Đã thêm `role="status"` + `aria-live="polite"` cho thành công, `role="alert"` + `aria-live="assertive"` cho lỗi.
-
-**Trang chủ hiện 3 phòng "nổi bật" viết cứng trong code, không đọc từ CSDL.**
-Trang này là trang tĩnh nên không có 3 trạng thái — nhưng dữ liệu phòng thì **nên** đọc từ CSDL, không nên viết cứng: hôm nay CSDL có "Phòng Hạnh Phúc" thì khớp, đổi tên phòng là trang chủ hiện sai.
-⚠️ **Chưa sửa** — thuộc Bước 17 hay không tuỳ; ghi ra đây để không bị quên. Xem mục "Việc còn lại".
-
-### Vì sao 2 kịch bản kiểm bằng unit test chứ không bấm tay
-
-Kịch bản 5 và 6 cần đăng nhập rồi bấm một thao tác. Trong phiên làm việc này, công cụ điều khiển trình duyệt **từ chối tham số khi nhập vào ô mật khẩu** (đã thử 8 lần với các cách chọn khác nhau, đều báo `value is required`), nên không đăng nhập được để bấm tay.
-
-Thay vào đó kiểm bằng **unit test** — và bằng chứng này còn **chắc hơn** bấm tay: bấm tay thì toast tự tắt sau 3 giây, bấm chậm một chút là bỏ lỡ mà không biết là do tool hay do code.
-
-| Nội dung kiểm | Test |
-|----------------|------|
-| Toast xanh / đỏ đúng màu | `Toast.test.tsx` — `ThanhCong_HienToastXanh`, `ThatBai_HienToastDo` |
-| Tự tắt sau 3 giây | `SauMotKhongGiVanConHien` (dùng đồng hồ giả) |
-| Nhiều toast không xóa oan nhau | `MotToastHetHanKhongXoaNhatPhaiKhac` |
-| Trình đọc màn hình có thông báo | `KhaiBaoRoleDeTrinhDocManHinhThongBao` |
-| Menu thu gọn mở/đóng, không tràn ngang | `PageLayout.test.tsx` — 7 test |
-
-### ⚠️ Phần CHƯA kiểm được bằng mắt
-
-**6 trang Admin ở khung 375px** — cần đăng nhập nên không vào được.
-Đã **kiểm bằng đọc code**:
-- `AdminLayout` dùng `flex-col` + `lg:flex-row` ⇒ sidebar xếp trên nội dung ở màn hình nhỏ, không tràn.
-- Cả **6/6** bảng đã bọc trong `overflow-x-auto` kèm `min-w-[...]` ⇒ bảng rộng cuộn ngang **trong riêng nó**, không làm vỡ trang.
-- Menu Admin dùng `flex flex-col` ⇒ không tràn ngang.
-
-⚠️ Cần người kiểm tra xác nhận bằng mắt trước khi đưa vào báo cáo:
-`/admin` · `/admin/bookings` · `/admin/facilities` · `/admin/rooms` · `/admin/customers` · `/admin/reviews` ở khung 375px.
-
-### Tổng kết
-
-| Hạng mục | Kết quả |
-|----------|---------|
-| 7 kịch bản kiểm thử tay | **7/7 PASS** (2 kịch bản kiểm bằng unit test) |
-| Lỗi tìm ra và sửa | **2** — header tràn ngang ở 375px · trang đặt phòng báo nhầm lỗi API thành "sai phòng" |
-| Cải thiện | **1** — thêm `role`/`aria-live` cho Toast |
-| Unit test | Frontend **258/258** (thêm **14** test: 7 Toast + 7 PageLayout) · Backend **361/361** |
-| Build | `npm run build` sạch · `dotnet build` 0 error 0 warning |
-| Chưa kiểm bằng mắt | 6 trang Admin ở 375px (xem cảnh báo trên) |
-
-## 12. Tổng kết
-
-| Nhóm chức năng | Số test | Đạt | Không đạt |
-|----------------|---------|-----|-----------|
-| Tài khoản | 12 | | |
-| Tìm kiếm & lọc | 9 | | |
-| Kiểm tra phòng trống | 9 | | |
-| Đặt phòng | 8 | | |
-| Quản lý đơn của tôi | 6 | | |
-| Admin danh mục | 9 | | |
-| Admin vòng đời | 11 | | |
-| Dashboard & đánh giá | 7 | | |
-| Giao diện | 7 | | |
-| **Tổng** | **78** | | |
-
-**Đạt ≥ 95% là đủ.** Các mục "không đạt" phải sửa hết trước khi chốt báo cáo.
-
-### 9b. Khoang ve sinh 2 gio sau khi tra phong (Buoc 13)
+### 9b. Khoảng vệ sinh 2 giờ sau khi trả phòng (Bước 13)
 
 | # | Loai | Kich ban | Ky vong | Thuc te | Ket qua |
 |---|------|----------|---------|---------|---------|
@@ -589,9 +489,12 @@ Thay vào đó kiểm bằng **unit test** — và bằng chứng này còn **ch
 > vien neu quen. Ca deu la loi van hanh. Tinh luoi (lazy, chi sua luc doc) cung
 > khong duoc vi CSDL van sai, thong ke o Buoc 15 se dem sai so phong dang ve sinh.
 
+
 ---
 
-## 10. Admin — khoa tai khoan khach (Buoc 14) — 30/09/2026
+---
+
+## 10. Bước 14 — khoá tài khoản khách (30/09/2026)
 
 > Phan chuc nang da lam xong o Buoc 12 (trong trang "Khach hang"). Buoc 14 chi
 > kiem chung lai day du chuoi khoa -> bi tu choi -> mo khoa.
@@ -763,3 +666,97 @@ Khai bắt buộc cho trường mà API không gửi khiến `tsc` không bắt 
 | Giao diện | **6/6** PASS |
 | Unit test | Backend **358/358** (thêm 25) · Frontend **244/244** (thêm 36) |
 | Build | `0 Error(s) · 0 Warning(s)` · `npm run build` sạch |
+
+---
+
+## 13. Giao diện & trải nghiệm (Bước 17)
+
+> Kiểm ngày 01/10/2026. Mục tiêu: mọi trang dùng được ở khung **375px** · mọi danh sách có đủ 3 trạng thái · thông báo lỗi không lộ chi tiết kỹ thuật.
+
+| # | Kịch bản | Kỳ vọng | Thực tế | Kết quả |
+|---|----------|---------|---------|---------|
+| 1 | Thu nhỏ cửa sổ điện thoại (375px) | Mọi trang dùng được, không tràn ngang | **Trang chủ vỡ**: logo chồng lên menu, menu bị xuống dòng thành "Trang/chủ", nút "Đăng ký" bị cắt ở mép phải, **có thanh cuộn ngang** dưới cùng. → Đã sửa: thêm nút 3 gạch, dưới `sm` menu xếp dọc, chữ logo ẩn. Kiểm lại: sạch | ✅ *(sau khi sửa)* |
+| 2 | Tải trang chậm | Hiện spinner / skeleton | Các trang có dữ liệu đều hiện dòng "Đang tải..." (`isPending`). Trang chủ là trang tĩnh, không gọi API nên không cần | ✅ |
+| 3 | Danh sách không có dữ liệu | Hiện thông báo, không trang trắng | Tìm "zzzzkhongco" → hiện thẻ **"Không tìm thấy phòng nào / Thử nới rộng khoảng giá, giảm số khách hoặc bỏ bớt điều kiện lọc"** — có cả gợi ý hành động | ✅ |
+| 4 | Gọi API lỗi | Thông báo thân thiện, không lộ stack trace | **Tìm ra lỗi thật ở trang đặt phòng**: khi API địa điểm hỏng, `diaDiemList` rỗng ⇒ rơi vào nhánh *"không tìm thấy phòng"* và báo **"Đường dẫn trỏ sai phòng"** — người dùng tưởng mình gõ sai trong khi hệ thống đang lỗi. Đã tách nhánh lỗi riêng: *"Không tải được danh sách phòng / Hệ thống đang không phản hồi"* + nút Thử lại | ✅ *(sau khi sửa)* |
+| 5 | Thao tác thành công | Hiện toast xanh | Toast `success` hiện lớp `toast-success`, tự tắt sau **3 giây**. Kiểm bằng **unit test** với đồng hồ giả | ✅ |
+| 6 | Thao tác thất bại | Hiện toast đỏ | Toast `error` hiện lớp `toast-error`, tự tắt sau 3 giây. Kiểm bằng **unit test** | ✅ |
+| 7 | Gõ URL không tồn tại | Hiện trang 404 | `/khong-ton-tai-abc` → trang 404 *"Không tìm thấy trang bạn yêu cầu..."* + nút "Về trang chủ". Không lộ stack trace | ✅ |
+
+### Vì sao kịch bản 5 và 6 kiểm bằng unit test chứ không bấm tay
+
+Hai kịch bản này cần đăng nhập rồi bấm một thao tác. Trong phiên làm việc 01/10, công cụ điều khiển trình duyệt **từ chối tham số khi nhập vào ô mật khẩu** (thử 8 lần với các cách chọn khác nhau, đều báo `value is required`), nên không đăng nhập được để bấm tay.
+
+Unit test lại **chắc hơn bấm tay** ở đúng chỗ này: toast tự tắt sau 3 giây, bấm tay chậm một chút là bỏ lịch mà không phân biệt được do tool hay do code. Dùng đồng hồ giả thì kiểm đúng mốc 3 giây, không có nhân tố con người.
+
+| Nội dung kiểm | Test |
+|----------------|------|
+| Toast xanh / đỏ đúng màu | `Toast.test.tsx` — `ThanhCong_HienToastXanh`, `ThatBai_HienToastDo` |
+| Tự tắt sau 3 giây | `SauMotKhongGiVanConHien` |
+| Nhiều toast không xóa oan nhau | `MotToastHetHanKhongXoaNhatPhaiKhac` |
+| Trình đọc màn hình có thông báo | `KhaiBaoRoleDeTrinhDocManHinhThongBao` |
+| Menu thu gọn mở/đóng, không tràn ngang | `PageLayout.test.tsx` — 7 test |
+
+### Cải thiện thêm phát hiện khi kiểm thử
+
+**Toast không có `role` → trình đọc màn hình im lặng.** Toast tự hiện lên chứ không phải do người dùng bấm, nên người mù không biết thao tác của mình đã thành công hay thất bại. Đã thêm `role="status"` + `aria-live="polite"` (thành công) và `role="alert"` + `aria-live="assertive"` (lỗi).
+
+### ⚠️ Phần CHƯA kiểm được bằng mắt
+
+**6 trang Admin ở khung 375px** — cần đăng nhập nên không vào được.
+Đã kiểm **bằng đọc code**: `AdminLayout` dùng `flex-col` + `lg:flex-row` ⇒ sidebar xếp trên nội dung ở màn hình nhỏ; cả **6/6** bảng đã bọc trong `overflow-x-auto` kèm `min-w-[...]` ⇒ bảng rộng cuộn ngang **trong riêng nó**, không làm vỡ trang.
+
+⚠️ Cần xác nhận bằng mắt trước khi đưa vào báo cáo:
+`/admin` · `/admin/bookings` · `/admin/facilities` · `/admin/rooms` · `/admin/customers` · `/admin/reviews` ở khung 375px.
+
+| Hạng mục | Kết quả |
+|----------|---------|
+| Kịch bản | **7/7 PASS** (2 kịch bản kiểm bằng unit test) |
+| Lỗi tìm ra & sửa | **2** — header tràn ngang 375px · trang đặt phòng báo nhầm lỗi API thành "sai phòng" |
+| Cải thiện | **1** — thêm `role`/`aria-live` cho Toast |
+| Unit test | Frontend **258/258** (thêm **14**: 7 Toast + 7 PageLayout) · Backend **361/361** |
+| Build | `npm run build` sạch · `dotnet build` 0 error 0 warning |
+
+---
+
+## 14. Tổng kết
+
+> Đếm từ chính các bảng trong tài liệu này: mỗi dòng bắt đầu bằng số thứ tự ở cột `#` là **một kịch bản**.
+> Cột "Đạt" đếm dòng đã đánh dấu ✅ hoặc PASS.
+
+| Bước | Nhóm chức năng | Số kịch bản | Đạt | Chưa đạt |
+|-------|----------------|-------------|-----|----------|
+| 3 | Cơ sở dữ liệu 9 bảng | 10 | 10 | 0 |
+| 4 | Dữ liệu mẫu tự sinh | 17 | 17 | 0 |
+| 5 | Tài khoản (đăng ký / đăng nhập / hồ sơ) | 72 | 72 | 0 |
+| 6 | Xem địa điểm | 9 | 9 | 0 |
+| 7 | Tìm kiếm & lọc phòng | 11 | 11 | 0 |
+| 8 | Chi tiết phòng | 8 | 8 | 0 |
+| 9 | Kiểm tra phòng trống | 8 | 8 | 0 |
+| 10 | Đặt phòng | 11 | 11 | 0 |
+| 11 | Quản lý đơn của tôi | 8 | 7 | **1** |
+| 12 | Admin quản lý danh mục | 17 | 17 | 0 |
+| 13 | Admin vòng đời đơn & phòng (+ khoảng vệ sinh) | 22 | 22 | 0 |
+| 14 | Admin khoá tài khoản | 6 | 6 | 0 |
+| 15 | Dashboard thống kê | 21 | 21 | 0 |
+| 16 | Đánh giá & nhận xét | 34 | 34 | 0 |
+| 17 | Giao diện & trải nghiệm | 7 | 7 | 0 |
+| **Tổng** | | **261** | **260** | **1** |
+
+**Tỉ lệ đạt: 260/261 = 99,6%.**
+
+Dòng chưa đạt duy nhất là **mục 7 — "Lọc đơn theo trạng thái"**: tính năng chưa tồn tại ở cả API lẫn giao diện, dù `todo.md` từng đánh dấu Bước 11 là xong. Chi tiết ở mục 7.
+
+### Ghi chú về cách đếm
+
+- Mục 5 (72 kịch bản) gộp ba bảng: gọi API, kiểm thử giao diện, và bảng lỗi phát hiện khi kiểm thử.
+- Mục 13 (22) gồm 16 kịch bản vòng đời đơn + 6 kịch bản khoảng vệ sinh 2 giờ.
+- Các bảng "Tổng kết" nhỏ ở cuối mỗi mục **không tính** vào số kích bản (chúng là bảng tổng hợp, dòng đầu cột không phải số thứ tự).
+
+### Việc còn lại
+
+| # | Việc | Vì sao còn |
+|---|------|-----------|
+| 1 | **Lọc đơn theo trạng thái** ở trang "Đơn của tôi" | Tính năng chưa làm, đã ghi ở mục 7 |
+| 2 | Xác nhận bằng mắt 6 trang Admin ở 375px | Công cụ trình duyệt lỗi khi nhập ô mật khẩu |
+| 3 | Trang chủ hiện 3 phòng "nổi bật" viết cứng trong code | Hôm nay khớp CSDL, nhưng đổi tên phòng là trang chủ hiện sai |

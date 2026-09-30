@@ -1758,3 +1758,69 @@ Viết test cho `PageLayout` bị vấp 3 lần:
 - Có nhiều bản cùng nội dung → dùng `getAllByRole` và **đếm số phần tử**. Ở đây đếm lại đúng thành phát biện: mở menu thu gọn là **thêm** một bản (1 → 2), không phải thay thế.
 
 > **Quy tắc:** test phải kiểm **hành vi quan sát được**, không kiểm hệ quả của CSS. `hidden` không phải hành vi — "bản menu thu gọn chỉ tồn tại khi bấm nút" mới là hành vi.
+---
+
+## 69. Script chèn khối mới mà **không xoá khối cũ** — tài liệu thành trùng lặp
+
+Muốn thay mục "Bước 17" trong `docs/KIEM_THU_TAY.md`. Tôi viết PowerShell: tìm dòng heading, **chèn** khối mới **trước** nó, rồi `WriteAllLines`.
+
+Hai lỗi cùng lúc:
+
+| Lỗi | Hậu quả |
+|-----|---------|
+| Chèn mà không xoá dòng cũ | File có **2 mục Bước 17**, một cái đầy kết quả, một cái rỗng |
+| Vòng lặp tìm vị trí **ghi đè biến mỗi lần khớp** | Chọn **nhầm** mục `## 11.` thứ hai → xoá mất **toàn bộ** kết quả kiểm thử Bước 15 |
+
+Đoạn lỗi:
+
+```powershell
+for (...) { if ($lines[$i] -match "^## 11\. ") { $start = $i } }   # ghi de moi lan -> lay dong CUOI
+```
+
+Sửa: dùng `break` ngay khi khớp, **và** xoá khoảng cũ trước khi chèn:
+
+```powershell
+for (...) { if ($lines[$i] -match "^## 11\. ") { $start = $i; break } }
+# ... $out = lines[0..start) + blockMoi + lines[end..]
+```
+
+> **Quy tắc:** thay một đoạn trong file = **thay**, không phải **thêm trước**. Nếu viết bằng script thì phải có
+> `break` khi tìm vị trí, và phải cắt khoảng cũ. Sau khi sửa xong **đếm lại số heading** và so với trước —
+> đếm là bước 10 giây bắt được cả hai lỗi.
+>
+> Bài học này mở rộng ra: **sau mỗi lần script sửa file tài liệu, phải mở lại đọc**. Không có "sửa xong là xong".
+
+---
+
+## 70. Đánh dấu `[x]` trong `todo.md` mà bảng kiểm thử còn trống — bước đó **chưa** xong
+
+Rà lại toàn bộ `KIEM_THU_TAY.md` để tìm mục nào còn dòng trống, phát hiện **mục 7 (Bước 11 — Quản lý đơn của tôi)**: cả cột *Thực tế* lẫn *Kết quả* đều trống, trong khi `todo.md` đánh dấu Bước 11 là `[x]` từ hôm trước.
+
+Chạy thử mới thì lộ ra tính năng **chưa tồn tại**: `GET /api/bookings/my` chỉ nhận `page`/`pageSize`, không có tham số trạng thái; giao diện cũng không có ô lọc. Thử `?status=0..4,99` đều trả đủ 7 đơn.
+
+**Vì sao lọt lưới:** bước đó được đóng khi *code đã chạy được*, chứ chưa đối chiếu với chính bảng kiểm thử. Bảng kiểm thử là **bằng chứng**, mà đã bỏ trống thì không có bằng chứng — tick `[x]` lúc đó là tick bằng cảm tính.
+
+> **Quy tắc:** trước khi tick `[x]`, mở bảng kiểm thử của bước đó và kiểm **không còn dòng nào trống cột "Kết quả"**.
+> Dòng trống = bước chưa kiểm. Tick `[x]` là khẳng định có bằng chứng, không phải khẳng định "code chạy được".
+>
+> Cách rà nhanh toàn bộ tài liệu:
+> ```powershell
+> $l = [IO.File]::ReadAllLines("docs\KIEM_THU_TAY.md", [Text.Encoding]::UTF8)
+> for ($i=0; $i -lt $l.Length; $i++) {
+>   if ($l[$i] -match '^\|\s*\d+(\.\d+)?[a-z]?\s*\|.*\|\s*\|\s*\|\s*$') { "dong $($i+1) chua dien ket qua" }
+> }
+> ```
+
+---
+
+## 71. Kỳ vọng ghi "403" nhưng hệ thống trả "404" — đôi khi **đừng sửa code, hãy sửa kỳ vọng
+
+Mục 7 dòng 4 ghi: *"Khách khác sửa URL để xem đơn người khác → bị chặn **403**"*. Chạy thật ra **404**.
+
+Tưởng lỗi. Nhưng Bước 16 đã chốt: trả 403 sẽ **lộ ra là đơn đó có thật** — chỉ cần đổi mã đơn là biết ngay. 404 không lộ gì. Vậy **404 mới đúng**, và tài liệu sai.
+
+> **Quy tắc:** khi kỳ vọng trong bảng kiểm thử lệch với thực tế, **đừng mặc định sửa code**.
+> Hỏi trước: thực tế có **cố ý** khác không? Ở đây là có — nó là quyết định bảo mật đã ghi ở Bước 16.
+> Sửa nhầm code theo bảng kiểm thử là phá vỡ một quyết định đã chốt để "cho khớp giấy".
+>
+> Dấu hiệu nhận ra: sự lệch nằm ở **mã lỗi bảo mật** (403/404) — đó là chỗ hay có quyết định nghiệp vụ ẩn sau.

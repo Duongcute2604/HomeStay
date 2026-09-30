@@ -595,6 +595,7 @@ từ query string) nên không có cách kích hoạt. Vẫn cần nói rõ vớ
 - **Mục tiêu đo được:** `GET /api/bookings/my` chỉ đơn của chính mình · hủy `PENDING`/`CONFIRMED`, từ chối hủy `CHECKED_IN` trở đi · xem lịch sử · 3/3 test tay · **≥ 10 unit test backend** + **≥ 10 unit test frontend**
 - **Bằng chứng:** **Backend 238/238** · **Frontend 177/177** · API **8/8** kịch bản · console sạch · đã kiểm tra ở khung mobile 390px (chi tiết ở `docs/KIEM_THU_TAY.md` mục 7)
 - **Ảnh chụp:** ✅ `.openchamber/screenshots/buoc11-*.jpg`
+- ⚠️ **Bổ sung 01/10: 7/8 kịch bản đạt, 1 chưa làm** — xem mục "Lỗ hổng tìm ra 01/10" bên dưới. Bước này **chưa xong trọn vẹn**.
 
 #### Quyết định đã chốt (trước khi code)
 
@@ -607,6 +608,16 @@ từ query string) nên không có cách kích hoạt. Vẫn cần nói rõ vớ
 | 5 | Lý do hủy | Không bắt buộc (`reason?`, ≤ 500) | Giảm ma sát; vẫn lưu để Admin tra cứu |
 | 6 | Danh sách có phân trang? | Có (`page/pageSize`, mặc định 20, tối đa 50), mới nhất trước | `AGENTS.md` 6.4 cấm trả toàn bộ bảng |
 | 7 | Giao diện | `/bookings` (danh sách + hủy 2 bước bấm) · `/bookings/:code` (chi tiết + dòng thời gian lịch sử) · link "Đơn của tôi" khi đã đăng nhập · trang thành công Bước 10 nối link xem đơn | Không link chết: trang thành công sửa thêm link (bước trước để trống đúng vì trang chưa có) |
+
+#### Lỗ hổng tìm ra 01/10 (khi rà lại toàn bộ bảng kiểm thử)
+
+| # | Vấn đề | Mức độ | Trạng thái |
+|---|--------|--------|------------|
+| 1 | **Lọc đơn theo trạng thái chưa làm.** Bảng kiểm thử mục 7 có dòng này nhưng cột "Thực tế" để trống — tức hồi đóng bước này **chưa hề kiểm**. Chạy thật: `GET /api/bookings/my` chỉ nhận `page`/`pageSize`, **không có** tham số trạng thái; giao diện cũng không có ô lọc. Thử `?status=0,1,2,3,4,99` → **đều trả đủ 7 đơn** | Trung bình — tính năng nhỏ, khoảng 30 dòng backend + 1 `<select>` | ❌ **Chưa làm** — cần quyết định có làm không |
+| 2 | Dòng 4 của bảng ghi kỳ vọng "403" nhưng hệ thống trả **404** | Không phải lỗi | ✅ Đã sửa kỳ vọng cho khớp thực tế (404 là quyết định chốt ở Bước 16, xem bảng quyết định dòng 2 ở trên) |
+
+> **Vì sao lọt lưới:** bước này được tick `[x]` khi *code đã chạy được*, mà chưa đối chiếu với chính bảng kiểm thử.
+> Bài học ở `lessons.md` mục 70 — trước khi tick `[x]` phải mở bảng kiểm thử và kiểm không còn dòng nào trống.
 
 ---
 
@@ -725,10 +736,6 @@ Kiểu dữ liệu sai là nguyên nhân gốc: khai bắt buộc cho trường 
 | 6 | Admin ẩn hay xoá? | **Cả hai** | Ẩn để xử lý vi phạm (giữ dữ liệu để đối chiếu), xoá khi bị spam |
 | 7 | Tính lại điểm kiểu nào? | `SUM/COUNT` lại **toàn bộ** đánh giá chưa ẩn của phòng | Tính lại từ đầu tự sửa được mọi sai lệch; cộng dồn `+1/10` thì mất đồng bộ ngay khi có xoá |
 | 8 | Có cần transaction không? | **Có** — ghi đánh giá + cập nhật điểm phòng cùng lúc | Không có transaction thì giữa lúc ghi đánh giá và lúc tính điểm, người khác đọc trang phòng sẽ thấy điểm chưa cộng |
-### [ ] BƯỚC 16 — Đánh giá & nhận xét
-- **Mục tiêu đo được:** chỉ đánh giá được đơn `COMPLETED` · 1 đơn 1 đánh giá (unique index) · cập nhật `RatingAvg`/`RatingCount` → **≥ 3 unit test** · Admin ẩn/xóa được
-- **Bằng chứng:**
-- **Ảnh chụp:** form đánh giá, danh sách đánh giá trong admin
 
 ---
 
@@ -771,9 +778,6 @@ Toast **không có `role`** → trình đọc màn hình im lặng. Toast tự h
 
 - Kịch bản 5 và 6 (toast xanh/đỏ) kiểm bằng **unit test** với đồng hồ giả, không bấm tay. Bằng chứng này chắc hơn bấm tay vì toast tự tắt sau 3 giây — bấm chậm một chút là bỏ lỡ mà không biết là do tool hay do code.
 - Khi viết test trong jsdom, Tailwind không được áp nên phần tử có lớp `hidden` **vẫn xuất hiện** trong DOM. Với menu 2 bản phải dùng `getAllByRole` và đếm số phần tử — đó mới phản ánh đúng hành vi thật (mở menu là **thêm** một bản, không phải thay thế).
-### [ ] BƯỚC 17 — Responsive + Loading/Error/Empty + Toast
-- **Mục tiêu đo được:** mọi trang dùng được ở 375px · mọi danh sách có đủ 3 trạng thái · 7/7 test tay mục 11 của `docs/KIEM_THU_TAY.md`
-- **Bằng chứng:** ảnh chụp 2 trang ở khung 375px
 
 ### [ ] BƯỚC 18 — 18 test case tích hợp (Postman)
 - **Mục tiêu đo được:** `docs/api/postman_collection.json` có **≥ 18 request** · chạy lại được, **≥ 17/18 đạt** · đặc biệt 3 test chứng minh chống đặt trùng · có ảnh kết quả cho báo cáo
