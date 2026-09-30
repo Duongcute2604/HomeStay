@@ -612,12 +612,13 @@ từ query string) nên không có cách kích hoạt. Vẫn cần nói rõ vớ
 
 ## Giai đoạn 5 — Quản trị
 
-### [ ] BƯỚC 12 — Admin quản lý danh mục
+### [x] BƯỚC 12 — Admin quản lý danh mục (xong 30/09/2026)
 - **Mục tiêu đo được:** CRUD địa điểm · CRUD tiện nghi · CRUD phòng (kèm ảnh + gán tiện nghi + cập nhật trạng thái) · chặn xóa phòng/địa điểm đang có đơn hoặc đang có phòng · 3/3 test tay
-- **Bằng chứng:**
-- **Ảnh chụp:** bảng quản lý phòng, form thêm/sửa phòng
+- **Bằng chứng:** 3 bộ API `/api/admin/{locations,rooms,customers}` (chỉ ADMIN) + 3 trang. **Backend 288/288** (thêm 50 unit test) · **Frontend 178/178** · API 8/8 kịch bản · giao diện 3/3 (chi tiết ở `docs/KIEM_THU_TAY.md` mục 8)
+- **Ảnh chụp:** ✅ `.openchamber/screenshots/buoc12-admin-rooms-*.jpg`, `admin-bookings-*.jpg`
+- **Ghi chú:** khách hàng gộp chung 1 trang với số đơn (theo yêu cầu); `CustomerDto.Id` có trong payload để gọi API nhưng giao diện **không** hiển thị
 
-### [ ] BƯỚC 13 — Admin vòng đời đơn & phòng ⭐
+### [x] BƯỚC 13 — Admin vòng đời đơn & phòng (xong 30/09/2026) ⭐
 - **Mục tiêu đo được:**
   - Đủ 6 chuyển trạng thái: `PENDING→CONFIRMED`, `→REJECTED`, `→CHECKED_IN`, `→COMPLETED`, `→CANCELLED`
   - Phòng: `AVAILABLE→BOOKED→OCCUPIED→CLEANING→(2h)→AVAILABLE` và `→MAINTENANCE`
@@ -625,12 +626,17 @@ từ query string) nên không có cách kích hoạt. Vẫn cần nói rõ vớ
   - **Chặn đặt phòng trong 2 giờ vệ sinh** → **1 unit test**
   - Ma trận chuyển trạng thái hợp lệ/không hợp lệ → **≥ 8 unit test**
   - Chạy trọn 1 vòng đời thật, 3/3 test tay
-- **Bằng chứng:** `dotnet test --filter "Status"` → `Passed! 8/8`
-- **Ảnh chụp:** màn hình quản lý đơn, nút xác nhận / check-in / check-out
+- **Bằng chứng:** **Backend 310/310** (thêm 22 unit test) · **Frontend 198/198** (thêm 20 unit test) · API 9/9 kịch bản · lịch sử trạng thái kiểm bằng SQL trực tiếp · giao diện 4/4 (chi tiết ở `docs/KIEM_THU_TAY.md` mục 9)
+- **Ảnh chụp:** ✅ `.openchamber/screenshots/admin-bookings-*.jpg`
+- **Ghi chú:**
+  - Trạng thái `CANCELLED` do **khách** tự hủy (Bước 11), không có endpoint Admin vì Admin không cần hủy hộ.
+  - `MAINTENANCE` do Admin đặt trực tiếp ở trang Phòng (Bước 12), không gắn với đơn.
+  - Còn nợ Bước 13: **tự động chuyển `CLEANING → AVAILABLE` sau 2 giờ** — hiện phải Admin bấm tay ở trang Phòng. Xem mục "Việc còn lại" bên dưới.
 
 ### [ ] BƯỚC 14 — Admin khóa tài khoản khách
 - **Mục tiêu đo được:** khóa → khách đăng nhập bị từ chối với thông báo rõ ràng · mở khóa → đăng nhập lại được
 - **Bằng chứng:**
+- **Ghi chú:** ⚠️ **Đã làm sớm ở Bước 12** (khoá/mở khoá trong `AdminCustomerService`, endpoint `PATCH /api/admin/customers/{id}/status`). Bước 14 chỉ còn kiểm thử tay: khoá → thử đăng nhập bằng tài khoản bị khoá phải nhận thông báo "Tài khoản đã bị khoá…" (đã có sẵn trong `ErrorMessages.TaiKhoanDaBiKhoa` từ Bước 5).
 
 ---
 

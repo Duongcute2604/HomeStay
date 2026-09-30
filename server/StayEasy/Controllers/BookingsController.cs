@@ -40,7 +40,7 @@ public class BookingsController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> TaoDon([FromBody] CreateBookingRequest request, CancellationToken ct)
     {
-        BookingResponseDto result = await _bookingService.TaoDonAsync(LayUserIdHienTai(), request, ct);
+        BookingResponseDto result = await _bookingService.TaoDonAsync(User.LayUserIdHienTai(), request, ct);
 
         return StatusCode(
             StatusCodes.Status201Created,
@@ -57,7 +57,7 @@ public class BookingsController : ControllerBase
         [FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken ct = default)
     {
         PagedResultDto<MyBookingDto> result =
-            await _bookingService.LayCuaToiAsync(LayUserIdHienTai(), page, pageSize, ct);
+            await _bookingService.LayCuaToiAsync(User.LayUserIdHienTai(), page, pageSize, ct);
 
         return Ok(ApiResponse<PagedResultDto<MyBookingDto>>.SuccessResponse("Lấy danh sách đơn thành công", result));
     }
@@ -71,7 +71,7 @@ public class BookingsController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> LayChiTiet(string code, CancellationToken ct)
     {
-        BookingDetailDto result = await _bookingService.LayChiTietAsync(LayUserIdHienTai(), code, ct);
+        BookingDetailDto result = await _bookingService.LayChiTietAsync(User.LayUserIdHienTai(), code, ct);
 
         return Ok(ApiResponse<BookingDetailDto>.SuccessResponse("Lấy chi tiết đơn thành công", result));
     }
@@ -90,25 +90,8 @@ public class BookingsController : ControllerBase
         // Body được phép rỗng hoàn toàn (lý do không bắt buộc) — `request` null
         // thì lý do là null, không báo lỗi thiếu body.
         BookingDetailDto result = await _bookingService.HuyDonAsync(
-            LayUserIdHienTai(), code, request?.Reason, ct);
+            User.LayUserIdHienTai(), code, request?.Reason, ct);
 
         return Ok(ApiResponse<BookingDetailDto>.SuccessResponse("Hủy đơn thành công", result));
-    }
-
-    /// <summary>
-    /// Lấy định danh người dùng từ access token.
-    /// TUYỆT ĐỐI không tin id do client gửi — đổi một con số là đặt đơn hộ người khác.
-    /// </summary>
-    private int LayUserIdHienTai()
-    {
-        string rawUserId = User.FindFirstValue(JwtTokenService.UserIdClaimType)
-            ?? throw new AppException(HttpStatusCode.Unauthorized, ErrorMessages.ChuaDangNhap);
-
-        if (!int.TryParse(rawUserId, out int userId))
-        {
-            throw new AppException(HttpStatusCode.Unauthorized, ErrorMessages.TokenKhongHopLe);
-        }
-
-        return userId;
     }
 }

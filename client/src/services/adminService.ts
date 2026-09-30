@@ -1,6 +1,8 @@
 import { apiClient, bocDuLieu, kiemTraThanhCong } from '../api/client'
 import type { ApiResponse } from '../types/auth'
 import type {
+  AdminBooking,
+  AdminBookingFilter,
   AdminLocation,
   AdminRoom,
   Amenity,
@@ -10,6 +12,7 @@ import type {
   RoomPayload,
 } from '../types/admin'
 import type { RoomStatus } from '../types/location'
+import type { PagedResult } from '../types/room'
 
 /**
  * Các lời gọi phần quản trị (Bước 12).
@@ -98,6 +101,70 @@ export const adminService = {
     const response = await apiClient.patch<ApiResponse<Customer>>(`/admin/customers/${id}/status`, {
       isLocked,
     })
+    return bocDuLieu(response.data)
+  },
+
+  // ----- Vòng đời đơn -----
+
+  /**
+   * Danh sách đơn có lọc theo trạng thái và từ khoá (mã đơn / tên / email khách).
+   *
+   * Chỉ gửi tham số có giá trị: `status=null` gửi lên sẽ thành chuỗi rỗng và
+   * server đọc sai — cùng lý do với `roomService.timKiem`.
+   */
+  async layDanhSachDon(filter: AdminBookingFilter): Promise<PagedResult<AdminBooking>> {
+    const thamSo = new URLSearchParams()
+
+    if (filter.status !== null) {
+      thamSo.set('status', String(filter.status))
+    }
+    if (filter.keyword.trim() !== '') {
+      thamSo.set('keyword', filter.keyword.trim())
+    }
+    thamSo.set('page', String(filter.page))
+    thamSo.set('pageSize', String(filter.pageSize))
+
+    const response = await apiClient.get<ApiResponse<PagedResult<AdminBooking>>>(
+      `/admin/bookings?${thamSo.toString()}`,
+    )
+    return bocDuLieu(response.data)
+  },
+
+  /** Xác nhận đơn: `PENDING → CONFIRMED`, phòng chuyển sang đã được đặt. */
+  async xacNhanDon(code: string): Promise<AdminBooking> {
+    const response = await apiClient.patch<ApiResponse<AdminBooking>>(
+      `/admin/bookings/${code}/confirm`,
+    )
+    return bocDuLieu(response.data)
+  },
+
+  /**
+   * Từ chối đơn kèm lý do. Bắt buộc có lý do — server trả 400 nếu để trống.
+   */
+  async tuChoiDon(code: string, reason: string): Promise<AdminBooking> {
+    const response = await apiClient.patch<ApiResponse<AdminBooking>>(
+      `/admin/bookings/${code}/reject`,
+      { reason },
+    )
+    return bocDuLieu(response.data)
+  },
+
+  /** Cho khách nhận phòng: `CONFIRMED → CHECKED_IN`. */
+  async checkInDon(code: string): Promise<AdminBooking> {
+    const response = await apiClient.patch<ApiResponse<AdminBooking>>(
+      `/admin/bookings/${code}/check-in`,
+    )
+    return bocDuLieu(response.data)
+  },
+
+  /**
+   * Khách trả phòng: `CHECKED_IN → COMPLETED`. Phòng chuyển sang đang dọn dẹp,
+   * chưa nhận đơn mới được ngay.
+   */
+  async checkOutDon(code: string): Promise<AdminBooking> {
+    const response = await apiClient.patch<ApiResponse<AdminBooking>>(
+      `/admin/bookings/${code}/check-out`,
+    )
     return bocDuLieu(response.data)
   },
 }

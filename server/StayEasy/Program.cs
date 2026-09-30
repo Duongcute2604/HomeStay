@@ -141,6 +141,9 @@ builder.Services.AddScoped<IBookingService, BookingService>();
 builder.Services.AddScoped<IAdminLocationService, AdminLocationService>();
 builder.Services.AddScoped<IAdminRoomService, AdminRoomService>();
 builder.Services.AddScoped<IAdminCustomerService, AdminCustomerService>();
+builder.Services.AddScoped<IAdminBookingService, AdminBookingService>();
+// Job nền: tự chuyển phòng đã vệ sinh xong (CLEANING) sang còn trống.
+builder.Services.AddHostedService<RoomCleaningJob>();
 builder.Services.AddSingleton<IPasswordHasher, PasswordHasher>();
 builder.Services.AddSingleton<ITokenHasher, TokenHasher>();
 builder.Services.AddSingleton<IJwtTokenService, JwtTokenService>();

@@ -84,7 +84,26 @@ public static class ErrorMessages
     public const string AnhPhongQuaNhieu = "Mỗi phòng chỉ được tải tối đa 10 ảnh";
     public const string TienNghiKhongHopLe = "Có tiện nghi không tồn tại trong danh mục";
     public const string KhongXoaPhongDangCoDon = "Không thể xoá phòng đã có đơn đặt. Vui lòng chuyển phòng sang bảo trì";
+    public const string PhongDangVeSinh = "Phòng vừa được vệ sinh, chưa sẵn sàng nhận đơn mới";
 
     public const string KhongTimThayKhach = "Không tìm thấy khách hàng";
     public const string KhongDuQuyenThaoTac = "Chỉ quản trị viên mới được thực hiện thao tác này";
+
+    // ----- Quản trị: vòng đời đơn -----
+
+    public const string KhongTimThayDon = "Không tìm thấy đơn đặt phòng";
+    public const string ChiTietTuChoiRong = "Vui lòng nhập lý do từ chối để khách biết vì sao đơn bị hủy";
+
+    /// <summary>
+    /// Báo thao tác không hợp lệ với trạng thái hiện tại của đơn. Có 2 tham số
+    /// theo thứ tự: <c>{0}</c> = trạng thái mà thao tác này yêu cầu,
+    /// <c>{1}</c> = trạng thái đơn đang thật sự ở.
+    /// </summary>
+    /// <remarks>
+    /// Cố tình KHÔNG nói "không thể chuyển sang trạng thái X": với thao tác
+    /// một chiều như trả phòng, câu đó đọc ra thành nghĩa ngược (đơn đã hoàn
+    /// tất mà bảo "không thể chuyển sang đã hoàn tất"). Chỉ nêu trạng thái
+    /// đang cần và đang có là đủ để Admin hiểu phải làm gì tiếp.
+    /// </remarks>
+    public const string SaiTrangThaiChoThaoTac = "Thao tác này chỉ áp dụng cho đơn đang \"{0}\". Đơn hiện ở trạng thái \"{1}\"";
 }

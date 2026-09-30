@@ -23,4 +23,11 @@ public static class BookingRules
 
     /// <summary>Giờ trả phòng quy định khi thuê theo ngày.</summary>
     public const int StandardCheckOutHour = 12;
+
+    /// <summary>
+    /// Sau khi khách trả phòng, phòng phải vệ sinh tối thiểu số giờ này mới
+    /// nhận đơn mới. Bắt buộc 2 giờ theo quy định nghiệp vụ — có unit test
+    /// (`CanDatPhongDangDọnDep_PhaiChoHetGioVeSinh`).
+    /// </summary>
+    public const int CleaningHoursAfterCheckout = 2;
 }

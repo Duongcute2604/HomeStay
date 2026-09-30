@@ -11,7 +11,12 @@ import { useAuth } from '../../hooks/useAuth'
  * giữa bảng tính, làm rối mắt.
  */
 
+/**
+ * Menu quản trị. Thứ tự theo luồng vận hành hằng ngày: vào đơn trước (việc
+ * phải làm), rồi mới tới danh mục (việc chuẩn bị).
+ */
 const MENU = [
+  { to: '/admin/bookings', nhan: 'Đơn đặt phòng' },
   { to: '/admin/facilities', nhan: 'Cơ sở' },
   { to: '/admin/rooms', nhan: 'Phòng' },
   { to: '/admin/customers', nhan: 'Khách hàng' },

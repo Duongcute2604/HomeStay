@@ -206,6 +206,14 @@ public class RoomService : IRoomService
             return new AvailabilityResponse { IsAvailable = false, Reason = ErrorMessages.PhongBaoTri };
         }
 
+        // 7b. Phòng vừa trả đang vệ sinh thì chưa nhận đặt cho tới khi đủ
+        // `CleaningHoursAfterCheckout` giờ. `UpdatedAt` là thời điểm chuyển
+        // sang CLEANING nên dùng làm mốc — không cần thêm cột riêng.
+        if (phong.Status == RoomStatus.CLEANING && ConDuThoiGianVeSinh(phong))
+        {
+            return new AvailabilityResponse { IsAvailable = false, Reason = ErrorMessages.PhongDangVeSinh };
+        }
+
         // 8. Trùng với đơn còn hiệu lực thì bận. Chạm biên không tính trùng:
         // trả 12:00, khách mới nhận 12:00 vẫn được.
         // Chỉ PENDING/CONFIRMED/CHECKED_IN giữ phòng — huỷ/từ chối/trả rồi thì thôi.
@@ -225,6 +233,18 @@ public class RoomService : IRoomService
         }
 
         return new AvailabilityResponse { IsAvailable = true, Reason = null };
+    }
+
+    /// <summary>
+    /// Phòng đang vệ sinh mà chưa đủ số giờ quy định thì chưa cho đặt.
+    ///
+    /// Dùng `DateTime.Now` (giờ máy chủ) chứ không phải `UtcNow` vì `UpdatedAt`
+    /// được ghi bằng `DateTime.Now` ở các service khác — trộn hai loại mốc thời
+    /// gian sẽ tính sai số giờ vệ sinh.
+    /// </summary>
+    private static bool ConDuThoiGianVeSinh(StayEasy.Entities.Room phong)
+    {
+        return phong.UpdatedAt.AddHours(BookingRules.CleaningHoursAfterCheckout) > DateTime.Now;
     }
 
     /// <inheritdoc />

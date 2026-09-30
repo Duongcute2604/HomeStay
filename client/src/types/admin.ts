@@ -9,6 +9,7 @@
  * payload, không bao giờ render ra màn hình (STT tự tính, đơn hiện bằng mã).
  */
 
+import type { BookingStatus } from './booking'
 import type { RoomStatus, RoomType } from './location'
 
 /** Một cơ sở trong trang quản trị. */
@@ -75,6 +76,41 @@ export interface Customer {
   isLocked: boolean
   createdAt: string
   totalBookings: number
+}
+
+/**
+ * Một đơn trong trang quản trị (Bước 13).
+ *
+ * Nguồn là `server/StayEasy/DTOs/AdminBookingDtos.cs`. `status` là SỐ — dùng
+ * `NHAN_TRANG_THAI_DON` từ `types/booking` để hiện nhãn tiếng Việt, đừng so
+ * sánh chuỗi.
+ */
+export interface AdminBooking {
+  id: number
+  /** Mã đơn `HS-YYMMDD-XXXX` — thứ Admin và khách đều dùng để tra cứu. */
+  code: string
+  customerName: string
+  customerEmail: string
+  customerPhone: string | null
+  roomName: string
+  locationName: string
+  bookingType: number
+  checkIn: string
+  checkOut: string
+  guestCount: number
+  totalAmount: number
+  status: BookingStatus
+  note: string | null
+  cancelReason: string | null
+  createdAt: string
+}
+
+/** Bộ lọc danh sách đơn ở trang quản trị. `null` ở `status` = không lọc. */
+export interface AdminBookingFilter {
+  status: BookingStatus | null
+  keyword: string
+  page: number
+  pageSize: number
 }
 
 /** Dữ liệu form tạo khách hàng (Admin nhập tay). */

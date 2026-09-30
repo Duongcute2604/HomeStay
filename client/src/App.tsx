@@ -4,6 +4,7 @@ import AdminLayout from './components/admin/AdminLayout'
 import PageLayout from './components/common/PageLayout'
 import Toast from './components/common/Toast'
 import ProtectedRoute from './components/ProtectedRoute'
+import AdminBookings from './pages/admin/AdminBookings'
 import AdminCustomers from './pages/admin/AdminCustomers'
 import AdminFacilities from './pages/admin/AdminFacilities'
 import AdminRooms from './pages/admin/AdminRooms'
@@ -42,6 +43,7 @@ export default function App(): JSX.Element {
       <Routes>
         <Route element={<KhungAdmin />}>
           <Route path="admin" element={<ChuyenHuongAdmin />} />
+          <Route path="admin/bookings" element={<AdminBookings />} />
           <Route path="admin/facilities" element={<AdminFacilities />} />
           <Route path="admin/rooms" element={<AdminRooms />} />
           <Route path="admin/customers" element={<AdminCustomers />} />
@@ -115,7 +117,7 @@ function KhungKhach(): JSX.Element {
   )
 }
 
-/** Gõ tay `/admin` thì đưa thẳng sang trang quản lý cơ sở. */
+/** Gõ tay `/admin` thì đưa thẳng sang trang đơn — việc Admin làm hằng ngày. */
 export function ChuyenHuongAdmin(): JSX.Element {
-  return <Navigate to="/admin/facilities" replace />
+  return <Navigate to="/admin/bookings" replace />
 }

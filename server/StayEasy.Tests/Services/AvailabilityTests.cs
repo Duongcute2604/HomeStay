@@ -4,6 +4,7 @@ using StayEasy.Data;
 using StayEasy.DTOs;
 using StayEasy.Entities;
 using StayEasy.Enums;
+using StayEasy.Services.Booking;
 using StayEasy.Services.Rooms;
 using StayEasy.Tests.Common;
 using StayEasy.Tests.Helpers;
@@ -292,6 +293,54 @@ public class AvailabilityTests
 
         Assert.False(result.IsAvailable);
         Assert.Equal(ErrorMessages.PhongBaoTri, result.Reason);
+        await db.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task KiemTraTrong_PhongMoiVeSinh_ChuaDuGio_TraVeBan()
+    {
+        // Quy định nghiệp vụ: sau khi trả phòng phải vệ sinh 2 giờ mới nhận đơn
+        // mới. Không chặn ở đây thì khách đặt trúng phòng đang lau nhà.
+        StayEasyDbContext db = TestDbContextFactory.Create();
+        Location location = TestDataBuilder.CreateLocation();
+        db.Locations.Add(location);
+        Room room = TestDataBuilder.CreateRoom(location, "101");
+        room.Status = RoomStatus.CLEANING;
+        room.UpdatedAt = DateTime.Now.AddMinutes(-30);
+        db.Rooms.Add(room);
+        await db.SaveChangesAsync();
+        RoomService service = TaoService(db);
+
+        DateTime nhan = DateTime.Now.AddDays(10);
+        AvailabilityResponse result = await service.KiemTraTrongAsync(
+            TaoYeuCau(nhan, nhan.AddDays(1)), CancellationToken.None);
+
+        Assert.False(result.IsAvailable);
+        Assert.Equal(ErrorMessages.PhongDangVeSinh, result.Reason);
+        await db.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task KiemTraTrong_PhongVeSinhDuGio_ChapNhanDat()
+    {
+        // Biên quan trọng: job nền chuyển CLEANING→AVAILABLE chạy mỗi phút, nên
+        // có lúc phòng vẫn còn CLEANING nhưng đã đủ giờ. Chặn thêm ở đây là
+        // chặn oan một phòng thật ra đã dùng được.
+        StayEasyDbContext db = TestDbContextFactory.Create();
+        Location location = TestDataBuilder.CreateLocation();
+        db.Locations.Add(location);
+        Room room = TestDataBuilder.CreateRoom(location, "101");
+        room.Status = RoomStatus.CLEANING;
+        room.UpdatedAt = DateTime.Now.AddHours(-BookingRules.CleaningHoursAfterCheckout);
+        db.Rooms.Add(room);
+        await db.SaveChangesAsync();
+        RoomService service = TaoService(db);
+
+        DateTime nhan = DateTime.Now.AddDays(10);
+        AvailabilityResponse result = await service.KiemTraTrongAsync(
+            TaoYeuCau(nhan, nhan.AddDays(1)), CancellationToken.None);
+
+        Assert.True(result.IsAvailable);
         await db.DisposeAsync();
     }
 

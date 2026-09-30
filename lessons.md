@@ -1366,3 +1366,85 @@ tôn trọng chứ không được bỏ `disabled` để test cho dễ.
 >    test cho giống người dùng thật.
 > 3. Nút khoá khi chưa đủ điều kiện là mẫu tốt cho mọi form phụ thuộc API:
 >    chặn được cả bấm đúp gửi 2 request.
+
+---
+
+## 50. `useMutation` cua TanStack Query goi `mutationFn` BAT DONG BO
+
+**Bieu hien (Buoc 13):** 3 test "bam nut -> kiem tra service duoc goi" deu fail
+voi `expected "spy" to be called with arguments: [ 'HS-01' ]` / `Number of calls: 0`,
+du tren trinh duyet bam nut chay hoan hao.
+
+**Vi sao:** `mutate()` khong goi `mutationFn` ngay. No di qua `MutationObserver`
+-> `Mutation.execute()` trong mot chuoi promise, nen `mutationFn` chay o
+**microtask ke tiep**. Kha nhin dong bo ngay sau `fireEvent.click` se luon fail
+du code dung hoan toan.
+
+**Da sua:** boc `await waitFor(() => expect(mock).toHaveBeenCalledWith(...))`.
+
+**Lien quan — `not.toHaveBeenCalled()` cung vo nghia theo ly do do:** muon chung
+minh API *khong* duoc goi thi phai `await waitFor(...)` mot cai gi do truoc
+(chang han doi bang render lai), roi moi kha nhin `not.toHaveBeenCalled()`.
+
+**Bai hoc:**
+
+> Test do KHONG dong nghia code sai. Truoc khi sua app, hoi: "cai ma test dang
+> kha nhin co dung khong?" — o day cach kha nhin sai (thieu `await`), khong phai
+> hanh vi app sai.
+
+---
+
+## 51. `getByText` khop CHINH XAC, ke ca dau cham cuoi cau
+
+**Bieu hien (Buoc 13):** test tim `'Khong co don nao khop bo loc hien tai'` bao
+`Unable to find an element with the text`, **trong khi `<p>` do co that trong
+DOM** (da kiem bang cach dump DOM tho).
+
+**Vi sao:** `getByText('chuoi')` so khop **bang toan bo** text da chuan hoa cua
+phan tu, khong phai "co chua". Component viet `...hien tai.` (co dau cham) con
+test viet khong co dau cham -> khong khop.
+
+**Da sua:** them dau cham vao chuoi trong test.
+
+**Bai hoc:**
+
+> 1. Muon so khop mot phan thi dung `regex`, dung dua vao viec bo dau cham.
+> 2. Khi test bao "khong tim thay" ma ban tin chac phan tu co that, **in DOM tho ra
+>    xem** (`vitest` in `<body>` trong phan loi) truoc khi doan nguyen nhan.
+
+---
+
+## 52. Nhan trung nhau giua `<option>` loc va the hien thi — phai khoanh vung truy van
+
+**Bieu hien (Buoc 13):** `getByText('Da xac nhan')` bao `Found multiple elements`
+— vi "Da xac nhan" vua la `<option>` trong o loc trang thai, vua la the trang
+thai trong bang.
+
+**Da sua:** dung `within(screen.getByRole('table')).getByText(...)` de chi tra
+trong bang. Ap dung cho ca chu "ma don" khi form chi tiet dang mo (ma hien o ca
+tieu de form lan dong bang).
+
+**Bai hoc:**
+
+> Khi mot nhan duoc dung o nhieu noi tren cung trang, truy van bang chuoi tran
+> la khong dang tin. `within(container)` la cong cu chuan de thu hop pham vi.
+
+---
+
+## 53. Cot bang Admin qua rong — "Thao tac" bi day khoi man hinh
+
+**Bieu hien (Buoc 13):** bang don co 9 cot, cot "Thao tac" nam ngoai vung nhin
+o man 1440px, ma do la cot quan trong nhat.
+
+**Da sua (3 viec, deu deu nhau):**
+
+1. Them `whitespace-nowrap` cho ma don / tien / thoi gian — truoc do ma don
+   `HS-261003-0014` bi vo thanh 3 dong lam dong bang cao gap rut.
+2. Gop cot "So khach" vao cot "Phong" (`{co so} · {n} khach`) de giam 1 cot.
+3. Ha `min-w` tu 1000px xuong 880px.
+
+**Bai hoc:**
+
+> Khi bang qua rong, **dung cu them cot** — hay gop thong tin phu vao dong thu hai
+> cua mot o da co. Cot quan trong (thao tac) phai nam trong man hinh, khong phai
+> cot du lieu bi hy sinh.

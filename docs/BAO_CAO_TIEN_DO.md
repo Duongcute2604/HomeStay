@@ -23,7 +23,7 @@
 | | 10 | Đặt phòng theo giờ / ngày | ✅ 3/3 (HP/EC/AB) | +61 | ✅ Xong (30/09) |
 | | 11 | Đơn của tôi, hủy đơn, lịch sử | ✅ 3/3 (HP/EC/AB) | +54 | ✅ Xong (30/09) |
 | 30/09 | 12 | **Admin quản lý danh mục** (Cơ sở / Phòng / Khách hàng) | ✅ 3/3 mỗi API + 3/3 trên trình duyệt | **288 pass (thêm 50)** | ✅ Xong (30/09) |
-| | 13 | Admin: xác nhận/check-in/check-out | ⬜ | ⬜ | ⬜ Chưa làm |
+| | 13 | Admin: xác nhận/check-in/check-out | ✅ API 9/9 + vệ sinh 6/6 + UI 4/4 | **312 pass (thêm 24)** | ✅ Xong (30/09) |
 | | 14 | Admin: khóa tài khoản khách | ⬜ | ⬜ | ⬜ Chưa làm |
 | | 15 | Dashboard thống kê | ⬜ | ⬜ | ⬜ Chưa làm |
 | | 16 | Đánh giá & nhận xét | ⬜ | ⬜ | ⬜ Chưa làm |
@@ -102,4 +102,5 @@
 | 30/09 | 10 | Dat phong theo gio/ngay: POST /api/bookings (transaction SERIALIZABLE, snapshot gia, lich su, ma HS-YYMMDD-XXXX) + trang /booking | 10/10 ca (2 tab chi 1 don), console sach, mobile 390px | Backend 27/27, frontend 160/160 (them 17) | Xong (30/09) |
 | 30/09 | 11 | Don cua toi: GET /api/bookings/my, GET /api/bookings/{code}, POST /api/bookings/{code}/cancel + trang /bookings va /bookings/:code | 8/8 ca, console sach, mobile 390px | Backend 238/238, frontend 177/177 | Xong (30/09) |
 | 30/09 | 12 | **Admin quan tri danh muc**: 3 bo API `/api/admin/{locations,rooms,customers}` (CRUD day du, chan xoa khi con phong/khong cho khoa admin) + 3 trang `/admin/{facilities,rooms,customers}` voi AdminLayout rieng | API 8/8 kich ban (HP/EC/AB); giao dien 3/3 (mo form + validate rong + xoa 2 buoc bi tu choi) | Backend **288/288** (them 50), frontend 177/177 giu nguyen | Xong (30/09) |
-| 30/09 | 12 | **Phat hien loi cua lượt truoc (quan trong):** 22 anh trong `public/images/rooms/{cozy,japandi,signature}/` KHONG phai anh phong ma la poster quang cao cua du an khac ("Nha o Hem"). Da xem truc tiep `cozy-1.jpg`, `cozy-2.jpg`, `cozy-3.jpg`, `signature-1.jpg` de xac nhan | Da sua duong dan trong seed + CSDL sang bộ anh moi (anh chinh + anh phu theo concept); **ANH CHUA DUNG NOI DUNG, can thay anh that** | ⏸ Cho user chon nguon anh |
+| 30/09 | 12 | **Phat hien loi cua lượt truoc (quan trong):** 22 anh trong `public/images/rooms/{cozy,japandi,signature}/` KHONG phai anh phong ma la poster quang cao cua du an khac ("Nha o Hem"). Da xem truc tiep `cozy-1.jpg`, `cozy-2.jpg`, `cozy-3.jpg`, `signature-1.jpg` de xac nhan | **Da sua xong:** 12 anh CC0 tu StockSnap (4 anh/concept) + logo ve bang SVG + sua anh hero va 3 dia chi trong footer; ghi nguon anh vao `docs/NGUON_ANH.md` | Xong (30/09) |
+| 30/09 | 13 | **Admin vong doi don**: 4 endpoint `PATCH /api/admin/bookings/{code}/{confirm,reject,check-in,check-out}` (ma tran chuyen trang thai trong 1 cho, transaction SERIALIZABLE, ghi `BookingStatusHistory` kem admin id) + trang `/admin/bookings` voi loc trang thai / tu khoa, phan trang, 1 nut cho moi hanh dong hop le | API 9/9 kich ban (HP/EC/AB) + lich su trang thai kiem bang SQL; khoang ve sinh 2 gio 6/6 (job nen RoomCleaningJob tu chuyen CLEANING->AVAILABLE, chan dat phong dang ve sinh); giao dien 4/4 (xac nhan + validate tu choi + loc + don bi tu choi) | Backend **312/312** (them 24), frontend **198/198** (them 20) | Xong (30/09) |

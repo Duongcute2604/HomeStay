@@ -433,7 +433,34 @@
 | 16 | GIAO DIỆN | `/admin/rooms` — 10 phòng | Giá đúng định dạng VND, căn phải | "90.000 ₫", "1.800.000 ₫" căn phải; concept hiện Cozy / Japandi / Signature | ✅ |
 | 17 | GIAO DIỆN | `/admin/rooms` — đổi trạng thái bằng dropdown | Ô chọn hiện 5 trạng thái tiếng Việt | "Còn trống / Đã được đặt / Đang có khách / Đang dọn dẹp / Bảo trì" | ✅ |
 
-> **Lỗi phát hiện trong lúc kiểm thử:** 22 ảnh trong `public/images/rooms/{cozy,japandi,signature}/` **không phải ảnh phòng** mà là poster quảng cáo của một dự án khác ("Nhà Ở Hẻm": banner, bản đồ tiện ích, poster khuyến mãi). Xem trực tiếp `cozy-1.jpg`, `cozy-2.jpg`, `cozy-3.jpg`, `signature-1.jpg` để xác nhận. Đường dẫn trong seed + CSDL đã sửa sang bộ ảnh mới, nhưng **nội dung ảnh vẫn cần thay bằng ảnh thật**.
+> **Lỗi phát hiện trong lúc kiểm thử:** 22 ảnh trong `public/images/rooms/{cozy,japandi,signature}/` **không phải ảnh phòng** mà là poster quảng cáo của một dự án khác ("Nhà Ở Hẻm": banner, bản đồ tiện ích, poster khuyến mãi). Xem trực tiếp `cozy-1.jpg`, `cozy-2.jpg`, `cozy-3.jpg`, `signature-1.jpg` để xác nhận. **Đã sửa xong:** thay bằng 12 ảnh CC0 của StockSnap (xem `docs/NGUON_ANH.md`), vẽ lại logo bằng SVG, sửa ảnh hero + 3 địa chỉ trong footer.
+
+---
+
+## 9. Admin — vòng đời đơn đặt phòng (Bước 13) — **30/09/2026**
+
+| # | Loại | Kịch bản | Kỳ vọng | Thực tế | Kết quả |
+|---|------|----------|---------|---------|---------|
+| 1 | HP | Xác nhận đơn `HS-261003-0014` (PENDING) | Đơn → CONFIRMED, phòng A101 → BOOKED | HTTP 200, `status: 1`; kiểm CSDL: A101 = `BOOKED` | ✅ |
+| 2 | HP | Nhận phòng cùng đơn đó | Đơn → CHECKED_IN, phòng → OCCUPIED | HTTP 200, `status: 2` | ✅ |
+| 3 | HP | Trả phòng cùng đơn đó | Đơn → COMPLETED, **phòng → CLEANING chứ không AVAILABLE** | HTTP 200, `status: 3`; kiểm CSDL: A101 = `CLEANING`. Đúng quy định vệ sinh 2 giờ | ✅ |
+| 4 | AB | Từ chối mà không nhập lý do | 400, đơn giữ nguyên PENDING | HTTP 400 `"Vui lòng nhập lý do để khách biết vì sao đơn bị hủy"`; phòng A301 vẫn `AVAILABLE` | ✅ |
+| 5 | EC | Từ chối kèm lý do | Đơn → REJECTED, lưu lý do vào `CancelReason`, phòng → AVAILABLE | HTTP 200, `status: 5`, `cancelReason: "Phòng đang bảo trì, đã sửa xong sẽ liên hệ lại"` | ✅ |
+| 6 | AB | Nhận phòng đơn **chưa xác nhận** | 409, không đổi trạng thái | HTTP 409 `"Thao tác này chỉ áp dụng cho đơn đang \"đã xác nhận\". Đơn hiện ở trạng thái \"chờ xác nhận\""` | ✅ |
+| 7 | AB | Xác nhận đơn đã bị từ chối | 409 | HTTP 409 `"Thao tác này chỉ áp dụng cho đơn đang \"chờ xác nhận\". Đơn hiện ở trạng thái \"đã từ chối\""` | ✅ |
+| 8 | AB | Trả phòng 2 lần liên tiếp | Lần 2 bị chặn 409 | HTTP 200 lần 1, HTTP 409 lần 2 | ✅ |
+| 9 | AB | Mã đơn không tồn tại | 404 | HTTP 404 `"Không tìm thấy đơn đặt phòng"` | ✅ |
+| 10 | EC | Lọc `status=0` (PENDING) | Chỉ trả đơn chờ xác nhận | `totalItems: 1` sau khi đã xử lý 2 đơn PENDING | ✅ |
+| 11 | EC | Tìm từ khoá `HS-2610` / `khach1` | Lọc theo mã và theo email khách | `HS-2610` → 4 đơn; `khach1` → 6 đơn | ✅ |
+| 12 | AB | Lịch sử trạng thái ghi đúng người thực hiện | Dòng `PENDING→CONFIRMED` ghi Admin, không phải khách | CSDL: `NULL→PENDING` bởi `khach1@gmail.com`; `PENDING→CONFIRMED` bởi `admin@stayeasy.vn` | ✅ |
+| 13 | GIAO DIỆN | `/admin/bookings` — 15 đơn đủ 6 trạng thái | Bảng gọn, cột "Thao tác" không bị đẩy khỏi màn hình | Mã đơn 1 dòng, tiền 1 dòng (`520.000 ₫`), phân trang "Trang 1 / 2" | ✅ |
+| 14 | GIAO DIỆN | Bấm "Xác nhận" trên đơn PENDING | Toast + bảng tự tải lại, nút đổi thành "Nhận phòng" | Đơn `HS-261029-0015` chuyển "Chờ xác nhận" → "Đã xác nhận"; nút đổi đúng | ✅ |
+| 15 | GIAO DIỆN | Bấm "Từ chối" rồi submit khi chưa nhập lý do | Chặn tại giao diện, **không gọi API** | Hiện đỏ "Vui lòng nhập lý do để khách biết vì sao đơn bị từ chối"; đơn vẫn "Chờ xác nhận" | ✅ |
+| 16 | GIAO DIỆN | Tìm từ khoá `khach1` | 15 đơn → 6 đơn của khách đó, nút "Bỏ lọc" xuất hiện | Header đổi "15 đơn" → "6 đơn", đều là Trần Thị Mai | ✅ |
+
+> **Lỗi nghiệm vụ do unit test bắt được (đã sửa):** `ChangedByUserId` trong `BookingStatusHistory` ban đầu ghi `don.UserId` — tức **id của khách đặt phòng**, không phải Admin thao tác. Khi tra lịch sử sẽ thấy "khách tự xác nhận đơn của mình", sai hoàn toàn. Sửa bằng cách truyền `adminUserId` từ token qua controller xuống service; test `XacNhanAsync_GhiLichSuTrangThai_GhiDungAdminIdKhongPhaiIdKhach` chốt lại hành vi này.
+>
+> **Lỗi thông báo 409 đọc ngược (đã sửa):** bản đầu `"Đơn đang ở trạng thái \"đã hoàn tất\", không thể chuyển sang \"khách đang ở\""` — với thao tác một chiều như trả phòng, câu này đọc ra thành nghĩa ngược. Đổi thành `"Thao tác này chỉ áp dụng cho đơn đang \"{cần}\". Đơn hiện ở trạng thái \"{đang có}\""`.
 
 ---
 
@@ -501,3 +528,19 @@
 | **Tổng** | **78** | | |
 
 **Đạt ≥ 95% là đủ.** Các mục "không đạt" phải sửa hết trước khi chốt báo cáo.
+
+### 9b. Khoang ve sinh 2 gio sau khi tra phong (Buoc 13)
+
+| # | Loai | Kich ban | Ky vong | Thuc te | Ket qua |
+|---|------|----------|---------|---------|---------|
+| 1 | HP | Phong `CLEANING` 3 gio truoc, khoi dong lai server | Job nen tu chuyen sang `AVAILABLE` | SQL: A102 `CLEANING` (moc -3h) -> `AVAILABLE`, `UpdatedAt` duoc cap nhat | PASS |
+| 2 | EC | Phong `CLEANING` 17 phut truoc, khoi dong lai server | **Van** `CLEANING` (chua du 2 gio) | SQL: A101 van `CLEANING` | PASS |
+| 3 | AB | Khach xem khung ngay cho phong A101 (dang ve sinh) | Bao ban kem ly do cu the | `{"isAvailable":false,"reason":"Phong vua duoc ve sinh, chua san sang nhan don moi"}` | PASS |
+| 4 | AB | Khach bam **Dat phong** voi phong A101 | 409, khong tao don | HTTP 409 "Phong vua duoc ve sinh, chua san sang nhan don moi" | PASS |
+| 5 | HP | Khach dat phong A102 (da ve sinh xong) | Tao don thanh cong | HTTP 201, ma `HS-261101-2186`, tong `1.040.000 d` | PASS |
+| 6 | GIAO DIEN | Trang Phong cua Admin sau khi job chay | Nhan dung trang thai | A101 "Dang don dep", A102 "Con trong" | PASS |
+
+> **Vi sao can job nen chu khong bam tay:** neu de Admin chuyen `CLEANING -> AVAILABLE`
+> tay thi (1) phong da san sang van bi chan dat neu quen bam, (2) phong ket vinh
+> vien neu quen. Ca deu la loi van hanh. Tinh luoi (lazy, chi sua luc doc) cung
+> khong duoc vi CSDL van sai, thong ke o Buoc 15 se dem sai so phong dang ve sinh.
