@@ -544,3 +544,22 @@
 > tay thi (1) phong da san sang van bi chan dat neu quen bam, (2) phong ket vinh
 > vien neu quen. Ca deu la loi van hanh. Tinh luoi (lazy, chi sua luc doc) cung
 > khong duoc vi CSDL van sai, thong ke o Buoc 15 se dem sai so phong dang ve sinh.
+
+---
+
+## 10. Admin — khoa tai khoan khach (Buoc 14) — 30/09/2026
+
+> Phan chuc nang da lam xong o Buoc 12 (trong trang "Khach hang"). Buoc 14 chi
+> kiem chung lai day du chuoi khoa -> bi tu choi -> mo khoa.
+
+| # | Loai | Kich ban | Ky vong | Thuc te | Ket qua |
+|---|------|----------|---------|---------|---------|
+| 1 | HP | Admin khoa tai khoan `khach2@gmail.com` | `isLocked = true` | `{"success":true,"message":"Da khoa tai khoan khach hang","data":{"isLocked":true,...}}` | PASS |
+| 2 | AB | Khach dang bi khoa thu dang nhinh | **403** kem thong bao ro rang | HTTP 403 `{"success":false,"message":"Tai khoan da bi khoa. Vui long lien he quan tri vien"}` | PASS |
+| 3 | AB | Dung refresh token cu cua tai khoan vua bi khoa | 401 | HTTP 401 (token gia bi tu choi ngay) | PASS |
+| 4 | HP | Admin mo khoa lai | `isLocked = false` | `{"success":true,"message":"Da mo khoa tai khoan khach hang","data":{"isLocked":false,...}}` | PASS |
+| 5 | HP | Khach dang nhinh lai sau khi mo khoa | Duoc, co access token | `success=true`, `role=0` (CUSTOMER), token cap | PASS |
+| 6 | AB | Admin thu khoa chinh tai khoan Admin | 403, khong doi trang thai | Unit test `DoiTrangThaiAsync_TaiKhoanAdmin_ThrowForbidden` | PASS |
+
+> Khong co buoc "xoa khach": xoa se lam mat lun lich su don. Vi pham thi chi khoa
+> tai khoan, giu nguyen du lieu giao dich — thiet ke nay da chot o Bước 12.

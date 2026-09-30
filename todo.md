@@ -633,10 +633,10 @@ từ query string) nên không có cách kích hoạt. Vẫn cần nói rõ vớ
   - `MAINTENANCE` do Admin đặt trực tiếp ở trang Phòng (Bước 12), không gắn với đơn.
   - Còn nợ Bước 13: **tự động chuyển `CLEANING → AVAILABLE` sau 2 giờ** — hiện phải Admin bấm tay ở trang Phòng. Xem mục "Việc còn lại" bên dưới.
 
-### [ ] BƯỚC 14 — Admin khóa tài khoản khách
+### [x] BƯỚC 14 — Admin khóa tài khoản khách (xong 30/09/2026)
 - **Mục tiêu đo được:** khóa → khách đăng nhập bị từ chối với thông báo rõ ràng · mở khóa → đăng nhập lại được
-- **Bằng chứng:**
-- **Ghi chú:** ⚠️ **Đã làm sớm ở Bước 12** (khoá/mở khoá trong `AdminCustomerService`, endpoint `PATCH /api/admin/customers/{id}/status`). Bước 14 chỉ còn kiểm thử tay: khoá → thử đăng nhập bằng tài khoản bị khoá phải nhận thông báo "Tài khoản đã bị khoá…" (đã có sẵn trong `ErrorMessages.TaiKhoanDaBiKhoa` từ Bước 5).
+- **Bằng chứng:** **6/6 kịch bản PASS** (chi tiết ở `docs/KIEM_THU_TAY.md` mục 10). Khách bị khoá đăng nhập trả **403** kèm thông báo rõ ràng; refresh token cũ bị từ chối **401**
+- **Ghi chú:** ⚠️ Phần chức năng **đã làm sớm ở Bước 12** (khoá/mở khoá trong `AdminCustomerService`, endpoint `PATCH /api/admin/customers/{id}/status`), Bước 14 chỉ kiểm chứng lại đủ bộ kịch bản. **Không có nút xoá khách** — xoá làm mất lịch sử đơn; vi phạm thì khoá tài khoản.
 
 ---
 

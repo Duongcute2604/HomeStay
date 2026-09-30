@@ -24,7 +24,7 @@
 | | 11 | Đơn của tôi, hủy đơn, lịch sử | ✅ 3/3 (HP/EC/AB) | +54 | ✅ Xong (30/09) |
 | 30/09 | 12 | **Admin quản lý danh mục** (Cơ sở / Phòng / Khách hàng) | ✅ 3/3 mỗi API + 3/3 trên trình duyệt | **288 pass (thêm 50)** | ✅ Xong (30/09) |
 | | 13 | Admin: xác nhận/check-in/check-out | ✅ API 9/9 + vệ sinh 6/6 + UI 4/4 | **312 pass (thêm 24)** | ✅ Xong (30/09) |
-| | 14 | Admin: khóa tài khoản khách | ⬜ | ⬜ | ⬜ Chưa làm |
+| | 14 | Admin: khóa tài khoản khách | ✅ 6/6 (khoá → 403 → mở khoá → đăng nhập lại) | giữ nguyên 312 | ✅ Xong (30/09) |
 | | 15 | Dashboard thống kê | ⬜ | ⬜ | ⬜ Chưa làm |
 | | 16 | Đánh giá & nhận xét | ⬜ | ⬜ | ⬜ Chưa làm |
 | | 17 | Responsive, Loading/Error/Empty, Toast | ⬜ | — | ⬜ Chưa làm |
