@@ -127,3 +127,59 @@ export interface Amenity {
   name: string
   icon: string | null
 }
+
+/**
+ * So lieu tong quan o dau trang thong ke (Buoc 15).
+ *
+ * Nguon la `server/StayEasy/DTOs/DashboardDtos.cs`. Ba dinh nghia quan trong
+ * da chot o backend va phai giu nguyen khi hien thi:
+ * - `doanhThuThangNay` chi gom don `COMPLETED` (da tra phong).
+ * - `donThangNay` dem moi trang thai, theo thang TAO don.
+ * - `tyLeLapDay` chi tinh don khach da thuc su o.
+ */
+export interface DashboardOverview {
+  tongDon: number
+  donThangNay: number
+  doanhThuThangNay: number
+  tongPhong: number
+  tongKhach: number
+  phongDangCoKhach: number
+}
+
+/** Mot cot cua bieu do theo thang. */
+export interface MonthlyStat {
+  /** Khoa `yyyy-MM` de dung lam khoa React. */
+  thang: string
+  /** Nhan rut gon `T9` cho truc ngang. */
+  nhan: string
+  doanhThu: number
+  soDon: number
+}
+
+/** Mot phong trong bang xep hang doanh thu. */
+export interface TopRoom {
+  tenPhong: string
+  tenCoSo: string
+  soDon: number
+  doanhThu: number
+}
+
+/** So phong theo tung trang thai - dung ve bieu do tron. */
+export interface RoomStatusCount {
+  trangThai: RoomStatus
+  soPhong: number
+}
+
+/** Toan bo so lieu tra ve trong 1 lan goi. */
+export interface Dashboard {
+  tuNgay: string
+  denNgay: string
+  tongQuan: DashboardOverview
+  theoThang: MonthlyStat[]
+  /** 0..1 - giao dien nhan 100 de hien %. */
+  tyLeLapDay: number
+  demDaBan: number
+  demTongCong: number
+  trangThaiPhong: RoomStatusCount[]
+  topPhong: TopRoom[]
+}

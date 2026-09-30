@@ -591,10 +591,10 @@ từ query string) nên không có cách kích hoạt. Vẫn cần nói rõ vớ
 | 10 | Giao diện | Route `/booking/:chiSoDiaDiem/:chiSoPhong?loai&checkIn&checkOut` (bọc `ProtectedRoute`) + form số khách/ghi chú + trang thành công hiện `Code` | Query param để F5 không mất. Chưa link "Đơn của tôi" — trang đó thuộc Bước 11, link chết bị cấm |
 | 11 | Nút "Tiếp tục đặt phòng" | Ở trang chi tiết, hiện khi khung báo trống; bấm → sang trang đặt kèm ngày đã chọn | Khung phát lựa chọn ra qua callback `onThayDoi` (Bước 8 đã tách khung để dùng lại) |
 
-### [ ] BƯỚC 11 — Đơn của tôi, hủy đơn, lịch sử (đang làm 30/09/2026)
+### [x] BƯỚC 11 — Đơn của tôi, hủy đơn, lịch sử · **XONG 30/09/2026**
 - **Mục tiêu đo được:** `GET /api/bookings/my` chỉ đơn của chính mình · hủy `PENDING`/`CONFIRMED`, từ chối hủy `CHECKED_IN` trở đi · xem lịch sử · 3/3 test tay · **≥ 10 unit test backend** + **≥ 10 unit test frontend**
-- **Bằng chứng:**
-- **Ảnh chụp:**
+- **Bằng chứng:** **Backend 238/238** · **Frontend 177/177** · API **8/8** kịch bản · console sạch · đã kiểm tra ở khung mobile 390px (chi tiết ở `docs/KIEM_THU_TAY.md` mục 7)
+- **Ảnh chụp:** ✅ `.openchamber/screenshots/buoc11-*.jpg`
 
 #### Quyết định đã chốt (trước khi code)
 
@@ -642,11 +642,35 @@ từ query string) nên không có cách kích hoạt. Vẫn cần nói rõ vớ
 
 ## Giai đoạn 6 — Thống kê & đánh giá
 
-### [ ] BƯỚC 15 — Dashboard thống kê
-- **Mục tiêu đo được:** 6 số liệu (tổng quan · doanh thu theo tháng · số đơn theo tháng · tỷ lệ lấp đầy · top 5 phòng · tỷ lệ trạng thái) · số liệu khớp với database · biểu đồ vẽ đúng
-- **Bằng chứng:** đối chiếu tay 1 số liệu doanh thu với truy vấn SQL trực tiếp
-- **Ảnh chụp:** dashboard
 
+### [x] BƯỚC 15 — Dashboard thống kê · **XONG 30/09/2026**
+- **Mục tiêu đo được:** 6 số liệu (tổng quan · doanh thu theo tháng · số đơn theo tháng · tỷ lệ lấp đầy · top 5 phòng · tỷ lệ trạng thái) · số liệu khớp với database · biểu đồ vẽ đúng
+- **Bằng chứng:** **Backend 333/333** (thêm 21 unit test) · **Frontend 208/208** (thêm 10 unit test) · **build 0 error 0 warning** · **đối chiếu SQL trực tiếp** khớp 4/4 số liệu (chi tiết ở `docs/KIEM_THU_TAY.md` mục 11)
+- **Ảnh chụp:** ✅ `.openchamber/screenshots/admin-dashboard-v8-*.jpg`
+
+#### Quyết định đã chốt (trước khi code)
+
+| # | Vấn đề | Chốt | Lý do |
+|---|--------|------|-------|
+| 1 | "Doanh thu" tính đơn nào? | Chỉ `COMPLETED`, xếp theo tháng **trả phòng** (`CheckOut`) | Đơn `PENDING` khách còn huỷ được, tính vào là doanh thu ảo. Đối chiếu SQL: tính cả đơn chưa xác nhận ra **4.500.000** thay vì **2.700.000** |
+| 2 | "Số đơn theo tháng" tính theo đâu? | Theo tháng **tạo** (`CreatedAt`), mọi trạng thái | Khác cơ sở với doanh thu là có chủ ý: tháng nào người ta đặt và tháng nào tiền vào là 2 câu hỏi khác nhau |
+| 3 | "Tỷ lệ lấp đầy" đếm trạng thái nào? | Chỉ `CHECKED_IN` + `COMPLETED` — tức khách **thực sự đã ở** | Đơn mới đặt thì phòng chưa bị chiếm, tính vào sẽ thổi phồng |
+| 4 | Một "đêm" tính thế nào? | **Cắt về ngày** (`.Date`) rồi mới trừ | Khách nhận 14:00 ngày 9, trả 12:00 ngày 11 = **2 đêm**. Trừ thẳng thời gian rồi cắt cụt ra 1 — thiếu 1 đêm cho **mọi** đơn |
+| 5 | Tháng không có đơn thì? | Vẫn giữ cột với giá trị **0** | Bỏ tháng rỗng thì trục ngang biểu đồ tụt mất tháng, người đọc tưởng tháng đó không tồn tại |
+| 6 | Số endpoint? | **1** endpoint gom, không tách 6 | Dashboard cần 6 con số cùng lúc; 6 lần gọi thì tải 6 lần và các con số có thể lệch nhau do đọc ở 6 thời điểm |
+| 7 | Gom số liệu bằng SQL hay trong RAM? | Lọc ở CSDL rồi `Sum`/`Count` bằng LINQ | Cột enum lưu dạng **chuỗi** nên `GROUP BY YEAR(), MONTH()` phải viết SQL thô cho mỗi bảng, dễ sai hơn nhiều. Dữ liệu đồ án chỉ vài chục dòng |
+| 8 | `/admin` trỏ đi đâu? | `/admin` **là** trang thống kê (bỏ hàm `ChuyenHuongAdmin`) | Menu Admin đổi thứ tự: Thống kê là mục đầu tiên |
+| 9 | Biểu đồ tròn dùng `<Legend />` của recharts? | **Không** — tự vẽ 4 chấm màu | Legend của recharts chiếm chỗ trong khung vẽ nên dễ làm lệch hình. Tự vẽ kèm số đếm ngay ("Còn trống: 4") đọc nhanh hơn |
+
+#### Bug phát hiện khi đối chiếu SQL (đã sửa + đã có test chặn)
+
+`(den - tu).Days` **cắt cụt phần giờ** nên mọi đơn đều thiếu 1 đêm → tỷ lệ lấp đầy ra `2/300` thay vì `4/300` (0,7% thay vì 1,3%).
+Nguyên nhân: giờ nhận phòng 14:00 và giờ trả phòng 12:00 là quy định cố định, còn test cũ dùng dữ liệu `00:00` nên **không bao giờ bắt được lỗi này**. Đã thêm test dùng đúng 14:00 / 12:00.
+
+#### Ghi chú
+
+- Trang dùng **recharts** — đã có sẵn trong `package.json`, **không thêm thư viện mới**.
+- Mọi biểu đồ đặt `isAnimationActive={false}`: dashboard không nên vẽ lại mỗi lần bấm "Làm mới", và ảnh chụp cho báo cáo phải ổn định. Đồng thời tránh được việc ảnh chụp rơi vào giữa animation nên nhìn như biểu đồ vỡ — đã mắc và mất nhiều thời gian chẩn đoán nhầm (xem `lessons.md` mục 56).
 ### [ ] BƯỚC 16 — Đánh giá & nhận xét
 - **Mục tiêu đo được:** chỉ đánh giá được đơn `COMPLETED` · 1 đơn 1 đánh giá (unique index) · cập nhật `RatingAvg`/`RatingCount` → **≥ 3 unit test** · Admin ẩn/xóa được
 - **Bằng chứng:**

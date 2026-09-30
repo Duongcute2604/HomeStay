@@ -1448,3 +1448,94 @@ o man 1440px, ma do la cot quan trong nhat.
 > Khi bang qua rong, **dung cu them cot** — hay gop thong tin phu vao dong thu hai
 > cua mot o da co. Cot quan trong (thao tac) phai nam trong man hinh, khong phai
 > cot du lieu bi hy sinh.
+
+---
+
+## 54. Test dùng dữ liệu `00:00` giấu bug cắt cụt phần giờ — Bước 15
+
+**Sai ở đâu:** `DemSoNgayTrongKhoang` trả `(den - tu).Days`.
+Đơn nhận phòng **14:00 ngày 09**, trả phòng **12:00 ngày 11** = 46 giờ.
+`(den - tu).Days` cắt cụt phần thập phân nên ra **1**, nhưng khách đã ở **2 đêm**
+(đêm 09 và đêm 10). Tỷ lệ lấp đầy ra `2/300` thay vì `4/300`.
+
+**Vì sao sai:** vì **toàn bộ test** của mình dùng `DateTime.Now.Date.AddDays(-10)` —
+tức **00:00:00**. Không test nào có phần giờ, nên phần giờ bị cắt cụt không bao giờ
+lộ. Chỉ khi đối chiếu với dữ liệu seed thật (giờ nhận 14:00, giờ trả 12:00) thì lỗi mới
+hiện ra. Lỗi này **không bao giờ** xảy ra nếu mình chỉ tin test.
+
+**Cách sửa:** cắt về ngày trước rồi mới trừ — `(den.Date - tu.Date).Days`.
+Đã thêm test `DemSoNgayTrongKhoang_GioNhan14hGioTra12h_TinhDungSoDem` với đúng
+`14:00` / `12:00`.
+
+> **Quy tắc:** khi nghiệp vụ có quy định thời gian cố định (giờ nhận 14:00, giờ trả
+> 12:00, giờ check-in 22:00…), **test phải dùng đúng giờ đó**, không dùng `.Date`
+> cho tiện. Dữ liệu test "tiện lợi" là nơi bug ẩn nhiều nhất.
+
+---
+
+## 55. Số liệu thống kê phải đối chiếu SQL, không tin unit test là đủ — Bước 15
+
+Unit test chỉ chứng minh **code đúng với dữ liệu mình tự dựng**. Còn dữ liệu thật
+(seed, khách gõ thật) có những đặc điểm mà dữ liệu tự dựng không có.
+
+Lần này đối chiếu SQL phát hiện 2 điều mà 21 unit test không bắt được:
+
+1. **Sai số** — đếm đêm thiếu 1 đêm mỗi đơn (xem mục 54).
+2. **Đúng nhưng không đáng tin** — nếu đã tính cả đơn chưa xác nhận, doanh thu tháng 9
+   ra `4.500.000` thay vì `2.700.000`. Không có test nào "sai", nhưng con số hiển thị
+   trên dashboard lại là tiền khách **còn có thể huỷ**.
+
+Cách chặn cho lần sau: thêm **1 truy vấn SQL đối chứng có chủ ý khác kết quả**, ghi
+rõ trong bảng kiểm thử là dòng nào "cố tình khác để chứng minh định nghĩa".
+
+> **Quy tắc:** báo cáo có mục "thống kê" thì **bắt buộc** chạy SQL đối chiếu ít nhất
+> 2 số liệu, và phải chạy cả phiên bản "nếu tính sai thì ra sao" để chứng minh
+> bộ lọc hoạt động.
+
+---
+
+## 56. `recharts` mặc định vẽ có animation — ảnh chụp rơi vào giữa chừng thì tưởng biểu đồ vỡ
+
+**Sai ở đâu:** biểu đồ tròn bị cắt mất nửa dưới. Đo `getBoundingClientRect` ra
+`.recharts-pie` rộng **138px** × cao **80px** trong khung 440×256.
+
+**Vì sao tôi chẩn đoán sai:** Tôi đoán do `<Legend height={32}>` của recharts chiếm
+chỗ trong khung vẽ làm lệch tâm `PieChart`, rồi sửa lại thành legend tự vẽ — và vẫn
+thấy vỡ. Tôi đã đi sai đường rất xa và sửa 3 lần liên tiếp.
+
+**Nguyên nhân thật:** `isAnimationActive` mặc định là `true`; recharts quét góc vòng
+tròn trong **1,5 giây**. Ảnh chụp màn hình rơi vào khoảng 30% animation nên chỉ thấy
+một phần vòng cung. Nhiều lần chụp liên tiếp đều trúng, nên tưởng lỗi thật.
+
+**Cách sửa:** `isAnimationActive={false}` cho mọi biểu đồ của dashboard.
+
+> **Quy tắc 1:** khi nghi ngờ lỗi hiển thị mà "tải lại vẫn còn", **đo kích thước thật**
+> (`getBoundingClientRect`) và so với khung chứa. Sai số hình học (138×80 thay vì
+> 160×160) là bằng chứng, suy đoán bằng mắt trên ảnh chụp thì không phải.
+>
+> **Quy tắc 2:** ảnh chụp màn hình là ảnh của **một thời điểm**, mọi animation đều có
+> thể làm nó nói dối. Muốn ảnh chụp phản ánh trạng thái cuối thì tắt animation.
+> Dashboard cũng không nên vẽ lại mỗi lần bấm "Làm mới" — tắt animation là đúng về
+> cả UX lẫn kiểm thử.
+>
+> **Quy tắc 3:** sửa 1 chỗ mà lỗi không đổi thì **dừng sửa** và đo lại, đừng sửa tiếp
+> theo giả thuyết mới. Mình đã sửa 3 lần trên cùng một triệu chứng.
+
+---
+
+## 57. `edit` tool hay rơi tham số `path` khi payload dài — chuyển sang PowerShell + file tạm
+
+`edit` với `newString`/`oldString` dài vài nghìn ký tự thỉnh thoảng báo
+`Invalid arguments for tool "edit": path: Missing key`.
+
+**Cách làm ổn định:**
+
+1. `write` nội dung cần chèn vào `.openchamber/tmp-xxx.md` (thư mục đã gitignore).
+2. PowerShell đọc file đó bằng `[System.IO.File]::ReadAllLines(path, [Text.Encoding]::UTF8)`.
+3. Ghép vào file đích bằng `ReadAllLines` + `WriteAllLines`.
+
+**Không** dùng `Set-Content` / `Add-Content` — chúng phá UTF-8 tiếng Việt.
+
+> **Quy tắc:** payload > 2.000 ký tự thì đừng thử `edit` lần đầu, và **tuyệt đối không
+> xoá dòng trong `todo.md`/`docs/` trước khi đã đọc được file tạm** — lần đầu mình
+> xoá 4 dòng rồi mới chèn, mất trắng mục Bước 15 phải làm lại từ đầu.

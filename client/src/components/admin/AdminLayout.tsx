@@ -16,10 +16,13 @@ import { useAuth } from '../../hooks/useAuth'
  * phải làm), rồi mới tới danh mục (việc chuẩn bị).
  */
 const MENU = [
-  { to: '/admin/bookings', nhan: 'Đơn đặt phòng' },
-  { to: '/admin/facilities', nhan: 'Cơ sở' },
-  { to: '/admin/rooms', nhan: 'Phòng' },
-  { to: '/admin/customers', nhan: 'Khách hàng' },
+  // `hetTrang` bắt buộc với mục gốc `/admin`: không có nó thì đang ở
+  // `/admin/rooms` mà mục "Thống kê" vẫn sáng — hai mục sáng cùng lúc.
+  { to: '/admin', nhan: 'Thống kê', hetTrang: true },
+  { to: '/admin/bookings', nhan: 'Đơn đặt phòng', hetTrang: false },
+  { to: '/admin/facilities', nhan: 'Cơ sở', hetTrang: false },
+  { to: '/admin/rooms', nhan: 'Phòng', hetTrang: false },
+  { to: '/admin/customers', nhan: 'Khách hàng', hetTrang: false },
 ] as const
 
 export default function AdminLayout(): JSX.Element {
@@ -38,6 +41,7 @@ export default function AdminLayout(): JSX.Element {
                 <NavLink
                   key={muc.to}
                   to={muc.to}
+                  end={muc.hetTrang}
                   className={({ isActive }) =>
                     [
                       'rounded-lg px-3 py-2 text-sm font-medium transition',

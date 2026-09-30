@@ -49,8 +49,8 @@
 | Tuần | Nội dung | Tình trạng |
 |------|----------|-----------|
 | Tuần 1 (29/09–05/10) | Môi trường, CSDL, seed, tài khoản (cả 2 tầng) | ✅ Xong cả backend lẫn giao diện tài khoản |
-| Tuần 2 (06/10–12/10) | Tìm kiếm, chi tiết phòng, đặt phòng, đơn của tôi | ⬜ |
-| Tuần 3 (13/10–19/10) | Admin, thống kê, đánh giá, kiểm thử, Chương 4 | ⬜ |
+| Tuần 2 (06/10–12/10) | Tìm kiếm, chi tiết phòng, đặt phòng, đơn của tôi | ✅ Xong (Bước 6–11) |
+| Tuần 3 (13/10–19/10) | Admin, thống kê, đánh giá, kiểm thử, Chương 4 | 🔄 Xong Bước 12–15 · còn Bước 16–20 |
 | Tuần 4 (20/10) | Bảo vệ | ⬜ |
 
 ---
@@ -104,3 +104,6 @@
 | 30/09 | 12 | **Admin quan tri danh muc**: 3 bo API `/api/admin/{locations,rooms,customers}` (CRUD day du, chan xoa khi con phong/khong cho khoa admin) + 3 trang `/admin/{facilities,rooms,customers}` voi AdminLayout rieng | API 8/8 kich ban (HP/EC/AB); giao dien 3/3 (mo form + validate rong + xoa 2 buoc bi tu choi) | Backend **288/288** (them 50), frontend 177/177 giu nguyen | Xong (30/09) |
 | 30/09 | 12 | **Phat hien loi cua lượt truoc (quan trong):** 22 anh trong `public/images/rooms/{cozy,japandi,signature}/` KHONG phai anh phong ma la poster quang cao cua du an khac ("Nha o Hem"). Da xem truc tiep `cozy-1.jpg`, `cozy-2.jpg`, `cozy-3.jpg`, `signature-1.jpg` de xac nhan | **Da sua xong:** 12 anh CC0 tu StockSnap (4 anh/concept) + logo ve bang SVG + sua anh hero va 3 dia chi trong footer; ghi nguon anh vao `docs/NGUON_ANH.md` | Xong (30/09) |
 | 30/09 | 13 | **Admin vong doi don**: 4 endpoint `PATCH /api/admin/bookings/{code}/{confirm,reject,check-in,check-out}` (ma tran chuyen trang thai trong 1 cho, transaction SERIALIZABLE, ghi `BookingStatusHistory` kem admin id) + trang `/admin/bookings` voi loc trang thai / tu khoa, phan trang, 1 nut cho moi hanh dong hop le | API 9/9 kich ban (HP/EC/AB) + lich su trang thai kiem bang SQL; khoang ve sinh 2 gio 6/6 (job nen RoomCleaningJob tu chuyen CLEANING->AVAILABLE, chan dat phong dang ve sinh); giao dien 4/4 (xac nhan + validate tu choi + loc + don bi tu choi) | Backend **312/312** (them 24), frontend **198/198** (them 20) | Xong (30/09) |
+| 30/09 | 14 | **Admin khoa tai khoan khach** — chuc nang da co san tu Bước 12, Buoc 14 chi lai day du bo kich ban | 6/6 kich ban PASS (HP/EC/AB): khoa → khach dang nhinh bi tu choi 403 kem thong bao; refresh token cu bi 401; mo khoa → dang nhinh lai duoc | Backend 312/312 giu nguyen, frontend 198/198 giu nguyen | Xong (30/09) |
+| 30/09 | 15 | **Dashboard thong ke**: `GET /api/admin/dashboard` tra gom 6 nhom so lieu + trang `/admin` (4 o so lieu, 4 bieu do recharts, bang top 5 phong). Menu Admin chuyen "Thong ke" len dau, `/admin` khong con chuyen huong | **Doi chieu SQL truc tiep 6/6 khop** (doanh thu thang 9 = 2.700.000; thang 6 = 7.250.000; tong don = 16; don thang 9 = 9; so dem da ban = 4). Tham so vuot gioi han 5/5 · phan quyen 4/4 (403/401) · giao dien 6/6 | Backend **333/333** (them 21), frontend **208/208** (them 10) | Xong (30/09) |
+| 30/09 | 15 | **Phat hien bug khi doi chieu SQL (quan trong):** `(den - tu).Days` cat cut phan gio nen moi don thieu 1 dem → ty le lap day ra `2/300` thay vi `4/300` (0,7% thay vi 1,3%). Giay nhan 14:00 / tra 12:00 la quy dinh co dinh, test cu dung du lieu `00:00` nen khong bao gio bat duoc | **Da sua:** cat ve ngay truoc roi tru — `(den.Date - tu.Date).Days`. Da them unit test dung dung gio 14:00/12:00 de chan | Xong (30/09) |

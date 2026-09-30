@@ -8,6 +8,7 @@ import type {
   Amenity,
   Customer,
   CustomerPayload,
+  Dashboard,
   FacilityPayload,
   RoomPayload,
 } from '../types/admin'
@@ -104,8 +105,22 @@ export const adminService = {
     return bocDuLieu(response.data)
   },
 
-  // ----- Vòng đời đơn -----
+  // ----- Thong ke -----
 
+  /**
+   * Lay toan bo so lieu thong ke trong MOT lan goi.
+   *
+   * Khong tach 6 endpoint: dashboard can 6 con so cung luc, 6 request rieng thi
+   * tai 6 lan va cac con so co the lech nhau do doc o 6 thoi diem khac nhau.
+   */
+  async laySoLieu(soThang = 6, soNgay = 30): Promise<Dashboard> {
+    const response = await apiClient.get<ApiResponse<Dashboard>>(
+      `/admin/dashboard?soThang=${soThang}&soNgay=${soNgay}`,
+    )
+    return bocDuLieu(response.data)
+  },
+
+  // ----- Vong doi don -----
   /**
    * Danh sách đơn có lọc theo trạng thái và từ khoá (mã đơn / tên / email khách).
    *

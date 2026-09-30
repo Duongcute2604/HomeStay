@@ -563,3 +563,72 @@
 
 > Khong co buoc "xoa khach": xoa se lam mat lun lich su don. Vi pham thi chi khoa
 > tai khoan, giu nguyen du lieu giao dich — thiet ke nay da chot o Bước 12.
+
+---
+
+## 11. Bước 15 — Dashboard thống kê (30/09/2026)
+
+### 11A. Đối chiếu số liệu với SQL trực tiếp (bắt buộc)
+
+Lệnh: `docker exec -i stayeasy-mysql mysql -ustayeasy -p****** stayeasy`
+Ngày chạy: **30/09/2026** · Cửa sổ tỷ lệ lấp đầy: `2026-09-01` → `2026-09-30`
+
+| # | Loại | Số liệu | API trả về | SQL truy vấn trực tiếp | Kết quả |
+|---|------|---------|------------|------------------------|---------|
+| 1 | HP | Doanh thu tháng 9/2026 | `2.700.000` | `SELECT SUM(TotalAmount) FROM Bookings WHERE Status='COMPLETED' AND CheckOut >= '2026-09-01' AND CheckOut < '2026-10-01'` → `2.700.000` | **PASS** |
+| 2 | HP | Doanh thu tháng 6/2026 | `7.250.000` | Cùng truy vấn, đổi khoảng tháng → `7.250.000` | **PASS** |
+| 3 | HP | Tổng số đơn | `16` | `SELECT COUNT(*) FROM Bookings` → `16` | **PASS** |
+| 4 | HP | Số đơn tạo trong tháng 9 | `9` | `WHERE CreatedAt >= '2026-09-01' AND CreatedAt < '2026-10-01'` → `9` | **PASS** |
+| 5 | HP | Số đêm phòng đã bán (30 ngày) | `4` | `SUM(GREATEST(DATEDIFF(LEAST(CheckOut,NOW()), GREATEST(CheckIn, DATE_SUB(NOW(),INTERVAL 29 DAY))),0))` với `Status IN ('CHECKED_IN','COMPLETED')` → `4` | **PASS** |
+| 6 | EC | Doanh thu tháng 9 **nếu tính cả** đơn chưa xác nhận | `2.700.000` (đã **loại** phần này) | Cùng điều kiện nhưng bỏ `Status='COMPLETED'` → `4.500.000` | **PASS** — chứng minh định nghĩa "chỉ tính đơn `COMPLETED`" được áp dụng đúng (chênh `1.800.000` là đơn `PENDING` bị loại **có chủ ý**) |
+
+**Bug phát hiện ở dòng 5 — đã sửa:** lần đầu API trả `2` đêm trong khi SQL trả `4`.
+Nguyên nhân: `(den - tu).Days` **cắt cụt phần giờ**. Đơn nhận phòng 14:00 ngày 09, trả phòng 12:00 ngày 11 là **2 đêm**, nhưng 46 giờ bị cắt còn 1.
+Vì giờ nhận/trả là quy định cố định nên **mọi đơn đều thiếu 1 đêm** → tỷ lệ lấp đầy ra `0,7%` thay vì `1,3%`.
+Cách sửa: cắt về ngày trước rồi mới trừ — `(den.Date - tu.Date).Days`.
+Đã thêm unit test dùng đúng giờ `14:00 / 12:00` để chặn (test cũ dùng `00:00` nên không bắt được).
+
+### 11B. Tham số vượt giới hạn (edge case)
+
+| # | Loại | Kịch bản | Kỳ vọng | Thực tế | Kết quả |
+|---|------|----------|---------|---------|---------|
+| 1 | EC | `soThang=0` | Tự chuẩn về mặc định | `theoThang` trả về **6** cột | PASS |
+| 2 | EC | `soNgay=9999` | Tự chuẩn về mặc định | `demTongCong` = 10 phòng × 30 = **300** | PASS |
+| 3 | AB | `soThang=-5&soNgay=-5` (số âm) | Không được làm hỏng server | Chuẩn về 6 và 30, **không** lỗi 500 | PASS |
+| 4 | EC | `soThang=3&soNgay=7` | 7 ngày tính cả hôm nay | `2026-09-24` → `2026-09-30`, `demTongCong` = 70 | PASS |
+| 5 | EC | Tháng không có đơn (T4, T5) | Vẫn có cột giá trị **0** | `doanhThu = 0`, `soDon = 0`, cột không biến mất | PASS |
+
+### 11C. Phân quyền (bất thường)
+
+| # | Loại | Kịch bản | Kỳ vọng | Thực tế | Kết quả |
+|---|------|----------|---------|---------|---------|
+| 1 | AB | Khách (`khach1@gmail.com`) gọi `GET /api/admin/dashboard` | **403** | HTTP `403 Forbidden` | PASS |
+| 2 | AB | Không gửi token | **401** | HTTP `401 Unauthorized` | PASS |
+| 3 | AB | Token giả (`Bearer abc.def.ghi`) | **401** | HTTP `401` | PASS |
+| 4 | AB | Khách gõ thẳng URL `/admin` trên trình duyệt | Bị đẩy về trang chủ | URL đổi thành `http://localhost:5174/` | PASS |
+
+### 11D. Giao diện
+
+| # | Loại | Kịch bản | Kỳ vọng | Thực tế | Kết quả |
+|---|------|----------|---------|---------|---------|
+| 1 | HP | Admin mở `/admin` | 4 ô số liệu + 4 biểu đồ + bảng top phòng | Đủ hết, tiền hiện `2.700.000 ₫`, tỷ lệ `1,3%` | PASS |
+| 2 | HP | Biểu đồ tròn trạng thái phòng | Đủ 5 trạng thái trong dữ liệu, không chồng chữ | Vòng tròn đầy, legend tự vẽ kèm số đếm: *Còn trống: 4 · Đã được đặt: 3 · Đang dọn dẹp: 2 · Bảo trì: 1* | PASS |
+| 3 | HP | Nhãn trục Y của biểu đồ "5 phòng" | Tên phòng nằm **1 dòng**, không chồng nhau | Đủ 5 tên: Phòng Đồi Thông · Hải Yến · Hạnh Phúc · Hoa Tử Đài · Đèn Lồng | PASS |
+| 4 | HP | Menu Admin ở `/admin` | Chỉ 1 mục sáng | Chỉ "Thống kê" sáng (dùng `end` của `NavLink`) | PASS |
+| 5 | EC | Xem ở khung hẹp (636px) | Không tràn ngang, xếp dọc | Menu và thẻ số liệu xếp 1 cột, không vỡ | PASS |
+| 6 | HP | Tải lại trang F5 | Số liệu giữ nguyên | Giữ nguyên `2.700.000 ₫` | PASS |
+
+**Lỗi gặp khi kiểm thử giao diện — đã sửa:** ảnh chụp màn hình nhiều lần cho thấy biểu đồ tròn chỉ vẽ được một phần.
+Nguyên nhân thật: `recharts` mặc định `isAnimationActive = true`, quét góc trong **1,5 giây**; ảnh chụp rơi vào giữa chừng nên nhìn như biểu đồ vỡ.
+Đã đặt `isAnimationActive={false}` cho mọi biểu đồ — dashboard không nên vẽ lại mỗi lần bấm "Làm mới", và ảnh chụp cho báo cáo phải ổn định.
+
+### 11E. Tổng kết
+
+| Hạng mục | Kết quả |
+|----------|---------|
+| Đối chiếu SQL | **6/6** khớp (1 dòng cố tình khác để chứng minh định nghĩa) |
+| Tham số vượt giới hạn | **5/5** PASS |
+| Phân quyền | **4/4** PASS |
+| Giao diện | **6/6** PASS |
+| Unit test | Backend **333/333** (thêm 21) · Frontend **208/208** (thêm 10) |
+| Build | `0 Error(s) · 0 Warning(s)` · `npm run build` sạch |

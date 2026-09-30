@@ -1,4 +1,4 @@
-import { Navigate, Outlet, Route, Routes } from 'react-router-dom'
+import { Outlet, Route, Routes } from 'react-router-dom'
 
 import AdminLayout from './components/admin/AdminLayout'
 import PageLayout from './components/common/PageLayout'
@@ -6,6 +6,7 @@ import Toast from './components/common/Toast'
 import ProtectedRoute from './components/ProtectedRoute'
 import AdminBookings from './pages/admin/AdminBookings'
 import AdminCustomers from './pages/admin/AdminCustomers'
+import AdminDashboard from './pages/admin/AdminDashboard'
 import AdminFacilities from './pages/admin/AdminFacilities'
 import AdminRooms from './pages/admin/AdminRooms'
 import Home from './pages/Home'
@@ -42,7 +43,7 @@ export default function App(): JSX.Element {
       <Toast />
       <Routes>
         <Route element={<KhungAdmin />}>
-          <Route path="admin" element={<ChuyenHuongAdmin />} />
+          <Route path="admin" element={<AdminDashboard />} />
           <Route path="admin/bookings" element={<AdminBookings />} />
           <Route path="admin/facilities" element={<AdminFacilities />} />
           <Route path="admin/rooms" element={<AdminRooms />} />
@@ -108,16 +109,11 @@ function KhungAdmin(): JSX.Element {
   )
 }
 
-/** Route cha của nhánh khách. `/admin` không khớp trang con nào nên chuyển hướng. */
+/** Route cha của nhánh khách. */
 function KhungKhach(): JSX.Element {
   return (
     <PageLayout>
       <Outlet />
     </PageLayout>
   )
-}
-
-/** Gõ tay `/admin` thì đưa thẳng sang trang đơn — việc Admin làm hằng ngày. */
-export function ChuyenHuongAdmin(): JSX.Element {
-  return <Navigate to="/admin/bookings" replace />
 }
