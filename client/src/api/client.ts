@@ -109,6 +109,40 @@ apiClient.interceptors.response.use(
 )
 
 /**
+ * Kiểm một response không mang dữ liệu.
+ *
+ * Tách khỏi `bocDuLieu` là BẮT BUỘC: `logout` và `change-password` trả
+ * `ApiResponse` mà `data` là `null` **cả khi thành công**. Dùng chung
+ * `bocDuLieu` thì mọi lần gọi đều báo lỗi dù server đã làm đúng
+ * (sự cố đã gặp ở Bước 5, `lessons.md` mục 25).
+ */
+export function kiemTraThanhCong(response: ApiResponse<unknown>): void {
+  if (!response.success) {
+    throw new Error(response.message)
+  }
+}
+
+/**
+ * Bóc lớp `ApiResponse` để service chỉ nhận đúng phần `data`.
+ *
+ * Response lỗi không đi qua đây vì interceptor đã ném lỗi, nhưng vẫn phải kiểm:
+ * nếu bỏ, hàm trả về `null` rồi nơi gọi dùng tiếp sẽ báo một lỗi khó hiểu hơn
+ * nhiều ("không đọc được thuộc tính của null") thay vì thông báo gốc.
+ *
+ * Đặt ở đây (chứ không phải trong từng service) để mọi service dùng chung một
+ * chỗ — hai bản sao là nguồn của lỗi Bước 5.
+ */
+export function bocDuLieu<T>(response: ApiResponse<T>): T {
+  kiemTraThanhCong(response)
+
+  if (response.data === null) {
+    throw new Error('Máy chủ trả về dữ liệu rỗng. Vui lòng thử lại.')
+  }
+
+  return response.data
+}
+
+/**
  * Bóc thông báo tiếng Việt từ một lỗi bất kỳ, để mọi trang hiển thị giống nhau.
  *
  * Nhận `unknown` chứ không phải `any`: lỗi trả về từ `catch` có kiểu `unknown`

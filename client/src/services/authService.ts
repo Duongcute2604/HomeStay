@@ -1,4 +1,4 @@
-import { apiClient } from '../api/client'
+import { apiClient, bocDuLieu, kiemTraThanhCong } from '../api/client'
 import type {
   ApiResponse,
   AuthResult,
@@ -8,37 +8,6 @@ import type {
   UpdateProfilePayload,
   UserProfile,
 } from '../types/auth'
-
-/**
- * Kiểm một response không mang dữ liệu (đăng xuất, đổi mật khẩu).
- *
- * Tách khỏi `bocDuLieu` là BẮT BUỘC chứ không phải cho sang: các endpoint này
- * trả `ApiResponse<object>.Success(...)` nên `data` là `null` **cả khi thành
- * công**. Nếu dùng chung `bocDuLieu`, `data === null` bị coi là lỗi và mọi
- * lần đăng xuất / đổi mật khẩu đều báo "Đã xảy ra lỗi" dù server đã làm đúng.
- */
-function kiemTraThanhCong(response: ApiResponse<unknown>): void {
-  if (!response.success) {
-    throw new Error(response.message)
-  }
-}
-
-/**
- * Bóc lớp `ApiResponse` để trang chỉ nhận đúng phần `data`.
- *
- * Response lỗi không đi qua đây vì interceptor đã ném lỗi, nhưng vẫn phải kiểm:
- * nếu bỏ, hàm trả về `null` rồi trang dùng tiếp sẽ báo một lỗi khó hiểu hơn
- * nhiều ("không đọc được thuộc tính của null") thay vì thông báo gốc.
- */
-function bocDuLieu<T>(response: ApiResponse<T>): T {
-  kiemTraThanhCong(response)
-
-  if (response.data === null) {
-    throw new Error('Máy chủ trả về dữ liệu rỗng. Vui lòng thử lại.')
-  }
-
-  return response.data
-}
 
 /**
  * Các lời gọi phần tài khoản.

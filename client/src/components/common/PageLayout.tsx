@@ -30,6 +30,9 @@ export default function PageLayout({ children }: { children: React.ReactNode }):
             <Link to="/" className="text-gray-600 hover:text-brand-700">
               Trang chủ
             </Link>
+            <Link to="/locations" className="text-gray-600 hover:text-brand-700">
+              Địa điểm
+            </Link>
 
             {daDangNhap ? (
               <>

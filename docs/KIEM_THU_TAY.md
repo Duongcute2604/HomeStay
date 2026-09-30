@@ -235,7 +235,41 @@
 
 ---
 
-## 2. Tìm kiếm & lọc phòng (Bước 7)
+## 2. Xem địa điểm (Bước 6)
+
+> Ngày chạy: 30/09/2026. API `GET /api/locations` (public, không cần token) +
+> trình duyệt thật trên `http://localhost:5174`.
+> **Kết quả: 9/9 ca đạt.** Xem bảng chi tiết bên dưới.
+
+**Kịch bản 1 — Happy path**
+
+| # | Kịch bản | Kỳ vọng | Thực tế | Kết quả |
+|---|----------|---------|---------|---------|
+| 1.1 | `GET /api/locations` không gửi token | 200, 3 địa điểm, mỗi địa điểm kèm phòng | 200, Hưng Yên (4 phòng) + Đà Lạt (3) + Hội An (3) = 10 phòng | ✅ |
+| 1.2 | Mở `/locations` | 3 thẻ địa điểm: ảnh, tên, địa chỉ, số phòng, giá thấp nhất | Đủ 3 thẻ, ảnh SVG hiện, "Từ 520.000 ₫/ngày" | ✅ |
+| 1.3 | Bấm vào địa điểm đầu | Sang `/locations/0`, hiện thông tin + 4 phòng kèm giá giờ/ngày, đánh giá, nhãn trạng thái | Hiện đủ: "Phòng tại Hưng Yên Ven Biển (4)", "90.000 ₫/giờ", "★ 5,0 (1 đánh giá)", "Còn trống"/"Đang dọn dẹp" | ✅ |
+
+**Kịch bản 2 — Edge case**
+
+| # | Kịch bản | Kỳ vọng | Thực tế | Kết quả |
+|---|----------|---------|---------|---------|
+| 2.1 | Gõ thẳng `/locations/1` chưa vào list | Vẫn hiện đúng Đà Lạt (tự tải list rồi chọn) | Hiện "Đà Lạt Đồi Thông" + 3 phòng | ✅ |
+| 2.2 | Gõ `/locations/99` | Báo không tìm thấy, không trắng màn | Hiện "Không tìm thấy địa điểm" + nút "Về danh sách địa điểm" | ✅ |
+| 2.3 | Màn hình điện thoại 390px | Không tràn ngang | Thẻ xếp 1 cột, rộng 343px trong 390px | ✅ |
+
+**Kịch bản 3 — Bất thường**
+
+| # | Kịch bản | Kỳ vọng | Thực tế | Kết quả |
+|---|----------|---------|---------|---------|
+| 3.1 | Tắt server rồi mở `/locations` (tab mới, cache trống) | Hiện lỗi + nút "Thử lại", không trắng màn | Hiện "Yêu cầu thất bại (mã 500)" + nút "Thử lại" (mã 500 do proxy Vite trả khi không nối được API) | ✅ |
+| 3.2 | Bật server lại rồi bấm "Thử lại" | Tải lại được danh sách | Hiện đủ 3 địa điểm | ✅ |
+| 3.3 | Kiểm tra quy tắc hiển thị bất biến | KHÔNG lộ `Id` ở response lẫn màn hình | Quét JSON: không có `id`/`locationId`/`roomId`; STT = chỉ số + 1; giá `text-right` + `.number-vn` | ✅ |
+
+> Console trình duyệt 0 warning 0 error trong cả 3 kịch bản. CSDL sau test:
+> 4 users, 3 locations, 10 rooms, `RefreshTokenHash` treo = 0.
+
+---
+## 3. Tìm kiếm & lọc phòng (Bước 7)
 
 | # | Loại | Kịch bản | Kỳ vọng | Thực tế | Kết quả |
 |---|------|----------|---------|---------|---------|
@@ -251,7 +285,7 @@
 
 ---
 
-## 3. Kiểm tra phòng trống (Bước 9)
+## 4. Kiểm tra phòng trống (Bước 9)
 
 | # | Loại | Kịch bản | Kỳ vọng | Thực tế | Kết quả |
 |---|------|----------|---------|---------|---------|
@@ -267,7 +301,7 @@
 
 ---
 
-## 4. Đặt phòng (Bước 10) ⭐
+## 5. Đặt phòng (Bước 10) ⭐
 
 | # | Loại | Kịch bản | Kỳ vọng | Thực tế | Kết quả |
 |---|------|----------|---------|---------|---------|
@@ -282,7 +316,7 @@
 
 ---
 
-## 5. Quản lý đơn của tôi (Bước 11)
+## 6. Quản lý đơn của tôi (Bước 11)
 
 | # | Loại | Kịch bản | Kỳ vọng | Thực tế | Kết quả |
 |---|------|----------|---------|---------|---------|
@@ -295,7 +329,7 @@
 
 ---
 
-## 6. Admin — quản lý danh mục (Bước 12)
+## 7. Admin — quản lý danh mục (Bước 12)
 
 | # | Loại | Kịch bản | Kỳ vọng | Thực tế | Kết quả |
 |---|------|----------|---------|---------|---------|
@@ -311,7 +345,7 @@
 
 ---
 
-## 7. Admin — vòng đời đơn & phòng (Bước 13) ⭐
+## 8. Admin — vòng đời đơn & phòng (Bước 13) ⭐
 
 > Chạy trọn vẹn 1 vòng đời, quan sát từng bước:
 
@@ -331,7 +365,7 @@
 
 ---
 
-## 8. Dashboard & đánh giá (Bước 15, 16)
+## 9. Dashboard & đánh giá (Bước 15, 16)
 
 | # | Loại | Kịch bản | Kỳ vọng | Thực tế | Kết quả |
 |---|------|----------|---------|---------|---------|
@@ -345,7 +379,7 @@
 
 ---
 
-## 9. Giao diện & trải nghiệm (Bước 17)
+## 10. Giao diện & trải nghiệm (Bước 17)
 
 | # | Kịch bản | Kỳ vọng | Thực tế | Kết quả |
 |---|----------|---------|---------|---------|
@@ -359,7 +393,7 @@
 
 ---
 
-## 10. Tổng kết
+## 11. Tổng kết
 
 | Nhóm chức năng | Số test | Đạt | Không đạt |
 |----------------|---------|-----|-----------|

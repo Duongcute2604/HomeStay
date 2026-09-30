@@ -3,6 +3,8 @@ import { Route, Routes } from 'react-router-dom'
 import PageLayout from './components/common/PageLayout'
 import ProtectedRoute from './components/ProtectedRoute'
 import Home from './pages/Home'
+import LocationDetail from './pages/LocationDetail'
+import Locations from './pages/Locations'
 import Login from './pages/Login'
 import NotFound from './pages/NotFound'
 import Profile from './pages/Profile'
@@ -26,6 +28,9 @@ export default function App(): JSX.Element {
 
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+
+        <Route path="/locations" element={<Locations />} />
+        <Route path="/locations/:chiSo" element={<LocationDetail />} />
 
         <Route
           path="/profile"

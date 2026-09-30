@@ -1108,3 +1108,59 @@ CSDL và kiểm tra mỗi request — tốn một truy vấn cho mọi API, quá
 >    giải thích và trách nhiệm rõ ràng. Sửa nhầm chỗ không lỗi là gây hại lớn nhất.
 > 3. **Tiêu chí kiểm thử phải viết ra lý do.** Script của tôi giả định "token phải đổi"
 >    mà không ghi lý do — nên khi đọc lại thấy "SAI" mà tưởng code hỏng.
+## 39. Điều hướng chi tiết bằng chỉ số khi response không được lộ `Id`
+
+**Bài toán:** `AGENTS.md` 6.3 cấm danh sách trả `Id`, nhưng trang chi tiết cần biết
+hiện địa điểm nào. Ba phương án đã cân nhắc:
+
+| Phương án | Vì sao loại / chọn |
+|-----------|-------------------|
+| List trả `Id` để link `/locations/{id}` | Vi phạm quy tắc bất biến — loại ngay |
+| Thêm cột `Slug`/`Code` rồi link theo slug | Phải migration + seed lại + đồng bộ cách sinh slug hai ngôn ngữ — quá đắt cho 3 địa điểm |
+| **Nhúng phòng tóm tắt vào response list, điều hướng bằng chỉ số** (`/locations/0`) | **Chọn.** Dữ liệu nhỏ (3 địa điểm, 10 phòng). Không endpoint chết (YAGNI). Chi tiết đọc từ cache TanStack Query của list. STT = chỉ số + 1 khớp luôn quy tắc hiển thị |
+
+**Điều kiện để phương án này đúng** (ghi rõ để Bước 8 tự kiểm lại, không áp dụng mù):
+
+1. Dữ liệu NHỎ — nhúng toàn bộ vào list vẫn nhẹ.
+2. Thứ tự ỔN ĐỊNH — `OrderBy Id` giống nhau trên MySQL và InMemory (sắp theo tên thì
+   collation hai nơi khác nhau, test chập chờn mà không ai hiểu vì sao).
+3. Chỉ số SAI phải có trang báo lỗi — `/locations/99` hiện "Không tìm thấy", không
+   trắng màn. Test có ca `it.each(['/locations/99', '/locations/-1', '/locations/abc'])`.
+
+**Bài học:**
+
+> 1. **Khi quy tắc chặn đường thẳng, liệt kê phương án ra rồi loại dần bằng chính
+>    các nguyên tắc trong AGENTS.md** (6.3, YAGNI, test được) — không đoán, không
+>    phá quy tắc lén.
+> 2. **Quyết định kiến trúc phải ghi vào `todo.md` TRƯỚC khi code** (mục "Quyết định
+>    đã chốt"), kèm điều kiện đúng để bước sau tự kiểm lại.
+> 3. Phương án này KHÔNG dùng được khi dữ liệu lớn hoặc cần chia sẻ link ổn định
+>    lâu dài (thêm/xoá địa điểm làm lệch chỉ số) — lúc đó phải quay lại phương án
+>    slug. Ghi rõ giới hạn để người sau không áp dụng mù.
+
+## 40. Viết test sai rồi mới biết mình hiểu sai trang — lỗi ở test, không phải code
+
+**Biểu hiện:** test `DiaDiemKhongPhong_KhongHienGia` đỏ:
+
+```
+expected document not to contain element, found <span ...>Từ 900.000 ₫/ngày</span>
+```
+
+**Vì sao sai:** trang có HAI địa điểm, địa điểm đầu CÓ phòng nên dòng giá tồn tại
+trên trang là đúng. Assert `queryByText` toàn trang là assert sai phạm vi — muốn
+chứng minh "thẻ Đà Lạt không hiện giá" mà lại kiểm cả trang.
+
+**Đã sửa:** đổi thành đếm — chỉ có đúng 1 dòng giá trên toàn trang
+(`getAllByText(...).toHaveLength(1)`), vì chỉ 1/2 địa điểm có phòng.
+
+**Bài học:**
+
+> 1. **Test đỏ thì đọc kỹ thông báo trước khi đụng vào code.** Ở đây thông báo nói
+>    rõ span tồn tại — tức trang đúng, test sai. Sửa code theo test sai là gây lỗi
+>    thật (ẩn giá của địa điểm có phòng).
+> 2. **Assert phạm vi hẹp đúng chỗ cần kiểm.** Kiểm thẻ nào thì tìm trong thẻ đó
+>    (hoặc đếm toàn trang khi số lượng đã biết trước), đừng `queryByText` toàn
+>    `document` rồi kết luận về một phần tử.
+> 3. Đây là lần thứ ba "test báo FAIL mà app đúng" (sau mục 29) — thành quy luật:
+>    **nghi ngờ script kiểm thử trước khi nghi ngờ code**, nhưng phải đọc bằng
+>    chứng rồi mới kết luận bên nào sai.

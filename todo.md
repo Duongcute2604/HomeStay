@@ -407,10 +407,53 @@ từ query string) nên không có cách kích hoạt. Vẫn cần nói rõ vớ
 
 ## Giai đoạn 3 — Khách tìm kiếm & xem
 
-### [ ] BƯỚC 6 — Xem địa điểm
-- **Mục tiêu đo được:** `/api/locations` trả danh sách không có `Id` · trang danh sách + trang chi tiết địa điểm chạy được · 3/3 test tay
+### [x] BƯỚC 6 — Xem địa điểm · **XONG 30/09/2026**
+- **Mục tiêu đo được:** `GET /api/locations` trả 3 địa điểm KHÔNG có `Id`, kèm phòng tóm tắt · trang `/locations` + `/locations/:chiSo` chạy được · 3/3 test tay · **≥ 8 unit test backend** + **≥ 10 unit test frontend**
+- **Kết quả đo được:**
+  - API: 200, 3 địa điểm + 10 phòng, không lộ `Id`, public không cần token
+  - Test tay: **9/9 ca đạt** (HP 3 · EC 3 · AB 3), ghi ở `docs/KIEM_THU_TAY.md` mục 2
+  - Unit test backend: `dotnet test --filter "LocationService"` → **10/10**
+  - Unit test frontend: `npm test` → **87/87** (thêm 27: format 8 · locationService 4 · Locations 7 · LocationDetail 8)
+  - `dotnet build --no-incremental` → **0 error 0 warning** · `npm run build` sạch · `npm run lint` sạch
+  - Console trình duyệt 0 warning 0 error · mobile 390px không tràn · CSDL nguyên vẹn
 - **Bằng chứng:**
 - **Ảnh chụp:**
+
+#### Quyết định đã chốt (trước khi code)
+
+| # | Vấn đề | Chốt | Lý do |
+|---|--------|------|-------|
+| 1 | List có trả `Id` không? | **Không** (`AGENTS.md` 6.3). Nhúng luôn phòng tóm tắt vào response list | Dữ liệu nhỏ (3 địa điểm, 10 phòng). Tránh endpoint chi tiết chết (YAGNI): trang chi tiết đọc từ cache TanStack Query của list |
+| 2 | Điều hướng tới chi tiết bằng gì? | **Chỉ số trong danh sách** (`/locations/0`, `/locations/1`...) | Không lộ `Id` ở đâu. STT = chỉ số + 1 khớp luôn quy tắc hiển thị. Gõ thẳng URL vẫn chạy (tải list rồi chọn theo chỉ số). Chỉ số sai → thông báo không tìm thấy |
+| 3 | Thứ tự sắp xếp | `OrderBy Id` cả địa điểm lẫn phòng | Ổn định giống nhau trên MySQL thật và InMemory của test (sắp theo tên thì collation hai nơi khác nhau, test chập chờn). Sắp theo `Id` không lộ `Id` ra response |
+| 4 | Địa điểm ngừng hoạt động | **Lọc `IsActive` ở Service**, không dùng global filter | Entity đã ghi "ngừng hoạt động thì không hiện cho khách". Test được (global filter khó test riêng từng trường hợp) |
+| 5 | Phòng nào hiện trong chi tiết? | **Hiện tất cả kèm nhãn trạng thái** (Trống/Đã đặt/Đang ở/Đang dọn/Bảo trì) | Kiểm tra trống thật là Bước 9. Hiện tại chỉ gắn nhãn, không cho đặt |
+| 6 | Ảnh đại diện phòng | Ảnh `IsPrimary`, không có thì ảnh `SortOrder` nhỏ nhất | Mỗi phòng seed 2 ảnh (chính + nội thất) |
+| 7 | `utils/format.ts` | **Tạo ở bước này** (`formatVnd`) | Bước 5 hoãn vì chưa màn hình nào hiện tiền; bước này hiện giá phòng nên đủ lý do (hết YAGNI) |
+
+#### File dự kiến
+
+| # | File | Viết gì |
+|---|------|---------|
+| 1 | `DTOs/LocationDtos.cs` | `LocationListItemDto` (không `Id`) + `RoomSummaryDto` (không `Id`, có `thumbnailUrl`, `status` số) |
+| 2 | `Services/Locations/ILocationService.cs` + `LocationService.cs` | `GetLocationsAsync(ct)`: chỉ `IsActive`, `Include Rooms + Images`, `AsNoTracking`, `Select` thẳng ra DTO |
+| 3 | `Controllers/LocationsController.cs` | `GET /api/locations`, public, trả `ApiResponse<List<...>>` |
+| 4 | *Sửa* `Program.cs` | Đăng ký DI |
+| 5 | `StayEasy.Tests/Services/LocationServiceTests.cs` | ≥ 8 test: 3 địa điểm · loại `IsActive=false` · số phòng đúng · thumbnail là ảnh chính · thứ tự ổn định · DB rỗng → list rỗng · DTO không có `Id` (biên dịch đã đảm bảo, test khẳng định hành vi) |
+| 6 | `types/location.ts` | `Location`, `RoomSummary`, `RoomType`/`RoomStatus` số + nhãn tiếng Việt |
+| 7 | `services/locationService.ts` | `layDanhSachDiaDiem()` qua `apiClient`, dùng `bocDuLieu` chung |
+| 8 | `utils/format.ts` + `format.test.ts` | `formatVnd`: `500.000 ₫`, số âm, số 0 |
+| 9 | `pages/Locations.tsx` | Danh sách: ảnh, tên, địa chỉ, số phòng, giá thấp nhất. Đủ 3 trạng thái Loading/Error/Empty |
+| 10 | `pages/LocationDetail.tsx` | Đọc `:chiSo` từ URL, lấy từ cache `['locations']`. Thông tin + lưới phòng (giá giờ/ngày, sức chứa, đánh giá, nhãn trạng thái). Chỉ số sai → trang không tìm thấy |
+| 11 | *Sửa* `App.tsx` + `Home.tsx` | Route `/locations`, `/locations/:chiSo`; nút "Xem địa điểm" ở trang chủ |
+
+#### 3 kịch bản test tay
+
+| Lần | Loại | Kịch bản | Kỳ vọng |
+|-----|------|----------|---------|
+| 1 | **HP** | Mở `/locations` → bấm vào 1 địa điểm → thấy thông tin + phòng kèm giá | 3 địa điểm, ảnh hiện đủ, giá `500.000 ₫` căn phải |
+| 2 | **EC** | F5 ở trang chi tiết · gõ thẳng `/locations/1` chưa vào list · gõ `/locations/99` · màn hình 390px | Vẫn hiện đúng · hiện đúng · báo không tìm thấy, không trắng màn · không tràn ngang |
+| 3 | **AB** | Tắt server rồi mở trang · ảnh lỗi (đổi tên file tạm) · kiểm tra KHÔNG lộ `Id` | Hiện lỗi + nút thử lại · hiện ảnh thay thế · response và màn hình đều không có `Id` |
 
 ### [ ] BƯỚC 7 — Tìm kiếm & lọc phòng
 - **Mục tiêu đo được:** `/api/rooms/search` hỗ trợ 9 tham số lọc + phân trang · STT liên tục qua các trang · 3/3 test tay · **≥ 6 unit test** cho bộ lọc/sắp xếp
@@ -490,7 +533,7 @@ từ query string) nên không có cách kích hoạt. Vẫn cần nói rõ vớ
 ## Giai đoạn 7 — Hoàn thiện & kiểm thử
 
 ### [ ] BƯỚC 17 — Responsive + Loading/Error/Empty + Toast
-- **Mục tiêu đo được:** mọi trang dùng được ở 375px · mọi danh sách có đủ 3 trạng thái · 7/7 test tay mục 9 của `docs/KIEM_THU_TAY.md`
+- **Mục tiêu đo được:** mọi trang dùng được ở 375px · mọi danh sách có đủ 3 trạng thái · 7/7 test tay mục 10 của `docs/KIEM_THU_TAY.md`
 - **Bằng chứng:** ảnh chụp 2 trang ở khung 375px
 
 ### [ ] BƯỚC 18 — 18 test case tích hợp (Postman)

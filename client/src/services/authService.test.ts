@@ -27,14 +27,20 @@ const { mockPost, mockGet, mockPut } = vi.hoisted(() => ({
   mockPut: vi.fn(),
 }))
 
-// Thay cả module `api/client` để không có gọi mạng nào thật sự xảy ra.
-vi.mock('../api/client', () => ({
-  apiClient: {
-    post: mockPost,
-    get: mockGet,
-    put: mockPut,
-  },
-}))
+// Thay `apiClient` để không có gọi mạng nào thật sự xảy ra, nhưng giữ NGUYÊN
+// `bocDuLieu` và `kiemTraThanhCong` thật: mock hai hàm đó thì test chỉ kiểm bản
+// giả, đúng loại che lỗi đã gặp ở backend (`lessons.md` mục 20).
+vi.mock('../api/client', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../api/client')>()
+  return {
+    ...actual,
+    apiClient: {
+      post: mockPost,
+      get: mockGet,
+      put: mockPut,
+    },
+  }
+})
 
 /** Kết quả đăng nhập hợp lệ, dùng làm mẫu cho các ca thành công. */
 const ketQuaDangNhap = {
