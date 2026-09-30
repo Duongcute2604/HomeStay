@@ -9,6 +9,7 @@ import Login from './pages/Login'
 import NotFound from './pages/NotFound'
 import Profile from './pages/Profile'
 import Register from './pages/Register'
+import Rooms from './pages/Rooms'
 
 /**
  * Bảng điều hướng.
@@ -31,6 +32,7 @@ export default function App(): JSX.Element {
 
         <Route path="/locations" element={<Locations />} />
         <Route path="/locations/:chiSo" element={<LocationDetail />} />
+        <Route path="/rooms" element={<Rooms />} />
 
         <Route
           path="/profile"

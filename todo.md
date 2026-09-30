@@ -455,10 +455,55 @@ từ query string) nên không có cách kích hoạt. Vẫn cần nói rõ vớ
 | 2 | **EC** | F5 ở trang chi tiết · gõ thẳng `/locations/1` chưa vào list · gõ `/locations/99` · màn hình 390px | Vẫn hiện đúng · hiện đúng · báo không tìm thấy, không trắng màn · không tràn ngang |
 | 3 | **AB** | Tắt server rồi mở trang · ảnh lỗi (đổi tên file tạm) · kiểm tra KHÔNG lộ `Id` | Hiện lỗi + nút thử lại · hiện ảnh thay thế · response và màn hình đều không có `Id` |
 
-### [ ] BƯỚC 7 — Tìm kiếm & lọc phòng
-- **Mục tiêu đo được:** `/api/rooms/search` hỗ trợ 9 tham số lọc + phân trang · STT liên tục qua các trang · 3/3 test tay · **≥ 6 unit test** cho bộ lọc/sắp xếp
+### [x] BƯỚC 7 — Tìm kiếm & lọc phòng · **XONG 30/09/2026**
+- **Mục tiêu đo được:** `GET /api/rooms/search` đúng 9 tham số + phân trang · STT liên tục qua các trang · 3/3 test tay · **≥ 10 unit test backend** + **≥ 12 unit test frontend**
+- **Kết quả đo được:**
+  - API: không lọc 10 phòng/2 trang · Hưng Yên 4 phòng · giá tăng dần đúng · trang 2 STT từ 7 · giá 0–1.000 rỗng · `locationIndex=99` rỗng không lỗi · min>max/type/sort sai đều 400 · không lộ `Id`
+  - Test tay: **11/11 ca đạt** (HP 4 · EC 4 · AB 3), ghi ở `docs/KIEM_THU_TAY.md` mục 3
+  - Unit test backend: `dotnet test --filter "RoomSearch"` → **15/15**
+  - Unit test frontend: `npm test` → **111/111** (thêm 24: roomSchemas 10 · roomService 5 · Rooms 9)
+  - `dotnet build --no-incremental` → **0 error 0 warning** · `npm run build` sạch · `npm run lint` sạch
+  - Console 0 warning 0 error · mobile 390px không tràn · CSDL nguyên vẹn
 - **Bằng chứng:**
 - **Ảnh chụp:** trang tìm kiếm
+
+#### Quyết định đã chốt (trước khi code)
+
+| # | Vấn đề | Chốt | Lý do |
+|---|--------|------|-------|
+| 1 | 9 tham số là gì? | `keyword, locationIndex, roomType, minPrice, maxPrice, capacity, sort, page, pageSize` | Đủ bộ lọc · sắp xếp · phân trang theo `AGENTS.md` 5.4. Không có `status` — hiện tất cả kèm nhãn như Bước 6 |
+| 2 | Lọc theo địa điểm bằng gì? | `locationIndex` — chỉ số như Bước 6 | Response không có `Id` nên không lọc theo `Id` được. Server ánh xạ chỉ số → địa điểm theo cùng thứ tự `OrderBy Id` |
+| 3 | `locationIndex` vượt phạm vi? | Trả **200 + danh sách rỗng** (không phải 404) | "Không có kết quả" là kết quả hợp lệ, giao diện hiện Empty state |
+| 4 | `minPrice > maxPrice`? | Trả **400** kèm thông báo | Giá trị mâu thuẫn là lỗi người dùng, phải báo rõ chứ không tự đoán (đổi chỗ hay bỏ qua) |
+| 5 | `roomType` ngoài 0–3? | Trả **400** | Enum không có giá trị đó; trả rỗng thì người gọi tưởng "hết phòng" |
+| 6 | Sắp xếp | `priceAsc, priceDesc, ratingDesc, newest` (mặc định `newest`) | Đủ dùng cho trang tìm kiếm. Giá trị tiếng Anh ở API, nhãn tiếng Việt ở giao diện |
+| 7 | `pageSize` tối đa | Chặn **50** ở server | Không cho `pageSize=1000000` kéo sập DB |
+| 8 | So khớp `keyword` | So tên phòng, không phân biệt hoa thường (`.ToLower()` hai vế) | MySQL collation `ci` vốn không phân biệt hoa thường; viết tường minh để InMemory của test cũng đúng |
+| 9 | STT liên tục | `(page-1)*pageSize + chỉ số + 1`, tính ở giao diện | Backend không có `Id` để neo; STT chỉ để hiển thị |
+| 10 | Form lọc | React Hook Form + Zod (schema riêng, test được) | `AGENTS.md` 7.2: mọi form dùng RHF + Zod |
+
+#### File dự kiến
+
+| # | File | Viết gì |
+|---|------|---------|
+| 1 | `DTOs/RoomDtos.cs` | `RoomSearchRequest` (9 query param + attribute kiểm) · `RoomSearchItemDto` (không `Id`, có `locationName`) · `PagedResultDto<T>` chung |
+| 2 | `Services/Rooms/IRoomService.cs` + `RoomService.cs` | `SearchAsync`: lọc → đếm → sắp → Skip/Take, `AsNoTracking`, `Select` ra DTO |
+| 3 | `Controllers/RoomsController.cs` | `GET /api/rooms/search`, public |
+| 4 | *Sửa* `Program.cs` | Đăng ký DI |
+| 5 | `StayEasy.Tests/Services/RoomSearchTests.cs` | ≥ 10 test: từng bộ lọc · sắp xếp · phân trang · min>max 400 · type sai 400 · index vượt phạm vi rỗng · pageSize chặn 50 |
+| 6 | `types/room.ts` | `RoomSearchItem`, `PagedResult<T>`, `SortOption`, `SearchFilters` — dùng lại `RoomType/RoomStatus` từ `location.ts` |
+| 7 | `schemas/roomSchemas.ts` + test | Schema form lọc: số ép kiểu, `minPrice<=maxPrice`, giá trị mặc định |
+| 8 | `services/roomService.ts` + test | `timKiem(filters)` dựng query string, mock `apiClient` |
+| 9 | `pages/Rooms.tsx` + test | Thanh lọc + lưới kết quả + STT liên tục + phân trang + Loading/Error/Empty |
+| 10 | *Sửa* `App.tsx`, `PageLayout.tsx`, `Home.tsx` | Route `/rooms`, link menu, nút trang chủ |
+
+#### 3 kịch bản test tay
+
+| Lần | Loại | Kịch bản | Kỳ vọng |
+|-----|------|----------|---------|
+| 1 | **HP** | Mở `/rooms` không lọc → lọc Hưng Yên → sắp giá tăng dần → sang trang 2 | 10 phòng / 2 trang · chỉ còn 4 phòng Hưng Yên · giá tăng dần · STT trang 2 tiếp nối (7, 8…) |
+| 2 | **EC** | Giá 0–1.000 → từ khoá không có kết quả → `locationIndex=99` gõ tay → mobile 390px | Empty state "Không tìm thấy" · tương tự · tương tự · không tràn ngang |
+| 3 | **AB** | `minPrice > maxPrice` → tắt server → kiểm KHÔNG lộ `Id` | 400 kèm thông báo · lỗi + nút thử lại · JSON và màn hình sạch `Id` |
 
 ### [ ] BƯỚC 8 — Chi tiết phòng
 - **Mục tiêu đo được:** trang chi tiết hiện đủ ảnh (bấm xem ảnh lớn) · tiện nghi · giá giờ/ngày · mô tả · đánh giá · khung chọn ngày

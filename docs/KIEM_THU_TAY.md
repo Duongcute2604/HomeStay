@@ -271,19 +271,29 @@
 ---
 ## 3. Tìm kiếm & lọc phòng (Bước 7)
 
+> Ngày chạy: 30/09/2026. API `GET /api/rooms/search` (public) + trình duyệt thật
+> trên `http://localhost:5174/rooms`.
+> **Kết quả: 11/11 ca đạt.** Bảng kế hoạch cũ giữ nguyên số thứ tự, chỉ điền kết quả.
+
 | # | Loại | Kịch bản | Kỳ vọng | Thực tế | Kết quả |
 |---|------|----------|---------|---------|---------|
-| 1 | HP | Không lọc | Hiện tất cả phòng, phân trang đúng | | |
-| 2 | HP | Lọc theo địa điểm Hưng Yên | Chỉ còn phòng của Hưng Yên | | |
-| 3 | EC | Lọc giá 0 – 1.000 | Danh sách rỗng, hiện trạng thái "Không tìm thấy" | | |
-| 4 | EC | Lọc giá 0 – 1.000.000.000 | Hiện tất cả phòng, không lỗi | | |
-| 5 | AB | Số khách vượt sức chứa mọi phòng | Danh sách rỗng | | |
-| 6 | HP | Sắp xếp giá tăng dần | Đúng thứ tự từ thấp đến cao | | |
-| 7 | AB | Tìm kiếm từ khóa không có kết quả | Danh sách rỗng + thông báo | | |
-| 8 | EC | Chuyển sang trang 2 | STT hiển thị 11, 12, 13… (không phải 1, 2, 3) | | |
-| 9 | HP | Giá hiển thị | Đúng định dạng `1.200.000 ₫`, **căn phải** | | |
+| 1 | HP | Không lọc | Hiện tất cả phòng, phân trang đúng | 10 phòng / 2 trang (6 + 4), "Tìm thấy 10 phòng · Trang 1/2" | ✅ |
+| 2 | HP | Lọc theo địa điểm Hưng Yên | Chỉ còn phòng của Hưng Yên | `locationIndex=0` → 4 phòng, toàn "Hưng Yên Ven Biển" | ✅ |
+| 3 | EC | Lọc giá 0 – 1.000 | Danh sách rỗng, hiện trạng thái "Không tìm thấy" | Hiện "Không tìm thấy phòng nào" + hướng dẫn nới điều kiện | ✅ |
+| 4 | EC | Lọc giá 0 – 1.000.000.000 | Hiện tất cả phòng, không lỗi | 10/10 phòng (giá cao nhất seed là 1.800.000/ngày) | ✅ |
+| 5 | AB | Số khách vượt sức chứa mọi phòng | Danh sách rỗng | `capacity=6` → 0 phòng (sức chứa lớn nhất là 5) | ✅ |
+| 6 | HP | Sắp xếp giá tăng dần | Đúng thứ tự từ thấp đến cao | 520.000 → ... → 1.800.000, kiểm bằng script so sánh từng cặp | ✅ |
+| 7 | AB | Tìm kiếm từ khóa không có kết quả | Danh sách rỗng + thông báo | Từ khoá lạ → 0 phòng + Empty state | ✅ |
+| 8 | EC | Chuyển sang trang 2 | STT liên tục, không đánh lại từ 1 | STT 7, 8, 9, 10; nút "Trang sau" mờ ở trang cuối | ✅ |
+| 9 | HP | Giá hiển thị | Đúng định dạng `1.200.000 ₫`, **căn phải** | "550.000 ₫/ngày" `text-right` + `.number-vn`; từ khoá "Hạnh Phúc" → đúng 1 phòng | ✅ |
+| 10 | AB | `minPrice > maxPrice` | 400 kèm thông báo | 400 "Giá thấp nhất không được lớn hơn giá cao nhất" | ✅ |
+| 11 | AB | `roomType` / `sort` sai | 400 kèm thông báo | 400 "Loại phòng không hợp lệ" / "Cách sắp xếp không hợp lệ" | ✅ |
 
----
+> Chưa kiểm tay: ô chọn địa điểm / loại phòng / sắp xếp bằng chuột (công cụ trình
+> duyệt không thao tác được `select`). Ba ô này đã có test giao diện + kiểm API
+> trực tiếp (`locationIndex=0` → 4 phòng Hưng Yên, `sort=priceAsc` → tăng dần đúng).
+> Console 0 warning 0 error. Mobile 390px: form 1 cột, ô rộng 309px, không tràn.
+> Response quét sạch `Id`. CSDL sau test: 4 users, 3 locations, 10 rooms.
 
 ## 4. Kiểm tra phòng trống (Bước 9)
 

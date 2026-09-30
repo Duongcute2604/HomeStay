@@ -29,17 +29,23 @@ export default function Home(): JSX.Element {
           <Link to="/profile" className="btn-outline">
             Xem hồ sơ
           </Link>
-          <Link to="/locations" className="btn-primary">
+          <Link to="/locations" className="btn-outline">
             Xem địa điểm
+          </Link>
+          <Link to="/rooms" className="btn-primary">
+            Tìm phòng
           </Link>
         </div>
       ) : (
         <div className="mt-6 flex flex-col items-center gap-3">
           <p className="text-sm text-gray-600">Đăng nhập để bắt đầu đặt phòng.</p>
 
-          <div className="flex gap-3">
+          <div className="flex flex-wrap justify-center gap-3">
             <Link to="/locations" className="btn-outline">
               Xem địa điểm
+            </Link>
+            <Link to="/rooms" className="btn-outline">
+              Tìm phòng
             </Link>
             <Link to="/login" className="btn-outline">
               Đăng nhập

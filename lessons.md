@@ -1164,3 +1164,48 @@ chứng minh "thẻ Đà Lạt không hiện giá" mà lại kiểm cả trang.
 > 3. Đây là lần thứ ba "test báo FAIL mà app đúng" (sau mục 29) — thành quy luật:
 >    **nghi ngờ script kiểm thử trước khi nghi ngờ code**, nhưng phải đọc bằng
 >    chứng rồi mới kết luận bên nào sai.
+## 41. `z.coerce.number('')` cho ra `0` — ô lọc để trống thành lọc "từ 0"
+
+**Biểu hiện:** test `OTrong_ChuyenThanhNull_KhongBaoLoi` đỏ. Ô giá để trống phải
+nghĩa là "không giới hạn", nhưng schema ép thành `0` rồi gửi `minPrice=0` lên —
+kết quả vẫn đúng (giá nào cũng ≥ 0) nhưng sai ý: URL thừa tham số, và với ô "số
+khách" thì `0` lại **báo lỗi** (số khách phải ≥ 1) dù người dùng chỉ xoá ô.
+
+**Nguyên nhân:** `Number('') === 0` trong JavaScript, nên `z.coerce.number()`
+không bao giờ thấy chuỗi rỗng. Phải tiền xử lý trước khi ép kiểu:
+
+```ts
+z.preprocess(
+  (giaTri) => (giaTri === '' || giaTri === null || giaTri === undefined ? null : giaTri),
+  z.coerce.number().min(...).max(...).nullable(),
+)
+```
+
+**Bài học:**
+
+> 1. **Ô nhập số trong form LỌC khác ô nhập số trong form ĐĂNG KÝ.** Form đăng ký:
+>    trống là lỗi. Form lọc: trống là "không giới hạn". Cùng một component `Input`
+>    nhưng hai ngữ nghĩa — schema phải nói rõ bằng `nullable()`.
+> 2. **Không tin直觉 về ép kiểu JavaScript.** `Number('')` ra `0`, không ra `NaN`.
+>    Chỗ nào ép kiểu thì viết test cho đầu vào rỗng trước tiên.
+> 3. Test này bắt được lỗi mà kiểm thử tay khó thấy: gửi `minPrice=0` thừa vẫn cho
+>    kết quả đúng, nên bấm tay không bao giờ phát hiện — chỉ đọc URL hoặc test
+>    mới thấy.
+
+## 42. Quên `beforeEach(mockReset)` — `mock.calls[0]` của test sau là cuộc gọi cũ
+
+**Biểu hiện:** test `CoBoLoc_GuiDuThamSoCoGiaTri` đỏ với `expected null to be
+'Hạnh Phúc'`. URL không có `keyword` vì đọc nhầm cuộc gọi của test trước
+(test "không lọc" không gửi keyword).
+
+**Đã sửa:** thêm `beforeEach(() => mockGet.mockReset())`. Đây là lần thứ hai mắc
+đúng lỗi này trong dự án (lần đầu ở `ProtectedRoute.test.tsx`).
+
+**Bài học:**
+
+> 1. **Mọi file test dùng mock function đều phải có `beforeEach(mockReset)`** —
+>    không ngoại lệ. Viết mock là viết kèm reset, như viết `IDisposable` là phải
+>    `Dispose`.
+> 2. Khi test assert trên `mock.calls[N]` mà ra giá trị lạ, kiểm tra đầu tiên là
+>    "đây có phải cuộc gọi của test này không" — in `mock.calls.length` ra là
+>    thấy ngay.

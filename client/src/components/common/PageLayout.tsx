@@ -33,6 +33,9 @@ export default function PageLayout({ children }: { children: React.ReactNode }):
             <Link to="/locations" className="text-gray-600 hover:text-brand-700">
               Địa điểm
             </Link>
+            <Link to="/rooms" className="text-gray-600 hover:text-brand-700">
+              Tìm phòng
+            </Link>
 
             {daDangNhap ? (
               <>
