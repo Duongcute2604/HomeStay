@@ -1,4 +1,12 @@
+import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
+
+import { layThongBaoLoi } from '../api/client'
+import { roomService } from '../services/roomService'
+import { RoomStatus } from '../types/location'
+import { formatDiem, formatVnd } from '../utils/format'
+import { LOC_MAC_DINH, SortOption } from '../types/room'
+
 
 /**
  * Trang chủ — phong cách ấm áp, nhẹ nhàng.
@@ -7,11 +15,35 @@ import { Link } from 'react-router-dom'
  * - Hero với background + tagline + địa chỉ
  * - Thanh tìm kiếm nhanh
  * - 3 loại phòng (Cozy, Japandi, Signature)
- * - Lưới phòng nổi bật
+ * - Lưới 3 phòng nổi bật (lấy từ API, có đủ 3 trạng thái tải/lỗi/rỗng)
  * - Quy định ở
  * - Footer liên hệ
  */
 export default function Home(): JSX.Element {
+  /*
+   * 3 phòng mới nhất cho lưới 'Phòng nổi bật'.
+   *
+   * pageSize: 3 và sort: newest là đủ — trang chủ không cần bộ lọc đầy đủ
+   * như trang /rooms, chỉ cần một lưới giới thiệu ngắn.
+   */
+  const {
+    data: ketQuaPhong,
+    isPending: isPendingPhong,
+    isError: isLoiPhong,
+    error: loiPhong,
+    refetch: taiLaiPhong,
+  } = useQuery({
+    queryKey: ['rooms', 'noi-bat'],
+    queryFn: () =>
+      roomService.timKiem({
+        ...LOC_MAC_DINH,
+        sort: SortOption.NEWEST,
+        pageSize: 3,
+      }),
+  })
+
+  const phongNoiBat = ketQuaPhong?.items ?? []
+
   return (
     <div>
       {/* Hero với background */}
@@ -87,7 +119,17 @@ export default function Home(): JSX.Element {
         </div>
       </section>
 
-      {/* Room Listings */}
+      {/*
+       * Lưới phòng nổi bật — lấy 3 phòng mới nhất từ API thật.
+       *
+       * Trước đây khối này viết cứng 3 thẻ phòng. Sai ở chỗ: tên phòng, giá và
+       * cả nút "Còn trống" nằm trong mã nguồn, nên sửa giá trong CSDL thì trang
+       * chủ vẫn hiện giá cũ — và nếu ai đó xoá phòng trong CSDL thì trang chủ vẫn
+       * còn. Dữ liệu hiển thị phải lấy từ một nguồn duy nhất là API.
+       *
+       * Cũng xử lý đủ 3 trạng thái như mọi danh sách khác (AGENTS.md 7.2): đang
+       * tải, lỗi, không có dữ liệu.
+       */}
       <section className="mx-auto max-w-6xl px-4 py-12">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-2xl font-bold text-amber-900">Phòng nổi bật</h3>
@@ -96,76 +138,86 @@ export default function Home(): JSX.Element {
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* Room Card 1 - Cozy */}
-          <div className="bg-white rounded-xl shadow-sm border border-amber-100 overflow-hidden hover:shadow-lg transition-shadow">
-            <div className="h-48 bg-amber-100 relative">
-              <img src="/images/rooms/cozy/cozy-1.jpg" alt="Phòng Hạnh Phúc" className="w-full h-full object-cover" />
-              <span className="absolute top-3 left-3 bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-medium">Còn trống</span>
-            </div>
-            <div className="p-4">
-              <h4 className="font-bold text-amber-900">Phòng Hạnh Phúc</h4>
-              <p className="text-sm text-amber-600 mt-1">Cơ sở 1 Linh Đàm · 2 người</p>
-              <div className="flex flex-wrap gap-1 mt-2">
-                {['WiFi', 'Máy lạnh', 'Giường king'].map((a) => (
-                  <span key={a} className="px-2 py-0.5 bg-amber-50 text-amber-700 rounded text-xs">{a}</span>
-                ))}
+        {isPendingPhong ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="bg-white rounded-xl shadow-sm border border-amber-100 overflow-hidden">
+                <div className="skeleton h-48 w-full" />
+                <div className="p-4 space-y-2">
+                  <div className="skeleton h-4 w-3/4" />
+                  <div className="skeleton h-3 w-1/2" />
+                  <div className="skeleton h-6 w-1/3" />
+                </div>
               </div>
-              <div className="mt-3 flex items-center justify-between">
-                <p className="text-lg font-bold text-amber-600">90.000 ₫/giờ</p>
-                <Link to="/locations/0/rooms/0" className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs rounded-lg font-medium transition-colors">
-                  Xem chi tiết
-                </Link>
-              </div>
-            </div>
+            ))}
           </div>
-
-          {/* Room Card 2 - Japandi */}
-          <div className="bg-white rounded-xl shadow-sm border border-amber-100 overflow-hidden hover:shadow-lg transition-shadow">
-            <div className="h-48 bg-amber-100 relative">
-              <img src="/images/rooms/japandi/japandi-1.jpg" alt="Phòng Hải Yến" className="w-full h-full object-cover" />
-              <span className="absolute top-3 left-3 bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-medium">Còn trống</span>
-            </div>
-            <div className="p-4">
-              <h4 className="font-bold text-amber-900">Phòng Hải Yến</h4>
-              <p className="text-sm text-amber-600 mt-1">Cơ sở 1 Linh Đàm · 3 người</p>
-              <div className="flex flex-wrap gap-1 mt-2">
-                {['WiFi', 'Máy lạnh', 'Bồn tắm nước nóng'].map((a) => (
-                  <span key={a} className="px-2 py-0.5 bg-amber-50 text-amber-700 rounded text-xs">{a}</span>
-                ))}
-              </div>
-              <div className="mt-3 flex items-center justify-between">
-                <p className="text-lg font-bold text-amber-600">130.000 ₫/giờ</p>
-                <Link to="/locations/0/rooms/2" className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs rounded-lg font-medium transition-colors">
-                  Xem chi tiết
-                </Link>
-              </div>
-            </div>
+        ) : isLoiPhong ? (
+          <div className="bg-white rounded-xl border border-amber-100 p-6 text-center">
+            <p className="text-sm text-red-600">{layThongBaoLoi(loiPhong)}</p>
+            <button
+              type="button"
+              onClick={() => void taiLaiPhong()}
+              className="mt-4 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm rounded-lg"
+            >
+              Thử lại
+            </button>
           </div>
-
-          {/* Room Card 3 - Signature */}
-          <div className="bg-white rounded-xl shadow-sm border border-amber-100 overflow-hidden hover:shadow-lg transition-shadow">
-            <div className="h-48 bg-amber-100 relative">
-              <img src="/images/rooms/signature/signature-1.jpg" alt="Phòng Xuân Hương" className="w-full h-full object-cover" />
-              <span className="absolute top-3 left-3 bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-medium">Còn trống</span>
-            </div>
-            <div className="p-4">
-              <h4 className="font-bold text-amber-900">Phòng Xuân Hương</h4>
-              <p className="text-sm text-amber-600 mt-1">Cơ sở 1 Linh Đàm · 5 người</p>
-              <div className="flex flex-wrap gap-1 mt-2">
-                {['WiFi', 'Bếp chung', 'Bàn làm việc'].map((a) => (
-                  <span key={a} className="px-2 py-0.5 bg-amber-50 text-amber-700 rounded text-xs">{a}</span>
-                ))}
-              </div>
-              <div className="mt-3 flex items-center justify-between">
-                <p className="text-lg font-bold text-amber-600">1.250.000 ₫/ngày</p>
-                <Link to="/locations/0/rooms/3" className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs rounded-lg font-medium transition-colors">
-                  Xem chi tiết
-                </Link>
-              </div>
-            </div>
+        ) : phongNoiBat.length === 0 ? (
+          <div className="bg-white rounded-xl border border-amber-100 p-6 text-center">
+            <p className="font-semibold text-amber-900">Chưa có phòng nào để hiển thị</p>
+            <Link to="/rooms" className="mt-2 inline-block text-sm text-amber-600 hover:text-amber-800">
+              Xem tất cả phòng →
+            </Link>
           </div>
-        </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {phongNoiBat.map((phong) => (
+              <div key={phong.roomNumber} className="bg-white rounded-xl shadow-sm border border-amber-100 overflow-hidden hover:shadow-lg transition-shadow">
+                <div className="h-48 bg-amber-100 relative">
+                  {phong.thumbnailUrl ? (
+                    <img
+                      src={phong.thumbnailUrl}
+                      alt={phong.name}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-sm text-amber-400">
+                      Chưa có ảnh
+                    </div>
+                  )}
+                  {phong.status === RoomStatus.AVAILABLE && (
+                    <span className="absolute top-3 left-3 bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-medium">
+                      Còn trống
+                    </span>
+                  )}
+                </div>
+                <div className="p-4">
+                  <h4 className="font-bold text-amber-900">{phong.name}</h4>
+                  <p className="text-sm text-amber-600 mt-1">
+                    {phong.locationName} · {phong.roomNumber} · {phong.capacity} người
+                  </p>
+                  {phong.ratingCount > 0 && (
+                    <p className="text-xs text-amber-500 mt-1">
+                      ★ {formatDiem(phong.ratingAvg)} · {phong.ratingCount} đánh giá
+                    </p>
+                  )}
+                  <div className="mt-3 flex items-center justify-between">
+                    <p className="text-lg font-bold text-amber-600 number-vn text-right">
+                      {formatVnd(phong.pricePerHour)}/giờ
+                    </p>
+                    <Link
+                      to={`/locations/${phong.locationIndex}/rooms/${phong.roomIndex}`}
+                      className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs rounded-lg font-medium transition-colors"
+                    >
+                      Xem chi tiết
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       {/* Quy định */}

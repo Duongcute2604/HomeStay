@@ -2216,3 +2216,58 @@ lớn nhất còn 400 kB. Tách theo nhóm thay vì `import()` từng trang: mà
 **Quy tắc tránh lặp:** khi kiểm tra "build sạch", phải **đọc cả dòng cảnh báo**, không chỉ
 dòng thành công. Cách chắc chắn hơn: `npm run build 2>&1 | Select-String -Pattern "warn|error"`
 thay vì chỉ `Select-String "built in"`.
+---
+
+## 85. Seed "bỏ qua nếu đã có dữ liệu" ⇒ sửa seeder không bao giờ tới được DB cũ
+
+**Sai ở đâu:** trang chủ hiển thị *"★ 5,0 · **30 đánh giá**"* cho Phòng Hạnh Phúc, trong khi
+cả hệ thống chỉ có **8** dánh giá và phòng đó có đúng **1**. Kiểm tra CSDL cho thấy cột
+`Rooms.RatingCount` bị ghi sai: một phòng `30`/`2`, một phòng ghi `5.0` dù thật sự **không có**
+đánh giá nào, một phòng ghi `5.0` dù đánh giá thật là `3`.
+
+**Vì sao:** `SeedData.SeedAsync` kiểm tra `db.Users.AnyAsync()` rồi `return` sớm nếu đã có
+dữ liệu. Đây là hàm seed tốt — chạy bao nhiêu lần cũng không nhân bản. Nhưng hậu quả là:
+`DuLieuMau.TinhLaiDiemPhong()` (tính lại điểm từ bảng `Reviews`) được thêm vào ở **Bước 16**,
+còn DB này đã seed từ **Bước 4**. Test `SeedAsync_DiemPhongChiTinhTuDanhGiaChuaAn` vẫn
+xanh vì nó chạy trên DB InMemory **rỗng** rồi seed lại từ đầu — đúng nơi cần kiểm tra.
+
+**Bài học phân biệt "code sai" với "dữ liệu cũ":** khi dữ liệu hiển thị sai, **đừng vội sửa
+code**. Đã làm đúng thứ tự ở đây:
+
+1. Đọc code: cả `ReviewScorer` (lúc chạy) và `TinhLaiDiemPhong` (lúc seed) đều loại trừ
+   `IsHidden` và làm tròn 2 chữ số — **hai chỗ nhất quán, code đúng**.
+2. Tìm test phủ đúng nghiệp vụ đó — đã có, và đang pass.
+3. Kết luận: lỗi nằm ở dữ liệu đã nạp cũ, không phải logic.
+
+**Đã sửa:** tính lại `RatingAvg`/`RatingCount` cho toàn bộ phòng theo đúng công thức của seed.
+Kết quả khớp 10/10 phòng.
+
+> **Quy tắc tránh lặp:** sau mỗi lần sửa `DuLieuMau`, phải **nạp lại dữ liệu mẫu từ đầu**
+> (xoá volume `homestay-mysql-data` rồi `docker compose up -d`) để chắc DB khớp code —
+> vì đơn vị kiểm thử của seeder là **DB sạch**, không phải DB đang chạy.
+
+---
+
+## 86. Dữ liệu hiển thị viết cứng trong JSX sẽ thành sai lệch âm thầm
+
+**Sai ở đâu:** lưới "Phòng nổi bật" ở trang chủ viết cứng 3 thẻ phòng (~70 dòng JSX lặp lại).
+Tên phòng, giá, ảnh và nhãn "Còn trống" đều nằm trong mã nguồn.
+
+**Vì sao nguy hiểm hơn vẻ ngoài:** sửa giá phòng trong CSDL thì trang chủ **vẫn hiện giá cũ**;
+xoá phòng trong CSDL thì trang chủ **vẫn còn thẻ đó**. Dữ liệu hiển thị có **hai nguồn**,
+nên không có cách nào biết cái nào đúng khi chúng lệch nhau — đây là cùng nguyên nhân gốc
+với `lessons.md` mục 20 (hai nơi giữ cùng một dữ liệu).
+
+**Đã sửa:** gọi `GET /api/rooms/search?pageSize=3` qua TanStack Query, rồi vẽ ra từ kết quả.
+Xoá được 80 dòng JSX lặp. Thêm đủ 3 trạng thái (đang tải / lỗi / không có dữ liệu) như
+mọi danh sách khác.
+
+**Quan sát đáng ghi lại:** lần mở trang đầu tiên sau khi sửa, màn hình hiện **HTTP 500** và
+hiện đúng thông báo lỗi kèm nút "Thử lại". Nguyên nhân là tôi đã tắt tiến trình backend
+để build nên Vite proxy không có gì để chuyển tiếp. Nghĩa là **trạng thái lỗi đã được
+kiểm chứng bằng sự cố thật**, không phải bằng giả định.
+
+> **Quy tắc tránh lặp:** mọi thứ hiển thị trên giao diện mà bản chất là dữ liệu nghiệp vụ
+> (tên, giá, số lượng, trạng thái) thì lấy từ API. Chỉ giữ cứng những thứ thuần trình bày:
+> câu chữ quy định, mô tả concept, nhãn nút. Và phải kiểm tra lại màn hình sau khi sửa bằng
+> cách **đối chiếu số liệu hiển thị với CSDL** — chính việc đó đã phát hiện lỗi mục 85.
