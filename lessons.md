@@ -2271,3 +2271,204 @@ kiểm chứng bằng sự cố thật**, không phải bằng giả định.
 > (tên, giá, số lượng, trạng thái) thì lấy từ API. Chỉ giữ cứng những thứ thuần trình bày:
 > câu chữ quy định, mô tả concept, nhãn nút. Và phải kiểm tra lại màn hình sau khi sửa bằng
 > cách **đối chiếu số liệu hiển thị với CSDL** — chính việc đó đã phát hiện lỗi mục 85.
+---
+
+## 88. Word báo "tệp bị hỏng" mà không nói chỗ nào sai — vì OOXML bắt buộc thứ tự phần tử
+
+**Sai ở đâu:** khi dựng file `.docx` bằng cách sinh trực tiếp `word/document.xml`, tôi xếp
+các phần tử trong `w:pPr` và `w:rPr` theo thứ tự "trông hợp lý". Word báo *"The file appears to
+be corrupted"* mà không chỉ ra vị trí. Tôi mất gần một giờ đoán.
+
+**Vì sao sai:** OOXML quy định thứ tự phần tử cứng theo lược đồ, không phải thứ tự tuỳ ý:
+
+| Thẻ | Thứ tự bắt buộc |
+|-----|------------------|
+| `w:pPr` | `pStyle` → `keepNext` → `numPr` → `pBdr` → `spacing` → `ind` → `jc` → `rPr` |
+| `w:rPr` | `rFonts` → `b` → `i` → `color` → `sz` → `szCs` |
+| `w:tcPr` | `tcW` → `shd` → `vAlign` |
+| `w:tblPr` | `tblW` → `jc` → `tblBorders` → `tblLayout` |
+
+Ngoài ra `w:jc` **không thuộc** `w:rPr` — canh chữ phải đặt trong `w:pPr`. Tôi đặt nó trong
+`w:rPr` nên tài liệu hỏng.
+
+**Cách sửa:** không ghép chuỗi `pPr` bằng tay. Hàm nhận **đối tượng tuỳ chọn** rồi tự xếp
+đúng thứ tự:
+
+```js
+function doan(style, noiDung, { giu, truoc, sau, thu, thuDau, canh }) {
+  const pPr = [
+    style && `<w:pStyle w:val="${style}"/>`,
+    giu && '<w:keepNext/>',
+    (truoc || sau) && `<w:spacing .../>`,
+    ind && `<w:ind .../>`,
+    canh && `<w:jc w:val="${canh}"/>`,
+  ].filter(Boolean).join('')
+}
+```
+
+Cách này khiến sai thứ tự về mặt cấu trúc là không thể xảy ra.
+
+> **Quy tắc tránh lặp:** khi sinh XML theo lược đồ, **không ghép thẻ bằng chuỗi tự do**. Nhận
+> tuỳ chọn có tên rồi để hàm tự sắp thứ tự — rẻ hơn nhiều so với tìm lỗi thứ tự.
+
+## 89. Ba lỗi "hỏng tệp" mà nguyên nhân nằm ngoài tài liệu
+
+Cùng một triệu chứng *"tệp bị hỏng"* nhưng ba nguyên nhân hoàn toàn khác, đều không nằm trong
+`document.xml`:
+
+1. **Thiếu `_rels/.rels`** — mọi gói OOXML đều cần tệp này để trỏ tới `word/document.xml`.
+   Không có nó thì Word không biết mở tệp nào.
+2. **Sai URI quan hệ** — `core-properties` phải dùng nhóm `package/2006`, còn `officeDocument`
+   và `extended-properties` dùng nhóm `officeDocument/2006`. Gộp thành một chuỗi là hỏng.
+3. **Thiếu `Override` cho `docProps/*.xml`** trong `[Content_Types].xml`.
+
+**Cách sửa và bài học:** đừng dựng lại gói từ đầu. Lấy nguyên gói của một tệp `.docx` làm
+nền (đọc ra rồi giữ lại mọi tệp), chỉ thay `document.xml` và danh sách ảnh, rồi lọc bỏ quan hệ
+ảnh cũ trong `document.xml.rels`. An toàn hơn hẳn việc tự viết `[Content_Types].xml` và
+`_rels/.rels`.
+
+## 90. Dấu `"` trong thuộc tính XML làm hỏng cả tài liệu
+
+Trường mục lục Word viết là `w:instr=" TOC \o "1-3" "`. Nếu chỉ escape `&`, `<`, `>` mà quên
+dấu nháy kép, XML sinh ra không đúng cấu trúc.
+
+**Cách sửa:** tách hai hàm — `thoat()` cho nội dung văn bản, `thoatThuocTinh()` cho giá trị
+thuộc tính (thêm escape `"`).
+
+> **Quy tắc tránh lặp:** khi chèn giá trị vào thuộc tính XML, luôn dùng hàm escape riêng cho
+> thuộc tính. Dùng chung hàm escape nội dung là nguồn lỗi rất dễ tái phát.
+
+## 91. Bảng kiểm tra XML phải chạy **trước** khi đóng gói
+
+Bốn lỗi ở mục 88, 89, 90 đều chỉ lộ ra khi mở bằng Word. Nếu kiểm tra ngay lúc sinh thì mỗi
+lỗi được sửa trong một phút thay vì phải đoán.
+
+Đã thêm hàm `kiemTraXml()` đếm thẻ mở và thẻ đóng của mọi phần tử trong mọi tệp `.xml` và
+`.rels`; nếu phần tử nào lệch thì **dừng lại, không ghi tệp**.
+
+```js
+const loi = []
+for (const ten of tep.keys()) {
+  if (!ten.endsWith('.xml') && !ten.endsWith('.rels')) continue
+  const dem = new Map()
+  for (const m of x.matchAll(/<(\/?)([A-Za-z0-9_.:-]+)([^>]*?)(\/?)>/g)) { /* đếm mở / đóng */ }
+  for (const [tenThe, { mo, dong }] of dem) if (mo !== dong) loi.push(`${ten}: <${tenThe}>`)
+}
+if (loi.length) throw new Error('Dừng lại — file sinh ra sẽ không mở được.')
+```
+
+> **Quy tắc tránh lặp:** định dạng nhị phân có nhiều quy tắc ẩn thì phải có **bước kiểm tra tự
+> động chạy trong lúc sinh**, không đợi tới bước dùng cuối mới phát hiện. Chỉ cần vài chục
+> dòng là tiết kiệm được hàng giờ đoán.
+
+## 92. Biểu thức chính quy tạo vô hình trong JavaScript template literal
+
+Bốn mục trên, có một mục khác: khi viết lệnh PowerShell **bên trong** template literal của
+JavaScript, các ký tự `\` trong biểu thức chính quy biến mất.
+
+```js
+const ps = `... [regex]::Matches($sb.ToString(), '/Count\s+(\d+)') ...`
+// PowerShell nhận được: '/Counts+(d+)'   ← sai!
+```
+
+Trong template literal không có tag, `\s` và `\d` không phải escape hợp lệ nên bị nuốt thành
+` s` và ` d`. Script PowerShell sau đó báo *"Cannot index into a null array"* — thông báo hoàn
+toàn không liên quan tới nguyên nhân thật.
+
+**Cách sửa:** viết `\\s`, `\\d` khi cần truyền `\` sang ngôn ngữ khác. Tốt hơn: **đừng làm
+regex trong PowerShell cả khi không cần** — đọc tệp PDF bằng Node (`readFileSync(pdf)
+.toString('latin1')`) vừa nhanh hơn vừa khỏi lỗi.
+
+> **Quy tắc tránh lặp:** khi sinh mã cho ngôn ngữ khác từ chuỗi của ngôn ngữ đang viết, kiểm
+> tra lại từng ký tự `\` và `$`. Cách chắc chắn hơn: **lưu kết quả vào tệp rồi đọc lại xem
+> đúng không** thay vì tin rằng chuỗi đã đúng.
+
+## 93. Giết Word giữa chừng để lại trạng thái khôi phục, khiến mọi lần đo sau đó sai
+
+Đây là mục tốn thời gian nhất trong buổi làm việc hôm nay.
+
+**Triệu chứng:** dùng `Stop-Process -Name WINWORD` để đóng vưỡng Word, rồi chạy lại đo số
+trang — Word **treo** hoặc trả kết quả sai (1 trang cho tài liệu dài 121 trang). Hai lần tôi
+kết luận nhầm rằng tệp `.docx` sinh ra bị hỏng và bắt đầu sửa từng bảng, từng kiểu bề rộng
+cột — trong khi tệp hoàn toàn bình thường.
+
+**Vì sao sai:** khi bị giết giữa lúc đang mở tài liệu, Word ghi tệp khôi phục vào
+`%APPDATA%\Microsoft\Word\*.asd` và ghi khoá `HKCU\Software\Microsoft\Office\16.0\Word\
+Resiliency\DocumentRecovery`. Lần khởi động sau, Word hiện **bảng khôi phục tài liệu** — bảng
+này chặn COM automation, nên tập lệnh treo hoặc đọc nhầm tài liệu đã khôi phục dở dang.
+
+**Cách sửa:** trước khi đo lại bằng Word, phải dọn sạch:
+
+```powershell
+Stop-Process -Name WINWORD -Force -ErrorAction SilentlyContinue
+Remove-Item "HKCU:\Software\Microsoft\Office\16.0\Word\Resiliency\DocumentRecovery" -Recurse -Force
+Get-ChildItem "$env:APPDATA\Microsoft\Word" -Include *.asd,*.lnk -Recurse -Force | Remove-Item -Force
+Get-ChildItem . -Filter '~$*' -Force | Remove-Item -Force   # tệp khoá của Word
+```
+
+Sau khi dọn, tài liệu hiện ra là **bình thường, đủ 121 trang**.
+
+> **Quy tắc tránh lặp:** **không bao giờ kết luận "file hỏng" chỉ từ một lần đo bằng công cụ
+> bị nhiễu.** Kiểm tra chéo bằng cách thứ hai độc lập (ở đây là xuất PDF rồi đếm `/Count`
+> trong tệp PDF) trước khi sửa mã nguồn. Sửa mã nguồn để "chữa" triệu chứng do công cụ gây ra
+> là lãng phí thời gian tệ nhất.
+
+## 94. `ComputeStatistics` của Word trả số trang chưa phân trang
+
+Hỏi Word số trang bằng `$doc.ComputeStatistics(2)` khi Word chạy ẩn cho kết quả **không đáng
+tin**: tài liệu 121 trang trả về 1. Word chỉ phân trang khi hiển thị hoặc khi được ép.
+
+**Cách sửa:** ép Word xuất PDF rồi đếm `/Count N` trong tệp PDF — đó là kết quả sau khi phân
+trang thật, và là con số người đọc sẽ thấy khi in ra.
+
+> **Quy tắc tránh lặp:** khi lấy số liệu từ công cụ tự động, hãy hỏi **"con số này có phải
+> thứ người dùng thực sự quan sát không?"**. Số trang phải đếm từ bản in, không đếm từ con
+> số bộ nhớ đệm của công cụ.
+
+## 95. PowerShell 5.1 đọc tệp `.ps1` theo mã ANSI, vỡ với tiếng Việt
+
+**Triệu chứng:** tập lệnh PowerShell sinh ra từ Node báo *"tệp bị hỏng"* trong khi chạy tay
+thì không sao. Nguyên nhân: PowerShell 5.1 đọc tệp `.ps1` không có BOM theo mã hệ thống
+(ANSI, ở đây là windows-1258), nên đường dẫn có tiếng Việt bị cắt thành ký tự lạ và Word nhận
+đường dẫn sai.
+
+**Cách sửa:** chạy Word trên **bản sao ở đường dẫn chỉ gồm ký tự ASCII** rồi chép kết quả về.
+Cách này chắc chắn hơn cả việc thêm BOM, vì không còn phụ thuộc cách trình duyệt tệp.
+
+> **Quy tắc tránh lặp:** khi điều khiển công cụ cũ từ ngôn ngữ khác, **tránh đưa chuỗi có ký tự
+> ngoài ASCII vào tệp trung gian**. Truyền qua đường dẫn ASCII hoặc qua luồng chuẩn.
+
+## 96. Bề rộng cột chia đều làm bảng 6 cột khó đọc
+
+Nhìn bảng 18 test case trong bản HTML thử, cột "Mục kiểm thử" chỉ vài chữ vẫn bị bẻ dòng liên
+tục trong khi cột "Input / thao tác kiểm thử" bên cạnh còn dư chỗ trống.
+
+**Cách sửa:** cấp phần bề rộng cho mỗi cột **theo độ dài chữ dài nhất của nó**, rồi ép tổng về
+đúng bề rộng vùng nội dung, và cho cột cuối nhận phần dư để tổng khớp tuyệt đối (lệch vài twip
+là lệch viền bảng).
+
+```js
+const doDai = hang[0].map((_, i) => Math.max(4, ...hang.map((r) => Math.min(60, hop(r[i]).length))))
+```
+
+> **Bài học:** script chạy sạch **không** bảo đảm kết quả đẹp. Phải **mở ra nhìn** — và khi
+> xem thì xem thứ khó nhìn nhất (bảng nhiều cột), không phải thứ dễ nhìn nhất.
+
+## 97. Vòng lặc chuyển markdown treo im lặng khi gặp dòng lạ
+
+Thêm nhận diện chú thích bảng với biểu thức `/^\*\*Bảng\s+[\d.]+\.?\*\*/`. Biểu thức này yêu
+cầu `**` nằm ngay sau phần số, nên dòng `**Bảng 1. Các chức năng đã triển khai**` **không**
+khớp — trong khi biểu thức dừng vòng lặp thì lại khớp. Kết quả: nhánh đoạn văn không nhận
+dòng nào và `i` không bao giờ tăng, script treo **không báo lỗi**.
+
+**Cách sửa:** thêm lưới an toàn ở nhánh đoạn văn — nếu không thu được dòng nào thì bắt buộc
+tăng `i`:
+
+```js
+if (van.length) { ra.push(doan('Nidung', cacDoanChay(van.join(' ')), { thuDau: 425 })) }
+else { i++ }   // dòng lạ khớp biểu thức dừng: không tăng i thì quay vô hạn, treo luôn
+```
+
+> **Quy tắc tránh lặp:** mỗi nhánh xử lý dòng phải **tăng chỉ số ở mọi đường thoát**. Với
+> nhánh cuối cùng ("gom các dòng còn lại"), luôn kèm `else { i++ }` để một dòng lạ không làm
+> treo cả chương trình.

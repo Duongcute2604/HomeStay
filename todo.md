@@ -924,7 +924,7 @@ Lưu ý mẫu vẫn ghi **"Kiến trúc hệ thống StayEasy"** — tên cũ, p
 > (bảng CSDL, sơ đồ Use Case, danh sách chức năng, ảnh chụp Chương 4).
 > Làm mà không sửa báo cáo = **tự tạo mâu thuẫn**, tệ hơn là không làm.
 
-### [ ] BƯỚC 22 — Thanh toán (mở rộng)
+### [x] BƯỚC 22 — Thanh toán (mở rộng) · **XONG 01/10/2026**
 - **Điều kiện bắt đầu:** Bước 1–21 xong hết · còn ≥ 3 ngày · sẵn sàng sửa báo cáo
 - **Phạm vi tối thiểu (KISS — KHÔNG làm cổng thanh toán thật):**
   - Bảng `payments` (id · booking_id · amount · method · status · paid_at)
@@ -933,9 +933,9 @@ Lưu ý mẫu vẫn ghi **"Kiến trúc hệ thống StayEasy"** — tên cũ, p
   - Khách xem lịch sử thanh toán · Admin đánh dấu đã thu tiền
   - Dashboard: cột doanh thu **đã thu** tách khỏi tổng giá trị đơn
 - **Mục tiêu đo được:** ≥ 3 unit test (đơn `COMPLETED` mới được đánh dấu `PAID` · không thu 2 lần · số tiền khớp `TotalAmount`)
-- **Bằng chứng:**
+- **Bằng chứng:** bảng Payments + ràng buộc UNIQUE trên BookingId + CK_Payments_Amount · 3 API khách + 3 API admin · AdminBookingService.MoPhieuThu mở phiếu khi đơn COMPLETED · Dashboard lấy doanh thu từ phiếu ĐÃ THU · migration 20261001031545_AddPayments · **34 unit test** · 3 ảnh 4.18, 4.22, 4.23
 
-### [ ] BƯỚC 23 — Thông báo trong hệ thống (mở rộng)
+### [x] BƯỚC 23 — Thông báo trong hệ thống (mở rộng) · **XONG 01/10/2026**
 - **Điều kiện bắt đầu:** Bước 22 xong **hoặc** còn ≥ 3 ngày
 - **Phạm vi tối thiểu:**
   - Bảng `notifications` (id · user_id · title · content · is_read · created_at)
@@ -943,7 +943,7 @@ Lưu ý mẫu vẫn ghi **"Kiến trúc hệ thống StayEasy"** — tên cũ, p
   - Tự sinh thông báo khi: Admin xác nhận / check-in / check-out / từ chối đơn
   - Icon chuông trên header + số badge chưa đọc + trang danh sách thông báo
 - **Mục tiêu đo được:** 1 thông báo sinh đúng khi đổi trạng thái đơn · đánh dấu đã đọc hoạt động · ≥ 2 unit test
-- **Bằng chứng:**
+- **Bằng chứng:** bảng Notifications + 2 index (UserId, CreatedAt) và (UserId, IsRead) · 3 API · NotificationService.TaoThongBao chạy trong **cùng transaction** chuyển trạng thái · migration 20261001042224_AddNotifications · **13 unit test** · 10 unit test frontend · 3 ảnh 4.19–4.21
 
 ### Thứ tự ưu tiên nếu chỉ đủ làm 1 cái
 | Ưu tiên | Mục | Vì sao |
@@ -974,6 +974,24 @@ Lưu ý mẫu vẫn ghi **"Kiến trúc hệ thống StayEasy"** — tên cũ, p
 
 ---
 
+
+### [x] BƯỚC 24 — File Word báo cáo tuần 5 · **XONG 01/10/2026**
+- **Mục tiêu đo được:** dựng `10123234_NguyenHaiNam_Do_An_4_Tuan5.docx` **không còn ô "Hình x.y" nào bị trống**, số trang và mục lục đúng, mở bằng Word không báo lỗi
+- **Quyết định về khung tài liệu:** dùng bài `10123234_NguyenHaiNam_MobileCoBan.docx.docx` làm khung thay vì mẫu `Tuan4.docx`, vì bài đó có sẵn:
+  - `Heading1/2/3` **tự đánh số** (`numId=1` → "CHƯƠNG 1", "1.1", "1.1.1") nên không phải gõ số mục tay
+  - hai style chú thích `hình` và `bảng` + 3 trường `TOC` cho mục lục, danh mục bảng, danh mục hình
+  - 3 header + 3 footer có số trang và phông nhúng
+  Chỉ giữ `styles.xml`, `numbering.xml`, `header/footer`, `fontTable`, `theme`; phần thân dựng lại hoàn toàn.
+- **Bố cục chốt:** 4 chương + Kết luận (Chương 5) + Tài liệu tham khảo (Chương 6) — 6 mục như bài mẫu
+- **Kết quả:** **121 trang · 46 ảnh · 36 bảng · 98 mục trong mục lục**, 46 mục danh mục hình, 11 mục danh mục bảng, 14 từ viết tắt. Mục lục đã điền số trang bằng chính Word.
+- **Bằng chứng:** `docs/tao-bao-cao.mjs` (sinh tài liệu) · `docs/kiem.mjs` · `docs/kiem-danh-muc.mjs` (kiểm tra) · file `.docx` không đưa lên git vì `.gitignore` chặn `*.docx`
+- **Cách dùng:**
+  ```powershell
+  node docs/tao-bao-cao.mjs              # chỉ sinh tệp, mục lục để trống chờ cập nhật
+  node docs/tao-bao-cao.mjs --cap-nhat   # sinh rồi mở Word điền mục lục rồi lưu
+  ```
+- **Nội dung mới viết:** `docs/CHUONG_1.md` (Tổng quan) · `docs/CHUONG_2.md` (Cơ sở lý thuyết) · `docs/CHUONG_3.md` (Phân tích thiết kế, nhúng đủ 23 ảnh)
+- **Bài học:** xem `lessons.md` mục 88–97 — 6 lỗi OOXML và 4 bẫy công cụ đều chỉ lộ ra khi mở bằng Word
 ## Danh sách cắt được (nếu trượt tiến độ)
 
 | Thứ tự | Cắt gì | Bước liên quan |

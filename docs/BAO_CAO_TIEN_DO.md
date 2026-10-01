@@ -34,6 +34,7 @@
 | 01/10 | 21 | **Ket luan + TLTK + slide + luyen trinh bay**: `docs/KET_LUAN.md` (4 phan) · `docs/TLTK.md` (10 mau + 15 cong nghe) · `docs/SLIDE.md` (16 slide, 13 phut 30 giay) · `docs/DAU_HOI_GVHD.md` (10 cau hoi) · `docs/LUYEN_TRINH_BAY.md` (3 lan luyen) | ✅ 4/4 hang muc | Backend **380/380** · Frontend **269/269** · build **0 error 0 warning** | Xong (01/10) · con: sinh vien tu luyen noi 3 lan |
 | 01/10 | 22 | **Thanh toán** — bảng `Payments` + 3 API khách · 3 API admin · mở phiếu thu khi đơn `COMPLETED` | ✅ 6 API · ✅ đối chiếu SQL 6/6 · ✅ UI 4/4 | **414/414** (thêm 34) | ✅ Xong (01/10) |
 | 01/10 | 23 | **Thông báo** — bảng `Notifications` + 3 API · sinh thông báo trong cùng transaction chuyển trạng thái | ✅ 3 API · ✅ đối chiếu SQL 4/4 · ✅ UI 3/3 | **414/414** (thêm 13) · FE **287/287** | ✅ Xong (01/10) |
+| 01/10 | 24 | **File Word báo cáo tuần 5** — `10123234_NguyenHaiNam_Do_An_4_Tuan5.docx` (dùng bài Mobile làm khung: `Heading1/2/3` tự đánh số + style chú thích `hình`/`bảng`) · Viết mới Chương 1, 2, 3 · Sinh tài liệu bằng `docs/tao-bao-cao.mjs` | ✅ Mở bằng Word không lỗi · ✅ mục lục đủ 98 mục có số trang · ✅ 46 ảnh · 36 bảng · **không còn ô "Hình x.y" nào bị trống** | giữ nguyên **414 + 287** | ✅ Xong (01/10) · **121 trang**
 
 **Ký hiệu:** ⬜ Chưa làm · 🟨 Đang làm · ✅ Xong · ❌ Cắt (ghi lý do)
 
