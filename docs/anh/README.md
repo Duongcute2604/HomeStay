@@ -1,17 +1,24 @@
-# Bộ 22 hình cho Chương 3 của báo cáo
+# Bộ 39 hình cho báo cáo (Chương 3 và Chương 4)
 
-Mục tiêu của Bước 19: **không để trống ô "Hình 3.x" nào** trong báo cáo, và mỗi hình
+**39 hình = 22 hình Chương 3 + 17 hình Chương 4.**
+
+Mục tiêu: **không để trống ô "Hình 3.x" hay "Hình 4.x" nào** trong báo cáo, và mỗi hình
 đều là hình thật — giao diện chụp từ hệ thống đang chạy, sơ đồ dựng từ dữ liệu của chính
 dự án.
+
+| Mục | Nội dung |
+|-----|----------|
+| [Danh sách 22 hình Chương 3](#danh-sách-22-hình) | 15 sơ đồ (3.1 – 3.15) + 7 ảnh giao diện (3.16 – 3.22) |
+| [Danh sách 17 hình Chương 4](#17-ảnh-giao-diện-cho-chương-4-hình-41--417) | 17 ảnh giao diện (4.1 – 4.17), xem cuối file |
 
 ## Hai loại hình
 
 | Nhóm | Số | Cách tạo | Nguồn |
 |------|----|----------|-------|
 | Sơ đồ | 15 (3.1 – 3.15) | Sinh bằng script `ve-so-do.mjs` ra SVG, rồi chụp ảnh | Nội dung lấy từ **code thật**: endpoint, entity, tầng kiến trúc, luồng nghiệp vụ |
-| Giao diện | 7 (3.16 – 3.22) | Chụp trực tiếp hệ thống đang chạy | Khung 1440 × 900 |
+| Giao diện | 24 (3.16 – 3.22 và 4.1 – 4.17) | Chụp trực tiếp hệ thống đang chạy | Khung 1440 × 900 |
 
-## Danh sách 22 hình
+## Danh sách 22 hình Chương 3
 
 | Hình | Tên trong báo cáo | File ảnh | File SVG |
 |------|-------------------|-----------|----------|
@@ -82,3 +89,37 @@ qua, không có nét nào cắt ngang chữ bên trong hộp.
 - Dữ liệu: **đúng trạng thái seed** — 15 đơn, 10 phòng đều `AVAILABLE`
 - Đã dọn sạch dữ liệu rác do các lần chạy test tích hợp (Bước 18), chỉ xoá theo
   `Note` đúng của test, **không** `TRUNCATE`
+
+## 17 ảnh giao diện cho Chương 4 (Hình 4.1 – 4.17)
+
+Chụp từ hệ thống đang chạy thật, dùng cho `docs/CHUONG_4.md`.
+Mọi ảnh quy ước nền trắng, không có viền đen của trình duyệt.
+
+| Hình | Nội dung | Tệp |
+|------|----------|-----|
+| 4.1 | Màn hình đăng nhập | `4-01-dang-nhap.jpg` |
+| 4.2 | Màn hình đăng ký | `4-02-dang-ky.jpg` |
+| 4.3 | Tìm kiếm và lọc phòng | `4-03-tim-kiem-phong.jpg` |
+| 4.4 | Chi tiết phòng | `4-04-chi-tiet-phong.jpg` |
+| 4.5 | Kiểm tra phòng trống (đã có người đặt) | `4-05-kiem-tra-phong-trong.jpg` |
+| 4.6 | Đặt phòng theo giờ | `4-06-dat-phong-theo-gio.jpg` |
+| 4.7 | Đặt phòng theo ngày | `4-07-dat-phong-theo-ngay.jpg` |
+| 4.8 | Đơn của tôi (lọc theo trạng thái) | `4-08-don-cua-toi.jpg` |
+| 4.9 | Chi tiết đơn + lịch sử + biểu mẫu đánh giá | `4-09-danh-gia-phong.jpg` |
+| 4.10 | Dashboard thống kê | `4-10-dashboard-thong-ke.jpg` |
+| 4.11 | Quản lý cơ sở (địa điểm) | `4-11-quan-ly-co-so.jpg` |
+| 4.12 | Quản lý phòng (danh sách) | `4-12-quan-ly-phong.jpg` |
+| 4.13 | Biểu mẫu phòng: ảnh + tiện nghi | `4-13-form-phong-anh-tien-nghi.jpg` |
+| 4.14 | Quản lý đơn đặt phòng | `4-14-quan-ly-don-dat-phong.jpg` |
+| 4.15 | Nút thao tác theo trạng thái đơn | `4-15-chuyen-trang-thai-don.jpg` |
+| 4.16 | Quản lý khách hàng | `4-16-quan-ly-khach-hang.jpg` |
+| 4.17 | Quản lý đánh giá | `4-17-quan-ly-danh-gia.jpg` |
+
+### Chụp lại ảnh này thì cần biết
+
+| Mục đích | Cách làm |
+|----------|----------|
+| Cần đăng nhập mà `browser.type` không nhận được mật khẩu | Tạo tạm một trang trong `client/public/` đặt `localStorage['homestay.auth']`, mở nó để nạp phiên, **xoá ngay sau khi dùng** (file chứa token, tuyệt đối không commit) |
+| Tham số URL đúng của trang đặt phòng | `loai=hour` hoặc `loai=day` — **không phải** `0`/`1`. Giao diện so sánh với hằng chuỗi `BookingType` trong `utils/pricing.ts` |
+| Mốc thời gian trong URL | Định dạng **giờ địa phương không ký `Z`**: `2026-10-29T15:00`. Gửi ký `Z` sẽ lệch 7 giờ |
+| Ảnh cần đơn ở trạng thái `PENDING` (hình 4.15) | Tạo đơn qua API trước, chụp xong xoá lại để CSDL về 15 đơn |

@@ -14,7 +14,7 @@ import { locationService } from '../services/locationService'
 import { roomService } from '../services/roomService'
 import type { BookingResult } from '../types/booking'
 import { NHAN_LOAI_PHONG } from '../types/location'
-import { formatNgay, formatVnd } from '../utils/format'
+import { formatNgay, formatVnd, toLocalIsoString } from '../utils/format'
 import { BookingType, NHAN_CACH_THUE, tinhSoDonVi, uocTinhTien } from '../utils/pricing'
 
 /**
@@ -170,8 +170,10 @@ export default function Booking(): JSX.Element {
         locationIndex: soDiaDiem,
         roomIndex: soPhong,
         type: loai,
-        checkIn: checkIn.toISOString(),
-        checkOut: checkOut.toISOString(),
+        // Gửi GIỜ ĐỊA PHƯƠNG: `toISOString()` trả UTC, lệch 7 giờ so với giờ khách
+        // chọn, và hệ thống sẽ không nhận ra là trùng lịch.
+        checkIn: toLocalIsoString(checkIn),
+        checkOut: toLocalIsoString(checkOut),
         guestCount: duLieu.guestCount,
         note: duLieu.note || undefined,
       })

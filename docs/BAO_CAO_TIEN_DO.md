@@ -25,12 +25,12 @@
 | 30/09 | 12 | **Admin quản lý danh mục** (Cơ sở / Phòng / Khách hàng) | ✅ 3/3 mỗi API + 3/3 trên trình duyệt | **288 pass (thêm 50)** | ✅ Xong (30/09) |
 | | 13 | Admin: xác nhận/check-in/check-out | ✅ API 9/9 + vệ sinh 6/6 + UI 4/4 | **312 pass (thêm 24)** | ✅ Xong (30/09) |
 | | 14 | Admin: khóa tài khoản khách | ✅ 6/6 (khoá → 403 → mở khoá → đăng nhập lại) | giữ nguyên 312 | ✅ Xong (30/09) |
-| | 15 | Dashboard thống kê | ⬜ | ⬜ | ⬜ Chưa làm |
-| | 16 | Đánh giá & nhận xét | ⬜ | ⬜ | ⬜ Chưa làm |
-| | 17 | Responsive, Loading/Error/Empty, Toast | ⬜ | — | ⬜ Chưa làm |
-| | 18 | 18 test case tích hợp (Postman) | ⬜ | — | ⬜ Chưa làm |
-| | 19 | 22 hình cho Chương 3 | — | — | ⬜ Chưa làm |
-| | 20 | Viết Chương 4 | — | — | ⬜ Chưa làm |
+| | 15 | Dashboard thống kê | ✅ đối chiếu SQL 6/6 + UI 6/6 | **333 pass (thêm 21)** | ✅ Xong (30/09) |
+| | 16 | Đánh giá & nhận xét | ✅ API 21/21 + đối chiếu SQL 7/7 + UI 6/6 | **358 pass (thêm 25)** | ✅ Xong (01/10) |
+| | 17 | Responsive, Loading/Error/Empty, Toast | ✅ 7/7 (5+6 qua unit test) | **258 pass (thêm 14)** | ✅ Xong (01/10) |
+| 01/10 | 18 | Bộ test tích hợp Postman (41 request, 7 nhóm) | ✅ **41/41 request · 115/115 kiểm chứng · 12/12 lần chạy** | **380/380** (thêm 11) | ✅ Xong (01/10) |
+| 01/10 | 19 | 22 hình cho Chương 3 (15 sơ đồ SVG + 7 ảnh giao diện) | ✅ 22/22 hình · 15/15 SVG | giữ nguyên | ✅ Xong (01/10) |
+| 01/10 | 20 | **Viết Chương 4 — 17 mục + 17 hình (4.1 – 4.17) + bảng 18 test case + đóng góp & triển khai** | ✅ đủ 17/17 mục · **phát hiện & sửa 1 lỗi thật** (gửi giờ UTC làm hỏng chống đặt trùng) | **380/380** · **269/269** (thêm 5) · build **0 error 0 warning** | ✅ Xong (01/10) |
 | | 21 | Kết luận, slide, luyện trình bày | — | — | ⬜ Chưa làm |
 | | 22 | **Thanh toán** (mở rộng, tuỳ chọn) | ⬜ | ⬜ | ⬜ Chỉ làm nếu còn thời gian |
 | | 23 | **Thông báo** (mở rộng, tuỳ chọn) | ⬜ | ⬜ | ⬜ Chỉ làm nếu còn thời gian |
@@ -114,3 +114,5 @@
 | 01/10 | 11 | **Lọc đơn theo trạng thái** (đóng nốt Bước 11): `GET /api/bookings/my?status=N` + ô chọn 7 lựa chọn ở `/bookings`; sửa lỗi ô lọc biến mất khi lọc ra danh sách rỗng | **7/7** kịch bản API · mục 7 nay **14/14** | Backend **369/369** (thêm 8) · Frontend **264/264** (thêm 6) · build sạch | Xong (01/10) |
 | 01/10 | 18 | **Bo test tich hop Postman**: `docs/api/postman_collection.json` (**41** request, 7 nhom) + runner `docs/api/run-postman.mjs` (tu viet, khong them package). Vong doi: 500 → 409 · **Sua Swagger** khong render · them buoc tu chuan bi/ don dep de collection chay lai duoc | **41/41** request · **115/115** kiem chung · **12/12** lan chay lien tiep | Backend **380/380** (them 11) · Frontend **264/264** · build 0 error 0 warning | Xong (01/10) |
 | 01/10 | 19 | **22 hinh cho Chuong 3**: 7 anh giao dien (chup tu he thong chay) + 15 so do (sinh bang script `ve-so-do.mjs` ra SVG). **Sua loi that**: nen trang Admin ban trong suot lam lo canvas toi | 22/22 hinh · 15/15 SVG · Frontend **264/264** · build 0 error 0 warning | Xong (01/10) |
+| 01/10 | 20 | **Viet Chuong 4** (`docs/CHUONG_4.md`, 659 dong): 4.1 khach hang (7 muc) + 4.2 quan tri (6 muc) + 4.3 kiem thu & trien khai (4 muc) = **17 muc**, kem **17 hinh giao dien** (4.1 - 4.17) chup tu he thong chay that va **bang 18 test case** | **Sua loi that (quan trong):** frontend gui moc gio bang `toISOString()` tra ve **gio UTC** con server doc nhu **gio dia phuong** -> lech 7 gio. Khach chon 15:00-19:00 vao phong **da co don** 15:00-19:00 van duoc tao don, trong khi man hinh hien thi dung "15:00 - 19:00" (giao dien nhin khong sai, du lieu thi sai). Root cause: ca he thong quy uoc **gio dia phuong** (data mau nhan phong 14:00, tra phong 12:00) chi co frontend gui nguoc lai | **Sua:** them `toLocalIsoString()` (khong ky `Z`) + thay o **3 cho gui len API**; them **4 test** khoa loi (khong chua `Z` va **khong bang** `toISOString()`). Backend **380/380** giu nguyen - Frontend **264 -> 269/269**. Them `manualChunks` tach 5 chunk de het canh bao "bundle > 500 kB" (869 kB -> lon nhat 400 kB) | Xong (01/10) |
+| 01/10 | 20 | **2 loi phat hien khi chuan bi anh + ghi vao `lessons.md` muc 81-84**: (81) `toISOString()` lam hong co che chong dat trung - test tu dong 649 test + 12 lan Postman deu bo loi vi ca hai gui chuoi **khong ky Z** dung nhu API mong doi, chi lo ra khi nguoi dung that bam chuot; (82) **doan ten tham so API** (`diaDiem`/`phong`/`loai`) thay vi doc DTO (`LocationIndex`/`RoomIndex`/`Type`) -> ASP.NET khong bao loi, lay gia tri mac dinh, kiem tra nham phong trong; (83) **phai kiem chung so lieu trong anh khop CSDL** truoc khi chup, va don dep sau khi chup; (84) canh bao `> 500 kB` cua Vite la loi that, phai doc ca dong canh bao chu khong phai chi dong `built in` | Ghi vao `lessons.md` (80 -> **84 muc**) va `docs/anh/README.md` (bang 17 anh + cach chup lai) | Xong (01/10) |

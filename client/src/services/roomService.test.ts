@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { roomService } from './roomService'
 import { RoomType } from '../types/location'
 import { LOC_MAC_DINH, SortOption } from '../types/room'
+import { toLocalIsoString } from '../utils/format'
 import { BookingType } from '../utils/pricing'
 
 /**
@@ -122,8 +123,24 @@ describe('roomService.kiemTraTrong', () => {
     expect(thamSo.get('locationIndex')).toBe('0')
     expect(thamSo.get('roomIndex')).toBe('2')
     expect(thamSo.get('type')).toBe('1')
-    expect(thamSo.get('checkIn')).toBe(nhan.toISOString())
-    expect(thamSo.get('checkOut')).toBe(tra.toISOString())
+    expect(thamSo.get('checkIn')).toBe(toLocalIsoString(nhan))
+    expect(thamSo.get('checkOut')).toBe(toLocalIsoString(tra))
+  })
+
+  it('GuiGioDiaPhuong_KhongCoKyZ_DeKhongLchMocGio', async () => {
+    mockGet.mockResolvedValue({ data: { success: true, message: 'OK', data: { isAvailable: true, reason: null } } })
+
+    await roomService.kiemTraTrong(0, 0, BookingType.DAY, nhan, tra)
+
+    const url: string = mockGet.mock.calls[0][0]
+    const thamSo = new URLSearchParams(url.split('?')[1])
+
+    // Khoá lại lỗi múi giờ: `toISOString()` trả UTC kèm 'Z'. Máy UTC+7 mà khách
+    // chọn 14:00 thì sẽ thành 07:00Z — hệ thống không thấy trùng lịch và vẫn tạo
+    // đơn, trong khi màn hình hiển thị 14:00. Đây chính là lỗi đã xảy ra thật.
+    expect(thamSo.get('checkIn')).toBe('2026-10-05T14:00:00')
+    expect(thamSo.get('checkIn')).not.toContain('Z')
+    expect(thamSo.get('checkOut')).not.toContain('Z')
   })
 
   it('TheoGio_TypeBang0', async () => {

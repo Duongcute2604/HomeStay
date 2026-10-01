@@ -28,6 +28,33 @@ export function formatDiem(value: number): string {
 }
 
 /**
+ * Định dạng một `Date` thành chuỗi **giờ địa phương** để gửi lên API:
+ * `Date` → `"2026-10-29T15:00:00"`.
+ *
+ * <b>Vì sao không dùng `toISOString()`:</b> `toISOString()` trả về giờ **UTC**
+ * kèm chữ `Z`. Máy ở múi giờ UTC+7 mà khách chọn 15:00 thì `toISOString()` cho
+ * `08:00:00.000Z` — lệch 7 giờ so với giờ khách thấy trên màn hình.
+ *
+ * Hậu quả đã xảy ra thật: khách chọn 15:00–19:00 vào phòng **đã có đơn** 15:00–19:00,
+ * nhưng hệ thống nhận 08:00–12:00 nên không thấy trùng, vẫn tạo đơn và hiển thị
+ * *"15:00 → 19:00"*. Giao diện nhìn không có gì sai, dữ liệu thì sai — đúng loại
+ * lỗi nguy hiểm nhất.
+ *
+ * Cả hệ thống dùng **giờ địa phương**: dữ liệu mẫu nhận phòng 14:00, trả phòng
+ * 12:00, và API đọc chuỗi không ký `Z` đúng như giờ đó. Nên gửi lên cũng phải
+ * không ký `Z` cho khớp.
+ */
+export function toLocalIsoString(date: Date): string {
+  const nam = date.getFullYear()
+  const thang = String(date.getMonth() + 1).padStart(2, '0')
+  const ngay = String(date.getDate()).padStart(2, '0')
+  const gio = String(date.getHours()).padStart(2, '0')
+  const phut = String(date.getMinutes()).padStart(2, '0')
+
+  return `${nam}-${thang}-${ngay}T${gio}:${phut}:00`
+}
+
+/**
  * Định dạng ngày giờ ISO từ API: `"2026-09-29T..."` → `"29/09/2026 14:30"`.
  *
  * Dùng `Intl` của trình duyệt để đúng múi giờ máy khách — server trả UTC,

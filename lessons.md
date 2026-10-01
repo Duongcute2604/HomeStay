@@ -207,7 +207,7 @@ npm warn install-scripts  esbuild@0.21.5 (postinstall: node install.js) chưa đ
 ## 12. Tiếng Việt hiện lỗi trong terminal ≠ file hỏng
 
 **Ngày:** 29/09/2026
-**Triệu chứng:** đọc `<title>` trong `index.html` ra `HomeStay � �?t ph?ng Homestay` — tưởng file bị hỏng encoding, sắp sửa lại cả dự án.
+**Triệu chứng:** đọc `<title>` trong `index.html` ra `HomeStay — Đặt phòng Homestay` — tưởng file bị hỏng encoding, sắp sửa lại cả dự án.
 
 **Nguyên nhân gốc:** **console Windows dùng codepage 437/850, không có nét dấu tiếng Việt.** Chỉ là hỏng ở tầng hiển thị, file trên đĩa vẫn UTF-8 đúng.
 
@@ -2126,3 +2126,93 @@ tin rằng script chạy xong là hình đẹp):
 >
 > Với sơ đồ có nét nối: **vẽ nét trước, hộp sau**. Hộp có nền đục sẽ che các đoạn nét chạy
 > qua, nhờ vậy không có nét nào cắt ngang chữ bên trong hộp.
+
+---
+
+## 81. `toISOString()` trả giờ UTC — làm hỏng cơ chế chống đặt trùng
+
+**Sai ở đâu:** giao diện gửi mốc thời gian lên API bằng `date.toISOString()`. Hàm này trả
+giờ **UTC** kèm chữ `Z`. Máy ở múi giờ UTC+7 mà khách chọn 15:00 thì `toISOString()` cho ra
+`08:00:00.000Z` — lệch 7 giờ.
+
+**Vì sao sai:** cả hệ thống đều quy ước mốc giờ là **giờ địa phương**: dữ liệu mẫu nhận
+phòng 14:00, trả phòng 12:00; API đọc chuỗi không ký `Z` đúng như giờ đó. Chỉ có giao diện
+gửi lên là quy ước ngược lại.
+
+**Hậu quả thật đã xảy ra:** khách chọn khung 15:00–19:00 vào một phòng **đã có đơn**
+15:00–19:00. Hệ thống nhận 08:00–12:00 nên không thấy trùng, vẫn tạo đơn — trong khi màn
+hình hiển thị đúng *"15:00 → 19:00"*. Giao diện nhìn hoàn hảo, dữ liệu thì sai. Đây là loại
+lỗi tệ nhất: người dùng và người kiểm thử đều không có cách nào phát hiện bằng mắt.
+
+**Đã sửa:** thêm `toLocalIsoString()` trong `client/src/utils/format.ts` định dạng mốc giờ
+theo giờ địa phương, không gắn `Z`. Thay ở cả 3 chỗ gửi lên API. Test khoá lại bằng cách
+khẳng định kết quả **không chứa `Z`** và **không bằng** `toISOString()` — chỉ khẳng định
+"định dạng đúng" thì vẫn có thể lặp lại lỗi này lần sau.
+
+**Quy tắc tránh lặp:** trước khi gửi mốc thời gian lên API, hỏi **hệ thống này quy ước
+giờ nào** rồi viết lệnh khớp quy ước đó. Cụ thể ở đây: *gửi giờ địa phương, không ký `Z`*.
+Và phải đối chiếu với dữ liệu thật trong CSDL, không tin rằng màn hình hiển thị đúng thì
+dữ liệu đúng.
+
+> Lỗi này lọt qua kiểm thử tự động 649 test và 12 lần chạy Postman vì cả hai đều gửi
+> chuỗi **không ký `Z`** — giống hệt cách API mong đợi. Nó chỉ lộ ra khi người dùng thật
+> bấm chuột. **Bài học: test phải mô phỏng cách người dùng thật sự thao tác, không chỉ
+> cách mình tiện viết.**
+
+---
+
+## 82. Đoán tên tham số API thay vì đọc DTO — tự tạo ra "lỗi" không tồn tại
+
+**Sai ở đâu:** kiểm tra `GET /api/rooms/availability?diaDiem=0&phong=2&loai=0&checkIn=...`
+thì API trả `isAvailable = true` cho mọi phòng, kể cả phòng đang có đơn. Tưởng hệ thống
+hỏng chống trùng.
+
+**Vì sao:** DTO `AvailabilityRequest` khai báo thuộc tính `LocationIndex`, `RoomIndex`,
+`Type` — tôi lại đoán tên tiếng Việt `diaDiem`, `phong`, `loai` như lúc đọc log SQL. Tên
+không khớp thì ASP.NET **không báo lỗi**, nó lấy giá trị mặc định (`0`, `0`, `1`). Kết quả
+là âm thầm kiểm tra phòng số 0 — phòng trống — nên luôn ra `true`.
+
+**Đã làm đúng sau đó:** đọc thẳng file DTO, đổi sang `LocationIndex/RoomIndex/Type`, thì
+mọi tình huống đều đúng: có đơn → `false`; nằm trong đơn → `false`; **chạm biên** (đơn kết
+thúc 19:00, hỏi 19:00–22:00) → `true`. Đây mới là hành vi mong muốn.
+
+**Quy tắc tránh lặp:** trước khi kết luận "code hỏng" từ một lần gọi API thất bại, hỏi
+**lệnh gọi của mình có đúng không**. Kiểm tra lại tên tham số từ DTO hoặc từ Swagger —
+`localhost:5080/swagger` liệt kê đúng tên và kiểu của từng tham số. Đặc biệt nguy hiểm với
+tham số không bắt buộc: thiếu hoặc sai tên sẽ **không bao giờ báo lỗi**, chỉ cho kết quả sai.
+
+---
+
+## 83. Kiểm chứng lại dữ liệu trước khi chụp ảnh báo cáo
+
+**Bài học:** khi chuẩn bị ảnh cho báo cáo, có 2 việc bắt buộc làm **trước**:
+
+1. **Đưa dữ liệu về đúng trạng thái** muốn chụp (đủ đơn mỗi trạng thái, phòng `AVAILABLE`).
+2. **Kiểm chứng số liệu trong ảnh khớp với CSDL** — đếm đơn, đếm phòng, đọc lại tên phòng.
+
+Lần này cả 2 việc đều có giá trị: hình 4.5 chỉ ra được lỗi múi giờ (mục 81) chỉ vì trước đó
+đã xác minh A201 thật sự có đơn `CHECKED_IN` 29/10 15:00–19:00. Nếu chụp đại, ảnh sẽ đẹp
+và sai — đúng thứ tệ nhất trong báo cáo.
+
+Sau khi chụp xong cũng phải **dọn dữ liệu trở lại** (đơn kiểm chứng, đơn tạo riêng để có
+nút "Xác nhận") để CSDL khớp với số liệu nêu trong báo cáo và với các ảnh đã chụp trước đó.
+
+---
+
+## 84. Cảnh báo "bundle > 500 kB" của Vite là lỗi thật, không phải nhiễu
+
+**Sai ở đâu:** nhiều lần chạy `npm run build` chỉ nhìn dòng `✓ built in`, bỏ qua cảnh báo
+màu vàng phía trên. Đến khi yêu cầu "0 cảnh báo" mới phát hiện gói JavaScript gộp chung
+~870 kB, vượt ngưỡng 500 kB.
+
+**Vì sao đáng sửa:** người dùng phải tải trọn gói trước khi thấy được trang đầu tiên, và
+mỗi lần sửa mã cũng phải tải lại toàn bộ.
+
+**Đã sửa:** thêm `build.rollupOptions.output.manualChunks` tách 4 nhóm thư viện
+(`nhan-react`, `nhan-du-lieu`, `nhan-bieu-mau`, `nhan-bieu-do`). Build còn **0 cảnh báo**,
+lớn nhất còn 400 kB. Tách theo nhóm thay vì `import()` từng trang: màn hình Admin vốn đã
+được bảo vệ phân quyền, thêm lazy loading chỉ là độ phức tạp không đổi lấy lợi ích rõ.
+
+**Quy tắc tránh lặp:** khi kiểm tra "build sạch", phải **đọc cả dòng cảnh báo**, không chỉ
+dòng thành công. Cách chắc chắn hơn: `npm run build 2>&1 | Select-String -Pattern "warn|error"`
+thay vì chỉ `Select-String "built in"`.

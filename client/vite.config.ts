@@ -11,6 +11,30 @@ import { defineConfig } from 'vitest/config'
  */
 export default defineConfig({
   plugins: [react()],
+  build: {
+    /*
+     * Tách thư viện ra khỏi bundle của mã dự án.
+     *
+     * Vì sao: gộp tất cả lại cho ra một gói ~870 kB, vượt ngưỡng 500 kB mà
+     * Vite cảnh báo. Người dùng phải tải trọn gói (kể cả Recharts chỉ dùng ở
+     * trang Thống kê của Admin) trước khi thấy được trang đầu tiên.
+     *
+     * Tách theo nhóm thư viện thay vì theo từng package: nhóm này không đổi
+     * giữa các lần sửa mã của mình, nên trình duyệt cache được lâu dài. Và
+     * không `import()` lazily các trang — màn hình Admin vốn đã được bảo vệ
+     * phân quyền, tách lazy chỉ làm thêm độ phức tạp mà không lợi gì rõ (YAGNI).
+     */
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'nhan-react': ['react', 'react-dom', 'react-router-dom'],
+          'nhan-du-lieu': ['@tanstack/react-query'],
+          'nhan-bieu-mau': ['react-hook-form', 'zod', '@hookform/resolvers/zod'],
+          'nhan-bieu-do': ['recharts'],
+        },
+      },
+    },
+  },
   server: {
     /*
      * Dùng 5174 vì trên máy này cổng 5173 đang bị pm2 chiếm cho một dự án

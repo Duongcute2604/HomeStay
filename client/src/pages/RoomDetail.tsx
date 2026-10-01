@@ -11,7 +11,7 @@ import RoomDateFrame from '../components/RoomDateFrame'
 import { BookingType } from '../utils/pricing'
 import { locationService } from '../services/locationService'
 import { NHAN_LOAI_PHONG, NHAN_TRANG_THAI_PHONG, RoomStatus } from '../types/location'
-import { formatDiem, formatVnd } from '../utils/format'
+import { formatDiem, formatVnd, toLocalIsoString } from '../utils/format'
 
 /**
  * Trang chi tiết một phòng.
@@ -208,8 +208,11 @@ export default function RoomDetail(): JSX.Element {
           onClick={() => {
             const thamSo = new URLSearchParams({
               loai: luaChon.loai,
-              checkIn: luaChon.checkIn?.toISOString() ?? '',
-              checkOut: luaChon.checkOut?.toISOString() ?? '',
+              // Giờ địa phương: trang đặt phòng đọc lại bằng `new Date(chuỗi)`,
+              // chuỗi không ký `Z` mới được hiểu là giờ địa phương. Gửi UTC sẽ
+              // làm trang sau hiển thị lệch mốc giờ với lúc khách vừa chọn.
+              checkIn: luaChon.checkIn ? toLocalIsoString(luaChon.checkIn) : '',
+              checkOut: luaChon.checkOut ? toLocalIsoString(luaChon.checkOut) : '',
             })
             navigate(`/booking/${soDiaDiem}/${soPhong}?${thamSo.toString()}`)
           }}

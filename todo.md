@@ -889,10 +889,15 @@ Mẫu báo cáo `.docx` vẫn ghi **"Hình 3.8. Kiến trúc hệ thống StayEa
 | Frontend | **264/264** test · `npm run build` 0 error |
 
 > **Bài học 78–80:** nền trang bán trong suốt làm lộ canvas của trình duyệt, cả trang bị tối theo · chuỗi `*/` trong chú thích CSS làm hỏng cả bản build · 22 hình trong báo cáo thì sinh bằng script, và phải xem ảnh sau khi sinh vì script chạy sạch không bảo đảm hình đẹp.
-### [ ] BƯỚC 20 — Viết Chương 4
+### [x] BƯỚC 20 — Viết Chương 4
+
 - **Mục tiêu đo được:** đủ 17 ảnh chức năng + bảng 18 test case + phần đóng gói & triển khai · **xong trước ngày 15/10**
-- **Tiến độ:** ____ / 17 mục
+- **Tiến độ:** **17 / 17 mục** ✅
 - **Bằng chứng:** file Word đầy đủ
+- **Kết quả:** `docs/CHUONG_4.md` (**659 dòng**) — 4.1 khách hàng (7 mục) · 4.2 quản trị (6 mục) · 4.3 kiểm thử & triển khai (4 mục) · 4.4 đóng góp · 4.5 kết luận = **17 mục / 17 hình**
+- **Bằng chứng ảnh:** 17 ảnh `docs/anh/4-*.jpg` chụp từ hệ thống đang chạy; **đã xem lại từng ảnh** sau khi chụp (2 ảnh chụp nhầm vì `loai=0` ra "theo ngày", phải chụp lại bằng `loai=hour`)
+- **Bằng chứng kiểm thử:** Backend **380/380** · Frontend **269/269** (thêm 5) · build **0 error 0 warning** (sau khi tách `manualChunks`) · Postman 41/41 từ Bước 18
+- **Lỗi thật phát hiện & sửa:** frontend gửi giờ UTC (`toISOString()`) lệch 7 giờ so với giờ địa phương → đặt trùng lọt qua. Thêm `toLocalIsoString()` + 4 test khoá lại. Chi tiết `lessons.md` mục 81–84
 
 ### [ ] BƯỚC 21 — Kết luận, TLTK, slide, luyện trình bày
 - **Mục tiêu đo được:** Kết luận có 4 phần (tóm tắt · ưu điểm · hạn chế · hướng phát triển) · slide 15–20 trang · luyện nói **≥ 3 lần**, mỗi lần **≤ 15 phút** (có ghi giờ)
@@ -948,10 +953,10 @@ Mẫu báo cáo `.docx` vẫn ghi **"Hình 3.8. Kiến trúc hệ thống StayEa
 |-----|-----|-----------|
 | Xong Bước 1–4 (môi trường + CSDL) | 01/10 | ✅ Xong 29/09 |
 | Xong Bước 5 (tài khoản) | 02/10 | 🟨 Backend xong 29/09, còn giao diện |
-| Xong Bước 11 (khách đặt phòng xong) | 06/10 | ⬜ |
-| Xong Bước 16 (hết tính năng) | 11/10 | ⬜ |
-| Xong Bước 18 (kiểm thử) | 12/10 | ⬜ |
-| **Xong Chương 4** | **15/10** | ⬜ |
+| Xong Bước 11 (khách đặt phòng xong) | 06/10 | ✅ Xong |
+| Xong Bước 16 (hết tính năng) | 11/10 | ✅ Xong |
+| Xong Bước 18 (kiểm thử) | 12/10 | ✅ Xong |
+| **Xong Chương 4** | ~~15/10~~ → **01/10** | ✅ Xong sớm 4 ngày |
 | Xong slide + Kết luận | 17/10 | ⬜ |
 | Luyện trình bày xong | 19/10 | ⬜ |
 | Bảo vệ | ~20/10 | ⬜ |

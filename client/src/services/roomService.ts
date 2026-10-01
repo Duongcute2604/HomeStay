@@ -1,4 +1,5 @@
 import { apiClient, bocDuLieu } from '../api/client'
+import { toLocalIsoString } from '../utils/format'
 import type { ApiResponse } from '../types/auth'
 import { BookingType } from '../utils/pricing'
 import type { PagedResult, RoomSearchItem, SearchFilters } from '../types/room'
@@ -68,8 +69,10 @@ export const roomService = {
       roomIndex: String(roomIndex),
       // API nhận số (0 = giờ, 1 = ngày), giao diện dùng chuỗi.
       type: loai === BookingType.HOUR ? '0' : '1',
-      checkIn: checkIn.toISOString(),
-      checkOut: checkOut.toISOString(),
+      // Gửi GIỜ ĐỊA PHƯƠNG. `toISOString()` sẽ trả UTC và làm lệch mốc giờ,
+      // khiến kiểm tra trùng lịch bỏ sót — xem `toLocalIsoString` trong utils/format.
+      checkIn: toLocalIsoString(checkIn),
+      checkOut: toLocalIsoString(checkOut),
     })
 
     const response = await apiClient.get<ApiResponse<Availability>>(
