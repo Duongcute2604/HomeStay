@@ -140,7 +140,7 @@ thể vòng qua bằng cách gọi thẳng API."
 
 ## Slide 6 — Tác nhân & Use case tổng quát *(4:15 – 5:00)*
 
-**Trên slide** (chèn hình `docs/anh/3-01-bieu-do-tac-nhan.jpg` và `docs/anh/3-02-use-case-tong-quat.jpg`)
+**Trên slide** (chèn hình `docs/anh/3-01-use-case-tong-quat.png` và `docs/anh/3-02-use-case-quan-ly-tai-khoan.png`)
 
 ```
 HỆ THỐNG CÓ 2 TÁC NHÂN
@@ -158,7 +158,7 @@ cho đến đặt phòng và đánh giá. Quản trị viên dùng 6 nhóm chứ
 
 ## Slide 7 — Kiến trúc hệ thống *(5:00 – 5:45)*
 
-**Trên slide** (chèn hình `docs/anh/3-10-kien-truc-he-thong.png` — kiến trúc phân tầng)
+**Trên slide** (chèn hình `docs/anh/3-09-bieu-do-lop-thuc-thi.png` — kiến trúc phân tầng)
 
 ```
 HTTP Request → CONTROLLER → SERVICE → Entity Framework → MySQL
@@ -181,7 +181,7 @@ giờ trả entity thô ra ngoài — luôn trả qua DTO để không lộ cấ
 
 ## Slide 8 — ERD *(5:45 – 6:30)*
 
-**Trên slide** (chèn hình `docs/anh/3-12-so-do-erd.png`)
+**Trên slide** (chèn hình `docs/anh/3-10-so-do-erd.png`)
 
 ```
 11 BẢNG · 13 KHÓA NGOẠI
@@ -204,7 +204,7 @@ thay đổi theo."
 
 ## Slide 9 — Biểu đồ tuần tự: đặt phòng *(6:30 – 7:30)*
 
-**Trên slide** (chèn hình `docs/anh/3-15-sequence-dat-phong.png`)
+**Trên slide** (chèn hình `docs/anh/3-13-sequence-dat-phong.png`)
 
 ```
 1. Khách chọn khung giờ trên trang chi tiết phòng
@@ -374,7 +374,7 @@ một đơn bị chặn. Cả hai lệnh build đều không có lỗi và khôn
 **Trên slide**
 ```
 ĐÃ HOÀN THÀNH
-17 nhóm chức năng · 11 bảng CSDL · 47 API · 22 màn hình · 18 sơ đồ UML
+17 nhóm chức năng · 11 bảng CSDL · 47 API · 22 màn hình · 16 sơ đồ UML
 701 test tự động + 267 kịch bản tay — đạt 100%
 
 HẠN CHẾ (ghi rõ trong báo cáo)

@@ -96,6 +96,6 @@
   không rõ nguồn gốc — trừ [9] và [10] vì hai tài liệu này nằm sẵn trong mẫu báo cáo.
 - Ngày truy cập ghi theo thứ tự em thực sự đọc tài liệu đó, từ 26/09/2026 (bắt đầu dự án)
   đến 01/10/2026 (khi viết Chương 4).
-- Hình và sơ đồ trong báo cáo: 18 sơ đồ UML do em dựng bằng script
+- Hình và sơ đồ trong báo cáo: 16 sơ đồ UML do em dựng bằng script
   `docs/anh/ve-so-do.mjs` (sinh SVG rồi dựng PNG), 32 ảnh giao diện chụp từ hệ thống
   đang chạy; nguồn ảnh phụ ghi tại `docs/anh/README.md`.

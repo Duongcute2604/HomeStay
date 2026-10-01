@@ -610,7 +610,7 @@ Toàn bộ hệ thống do một học viên thực hiện. Nội dung công vi�
 
 | Phần | Nội dung | Kết quả |
 |------|----------|---------|
-| **Phân tích thiết kế** | Yêu cầu chức năng, vai trò người dùng, 8 sơ đồ use case, biểu đồ lớp thực thi, 6 sơ đồ tuần tự, sơ đồ ERD, sơ đồ kiến trúc | 18 sơ đồ UML |
+| **Phân tích thiết kế** | Yêu cầu chức năng, vai trò người dùng, 8 sơ đồ use case, biểu đồ lớp thực thi, 6 sơ đồ tuần tự, sơ đồ ERD | 16 sơ đồ UML |
 | **Xây dựng cơ sở dữ liệu** | 11 bảng, quan hệ khoá ngoại, index, ràng buộc chống trùng lịch và chống thu hai lần, dữ liệu mẫu | Script tạo CSDL + dữ liệu mẫu |
 | **Xây dựng backend** | Kiến trúc phân tầng, xác thực JWT 2 loại token, 47 API, nghiệp vụ đặt phòng, tác vụ nền | ASP.NET Core 8 Web API |
 | **Xây dựng frontend** | 13 trang khách + 6 trang quản trị, biểu mẫu kiểm chứng, xử lý 3 trạng thái, thông báo | React 18 + TypeScript |

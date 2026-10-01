@@ -1,5 +1,5 @@
 /**
- * Chuyển 18 sơ đồ `.svg` sang `.png` để nhúng vào báo cáo Word.
+ * Chuyển 16 sơ đồ `.svg` sang `.png` để nhúng vào báo cáo Word.
  *
  * Vì sao không nhúng thẳng file `.svg`:
  * - Word chỉ hỗ trợ SVG từ bản 2016 trở lại, và khi chèn bằng script OOXML thì phần

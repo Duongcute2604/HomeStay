@@ -30,7 +30,7 @@ gồm 2 tác nhân (khách hàng và quản trị viên) với 17 nhóm chức n
 | Số bảng cơ sở dữ liệu | 11 (`Users`, `Locations`, `Rooms`, `RoomImages`, `Amenities`, `RoomAmenities`, `Bookings`, `BookingStatusHistory`, `Reviews`, `Payments`, `Notifications`) |
 | Số API | 47 endpoint trên 7 nhóm nghiệp vụ |
 | Số màn hình | 15 trang khách hàng + 7 trang quản trị |
-| Sơ đồ thiết kế | 18 sơ đồ UML (1 biểu đồ tác nhân, 8 use case, 1 kiến trúc, 1 lớp thực thi, 1 ERD, 6 tuần tự) |
+| Sơ đồ thiết kế | 16 sơ đồ UML (8 use case, 1 lớp thực thi, 1 ERD, 6 tuần tự) |
 | Kiểm thử đơn vị backend | **414 test** — xanh 100% |
 | Kiểm thử đơn vị frontend | **287 test** — xanh 100% |
 | Kiểm thử tích hợp REST API | **41 request / 115 kiểm chứng** — chạy liên tiếp 12 lần đều đạt |

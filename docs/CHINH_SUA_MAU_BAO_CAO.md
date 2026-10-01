@@ -87,7 +87,7 @@ mất điểm nặng hơn nhiều so với việc báo cáo thiếu một tính 
 
 | Mục | Nội dung cần thêm | Nguồn |
 |-----|-------------------|-------|
-| **1.3.1 Vai trò sử dụng** | Cần **biểu đồ tác nhân** và mô tả 2 tác nhân | `docs/anh/3-01-bieu-do-tac-nhan.jpg` |
+| **1.3.1 Vai trò sử dụng** | Cần **biểu đồ tác nhân** và mô tả 2 tác nhân | `docs/anh/3-01-use-case-tong-quat.png` |
 | **1.4 Nội dung thực hiện** | Danh sách 5 phần đã làm: phân tích thiết kế · Backend · Frontend · nghiệp vụ cốt lõi · kiểm thử | `docs/CHUONG_4.md` mục 4.4.1 |
 | **1.5 Phương pháp tiếp cận** | Mô tả cách phân tích nghiệp vụ và công cụ dùng | `KE_HOACH_TRIEN_KHAI_CHI_TIET.md` |
 
@@ -98,10 +98,10 @@ mất điểm nặng hơn nhiều so với việc báo cáo thiếu một tính 
 | Mục | Cần bổ sung |
 |-----|-------------|
 | Biểu đồ Use Case | 8 hình — `3-02` tổng quát, `3-03` quản lý tài khoản, `3-04` tìm kiếm & đặt phòng, `3-05` quản lý đặt phòng, `3-06` quản lý phòng, `3-07` thanh toán, `3-08` thông báo, `3-09` quản trị hệ thống |
-| Biểu đồ lớp thực thể | `3-11-bieu-do-lop-thuc-thi.png` |
+| Biểu đồ lớp thực thể | `3-09-bieu-do-lop-thuc-thi.png` |
 | Biểu đồ tuần tự | 6 hình — `3-13` đăng nhập, `3-14` tìm kiếm phòng, `3-15` đặt phòng, `3-16` check-in/check-out, `3-17` quản lý phòng, `3-18` thanh toán |
-| ERD | `3-12-so-do-erd.png` |
-| Kiến trúc hệ thống | `3-10-kien-truc-he-thong.png` (tiêu đề mẫu đang ghi *StayEasy* — đã sửa) |
+| ERD | `3-10-so-do-erd.png` |
+| Biểu đồ lớp thực thể + ERD | `3-09-bieu-do-lop-thuc-thi.png` và `3-10-so-do-erd.png` |
 
 Nguồn đầy đủ: `docs/anh/README.md`.
 
@@ -128,17 +128,17 @@ Chép nội dung từ các file sau, **giữ nguyên số mục và số hình**
 
 ---
 
-## Danh sách 57 hình phải dán
+## Danh sách 46 hình phải dán
 
 | Nhóm | Số | Khoảng số |
 |------|----:|-----------|
-| Sơ đồ Chương 3 | 18 | Hình 3.1 – 3.18 |
-| Giao diện Chương 3 | 7 | Hình 3.19 – 3.25 |
+| Sơ đồ Chương 3 | 16 | Hình 3.1 – 3.16 |
+| Giao diện Chương 3 | 7 | Hình 3.17 – 3.23 |
 | Giao diện Chương 4 | 32 | Hình 4.1 – 4.23 |
 
 Tất cả nằm trong `docs/anh/`. **Không ô "Hình 3.x" hay "Hình 4.x" nào được để trống.**
 
-Với 18 sơ đồ, chèn **file `.png`** ở `docs/anh/` (cùng tên, khác đuôi so với `.svg`).
+Với 16 sơ đồ, chèn **file `.png`** ở `docs/anh/` (cùng tên, khác đuôi so với `.svg`).
 PNG dựng ở hệ số phóng 2× nên chữ nhỏ vẫn rõ khi in. Muốn sửa nội dung sơ đồ thì sửa
 `docs/anh/ve-so-do.mjs` rồi chạy lại cả hai lệnh:
 
@@ -161,7 +161,7 @@ node docs/anh/svg-2-png.mjs
 | 6 | Cổng ghi trong báo cáo là **5174** (không phải 5173) | ⬜ |
 | 7 | Cổng API là **5080** | ⬜ |
 | 8 | Tài khoản demo ghi `admin@homestay.vn` / `123456` | ⬜ |
-| 9 | Đủ **57 hình**, không ô trống | ⬜ |
+| 9 | Đủ **46 hình**, không ô trống | ⬜ |
 | 10 | Chương 4 có đủ **17 mục** | ⬜ |
 | 11 | Có bảng **18 test case** | ⬜ |
 | 12 | Mục KẾT LUẬN có đủ 4 phần | ⬜ |

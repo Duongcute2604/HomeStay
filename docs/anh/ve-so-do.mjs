@@ -1,20 +1,19 @@
 /**
- * Sinh 18 sơ đồ cho Chương 3 (Hình 3.1 – 3.18) dưới dạng SVG.
+ * Sinh 16 sơ đồ cho Chương 3 (Hình 3.1 – 3.16) dưới dạng SVG.
  *
  * Vì sao tự sinh bằng script thay vì vẽ tay:
  * - Nội dung sơ đồ lấy từ **code thật** của dự án (endpoint, entity, luồng nghiệp vụ),
  *   nên phải cập nhật được khi code đổi. Vẽ tay thì không.
- * - 18 hình cùng một bộ quy ước (màu, cỡ chữ, bo góc) — sinh bằng script thì đồng bộ,
+ * - 16 hình cùng một bộ quy ước (màu, cỡ chữ, bo góc) — sinh bằng script thì đồng bộ,
  *   vẽ tay thì mỗi hình lệch nhau một chút.
  *
  * Cách dùng:
- *   node docs/anh/ve-so-do.mjs        → ghi 18 file .svg vào docs/anh/so-do/
+ *   node docs/anh/ve-so-do.mjs        → ghi 16 file .svg vào docs/anh/so-do/
  *
- * Ảnh .jpg cho báo cáo được chụp từ chính các file .svg này (xem docs/anh/README.md).
+ * Ảnh .png cho báo cáo được dựng từ chính các file .svg này bằng `svg-2-png.mjs`.
  *
  * Thứ tự đánh số Hình trong báo cáo:
- *   3.1 biểu đồ tác nhân · 3.2 – 3.9 use case · 3.10 kiến trúc
- *   3.11 lớp thực thi · 3.12 ERD · 3.13 – 3.18 tuần tự
+ *   3.1 – 3.8 use case · 3.9 lớp thực thi · 3.10 ERD · 3.11 – 3.16 tuần tự
  */
 
 import { mkdirSync, writeFileSync } from 'node:fs'
@@ -272,38 +271,175 @@ function veUseCase(d) {
  * @param {{ten:string, cot:Array<{ten:string, he?:boolean}>, moc:Array}} d
  *        `moc` = {tu, den, nhan, kieu?:'goi'|'traVe'|'tha'} — chỉ số cột (0..n-1)
  */
+/** Bảng màu riêng cho sơ đồ tuần tự — khác bảng màu chung để hình đúng kiểu PlantUML. */
+const MAU_UT = {
+  nen: '#ffffff',
+  bieuTuong: '#1f9bd7', // xanh lam vòng tròn đầu người / biểu tượng ranh giới
+  kichHoat: '#b3e0f5', // nền thanh kích hoạt
+  kichHoatBien: '#1f9bd7',
+  duong: '#374151',
+  chu: '#1f2937',
+}
+
+/**
+ * Sơ đồ tuần tự kiểu PlantUML.
+ *
+ * <para>
+ * Bốn thứ làm nên kiểu này:
+ * </para>
+ * <list type="bullet">
+ * <item>**Biểu tượng đầy màu**: tác nhân là hình người xanh, thành phần bên trong là
+ * vòng tròn xanh đặt trên một đường ngang (ký hiệu ranh giới).</item>
+ * <item>**Thanh kích hoạt** dọc theo đường đời: cho biết đối tượng nào đang "bận" —
+ * không có nó thì không đọc được luồng với sơ đồ nhiều lời gọi lồng nhau.</item>
+ * <item>**Đánh số phân cấp** `1`, `1.1`, `1.1.1`: sinh tự động theo chiều sâu lồng nhau,
+ * nên không phải đánh tay và không sợ sai thứ tự.</item>
+ * <item>**Khối `alt`** cho nhánh rẽ điều kiện — phần lớn sơ đồ tuần tự thực tế đều có.</item>
+ * </list>
+ *
+ * @param {{ten:string, cot:Array<{ten:string, loai?:string}>, moc:Array, alt?:Array}} d
+ */
 function veSequence(d) {
-  const cotRong = 190
-  const x0 = cotRong / 2 + 20
-  // 100 px hở bên phải: hộp tên rộng 164 nằm giữa cột, hẹp hơn sẽ bị cắt.
-  const W = x0 + (d.cot.length - 1) * cotRong + 100
-  const dau = 60
-  const buoc = 56
-  const H = dau + d.moc.length * buoc + 70
+  const cotRong = 200
+  const x0 = cotRong / 2 + 40
+  const dau = 30
+  const buoc = 54
+  const yDau = dau + 96
+  const W = x0 + (d.cot.length - 1) * cotRong + cotRong / 2 + 60
   const cx = (i) => x0 + i * cotRong
 
+  /*
+   * Đánh số phân cấp `1` · `1.1` · `1.1.1` — sinh tự động, không viết tay.
+   *
+   * Nguyên tắc: giữ một ngăn xếp các khung đang "bận". Xử lý thông điệp A → B:
+   * - B **đã có** trong ngăn xếp thì quay về đúng khung đó, cắt các khung sâu hơn. Đây
+   *   chính là lúc lời gọi trước kết thúc và đối tượng gọi lại nhận quyền điều khiển.
+   *   Không cắt thì mỗi lời gọi tới MySQL lại chồng một khung mới, số thứ tự thành
+   *   `1.1.1.1.1.1.1` — đúng nhưng vô nghĩa.
+   * - B **chưa có** thì mở khung mới và đánh số con theo khung đang mở.
+   */
+  const moc = d.moc.map((m, i) => ({ ...m, y: yDau + i * buoc }))
+  const khung = [{ cot: d.cot[0].ten, so: '', dem: 0, yDau: 0, yCuoi: 0 }]
+  // Thanh kích hoạt phải gom vào danh sách riêng: `khung` là ngăn xếp **hiện tại**, bị
+  // cắt khi quay lại khung trên, nên đọc lại nó ở cuối sẽ chỉ còn vài khung cuối.
+  const thanh = []
+
+  for (const m of moc) {
+    let viTri = -1
+    for (let i = khung.length - 1; i >= 0; i--) {
+      if (khung[i].cot === d.cot[m.den].ten) { viTri = i; break }
+    }
+    if (viTri < 0) {
+      khung.push({ cot: d.cot[m.den].ten, so: '', dem: 0, yDau: m.y - 22, yCuoi: m.y + 16 })
+      viTri = khung.length - 1
+      thanh.push(khung[viTri])
+    }
+    khung.length = viTri + 1
+
+    const dinh = khung[viTri]
+    dinh.dem++
+    m.so = dinh.so === '' ? String(dinh.dem) : `${dinh.so}.${dinh.dem}`
+
+    // Khung vừa mở nhận số của chính thông điệp này làm tiền tố cho thông điệp con.
+    // Thiếu đoạn này thì mọi khung con có tiền tố rỗng, số thứ tự chỉ còn 1, 2, 3…
+    // chứ không phân cấp theo chiều sâu lồng nhau.
+    for (const f of khung.slice(viTri + 1)) {
+      f.so = m.so
+      f.dem = 0
+    }
+
+    for (const f of khung.slice(0, viTri + 1)) {
+      if (f.yDau === 0) f.yDau = m.y - 22
+      f.yCuoi = m.y + 16
+    }
+  }
+
+  const H = yDau + (moc.length - 1) * buoc + 76
+
+  /* --- Khối `alt`: khung hình chữ nhật, tab nhãn ở mép trái, điều kiện bên trong. --- */
   let s = ''
-  // Đầu cột: hộp tên + đường đời đứt đoạn
-  d.cot.forEach((c, i) => {
-    s += hop(cx(i) - 82, 14, 164, 34, c.ten, {
-      fill: c.he ? MAU.vung : MAU.heThong,
-      bien: c.he ? MAU.vungBien : MAU.heThongBien,
-      size: 12,
-      dam: 600,
+  for (const a of d.alt ?? []) {
+    const y1 = moc[a.tu].y - 38
+    const y2 = moc[a.den].y + 30
+    const xa = cx(0) - cotRong / 2 + 8
+    const xb = cx(d.cot.length - 1) + cotRong / 2 - 8
+    s += `<rect x="${xa}" y="${y1}" width="${xb - xa}" height="${y2 - y1}" fill="none" stroke="#374151" stroke-width="1"/>`
+    const rongTab = a.ten.length * 8 + 12
+    s += `<rect x="${xa - 4}" y="${y1 - 9}" width="${rongTab}" height="18" fill="#ffffff" stroke="#374151" stroke-width="1"/>`
+    s += chu(xa - 4 + rongTab / 2, y1 + 4, a.ten, { size: 11 })
+    a.dieuKien.forEach((dk, i) => {
+      s += chu(xa + 30, y1 + 22 + i * 15, dk, { size: 10.5, an: 'start', mau: MAU_UT.chu })
     })
-    s += duong(cx(i), 48, cx(i), H - 40, { mau: '#9ca3af', rong: 1.1, gach: '5 4' })
+  }
+
+  /* --- Đường đời + biểu tượng đầu cột. --- */
+  d.cot.forEach((c, i) => {
+    const x = cx(i)
+    s += c.loai === 'nguoi' ? bieuTuongNguoi(x, dau + 4) : bieuTuongRanhGioi(x, dau + 8)
+    s += chu(x, dau + 58, c.ten, { size: 12, dam: 600 })
+    s += duong(x, dau + 66, x, H - 38, { mau: '#9ca3af', rong: 1.1, gach: '5 4' })
   })
 
-  d.moc.forEach((m, i) => {
-    const y = dau + 30 + i * buoc
-    // `tu` / `den` là CHỈ SỐ CỘT, phải đổi sang toạ độ x qua `cx()`.
+  /* --- Thanh kích hoạt, vẽ trước mũi tên để mũi tên nằm trên. --- */
+  for (const f of thanh) {
+    const x = cx(d.cot.findIndex((c) => c.ten === f.cot))
+    s += `<rect x="${x - 6}" y="${f.yDau}" width="12" height="${f.yCuoi - f.yDau}" fill="${MAU_UT.kichHoat}" stroke="${MAU_UT.kichHoatBien}" stroke-width="1"/>`
+  }
+
+  /* --- Mũi tên. Trả về vẽ nét đứt; tự gọi vẽ khung hộp nhỏ. --- */
+  for (const m of moc) {
+    const traVe = m.kieu === 'traVe'
+    const nhan = `${m.so}: ${m.nhan}`
+
+    if (m.tu === m.den) {
+      const x = cx(m.tu)
+      s += `<path d="M ${x + 6} ${m.y} L ${x + 34} ${m.y} L ${x + 34} ${m.y + 20} L ${x + 6} ${m.y + 20}" fill="none" stroke="${MAU_UT.duong}" stroke-width="1.1"${traVe ? ' stroke-dasharray="5 3"' : ''}/>`
+      s += `<polygon points="${x + 6},${m.y + 20} ${x + 13},${m.y + 17} ${x + 13},${m.y + 23}" fill="${MAU_UT.duong}"/>`
+      s += nhanCuaNen(nhan, x + 40, m.y - 6, 'start')
+      continue
+    }
+
     const x1 = cx(m.tu)
     const x2 = cx(m.den)
-    s += m.tho ? duong(x1, y, x2, y, { gach: '4 3' }) : muiTen(x1, y, x2, y, { nhan: m.nhan })
-  })
+    s += duong(x1, m.y, x2, m.y, { mau: MAU_UT.duong, rong: 1.2, gach: traVe ? '6 4' : '' })
+    const dauT = 8
+    const goc = x2 > x1 ? 0 : 180
+    const c1 = x2 - dauT * Math.cos(((goc - 22) * Math.PI) / 180)
+    const c2 = x2 - dauT * Math.cos(((goc + 22) * Math.PI) / 180)
+    s += `<polygon points="${x2},${m.y} ${c1.toFixed(1)},${(m.y - 3.4).toFixed(1)} ${c2.toFixed(1)},${(m.y + 3.4).toFixed(1)}" fill="${MAU_UT.duong}"/>`
+    s += nhanCuaNen(nhan, (x1 + x2) / 2, m.y - 4, 'middle')
+  }
 
-  s += chu(20, H - 16, d.ten, { size: 13, an: 'start', dam: 600 })
+  s += chu(20, H - 14, 'Mũi tên liền = lời gọi · nét đứt = trả về · thanh xanh dọc đường đời = đối tượng đang xử lý.', {
+    size: 11,
+    an: 'start',
+    mau: MAU_UT.chu,
+  })
   return svg(W, H, '', s, d.ten)
+}
+
+/** Nhãn thông điệp có nền trắng, để không bị nét khác cắt qua chữ. */
+function nhanCuaNen(nhan, x, y, an) {
+  const doRong = nhan.length * 5.6 + 8
+  const xNhan = an === 'middle' ? x - doRong / 2 : an === 'end' ? x - doRong : x
+  return `<rect x="${xNhan.toFixed(1)}" y="${y - 10}" width="${doRong.toFixed(1)}" height="14" fill="${MAU_UT.nen}"/>`
+    + chu(x, y, nhan, { size: 11, an, mau: MAU_UT.chu })
+}
+
+/** Tác nhân: hình người xanh, đầu là hình tròn đặc. */
+function bieuTuongNguoi(x, y) {
+  const m = MAU_UT.bieuTuong
+  return `<circle cx="${x}" cy="${y + 6}" r="7" fill="${m}"/>
+<path d="M ${x} ${y + 14} L ${x} ${y + 34} M ${x - 9} ${y + 20} L ${x} ${y + 26} L ${x + 9} ${y + 20}
+         M ${x} ${y + 34} L ${x - 7} ${y + 48} M ${x} ${y + 34} L ${x + 7} ${y + 48}"
+      fill="none" stroke="${m}" stroke-width="2" stroke-linecap="round"/>`
+}
+
+/** Thành phần bên trong: vòng tròn xanh đặt trên một đường ngang (ký hiệu ranh giới). */
+function bieuTuongRanhGioi(x, y) {
+  const m = MAU_UT.bieuTuong
+  return `<line x1="${x - 20}" y1="${y + 20}" x2="${x + 20}" y2="${y + 20}" stroke="#1f2937" stroke-width="1.4"/>
+<circle cx="${x}" cy="${y + 8}" r="12" fill="${m}" stroke="#1f2937" stroke-width="1.4"/>`
 }
 
 /**
@@ -724,7 +860,7 @@ function duoyDep(x1, y1, x2, y2, rong = 1.1) {
  * phải có trong tài liệu chứ không phải trong đầu.
  */
 const useCases = {
-  '3-02-use-case-tong-quat': {
+  '3-01-use-case-tong-quat': {
     ten: 'Hệ thống HomeStay',
     tacNhan: [
       {
@@ -761,7 +897,7 @@ const useCases = {
       'Ranh giới đã chốt: hệ thống chỉ ghi nhận phương thức thanh toán, KHÔNG nối API cổng thanh toán; thông báo chỉ hiển thị trong hệ thống, không gửi email/SMS.',
     ],
   },
-  '3-03-use-case-quan-ly-tai-khoan': {
+  '3-02-use-case-quan-ly-tai-khoan': {
     ten: 'Quản lý tài khoản',
     tacNhan: [
       { ten: 'Khách', dung: ['Đăng ký tài khoản', 'Đăng nhập', 'Xem hồ sơ', 'Cập nhật hồ sơ', 'Đổi mật khẩu', 'Đăng xuất'] },
@@ -781,7 +917,7 @@ const useCases = {
       'Mật khẩu lưu dạng BCrypt hash, không bao giờ lưu dạng thô.',
     ],
   },
-  '3-04-use-case-tim-kiem-va-dat-phong': {
+  '3-03-use-case-tim-kiem-va-dat-phong': {
     ten: 'Tìm kiếm & đặt phòng',
     tacNhan: [{ ten: 'Khách', dung: ['Chọn địa điểm', 'Đặt nhu cầu lọc', 'Xem kết quả tìm kiếm', 'Chọn phòng', 'Đặt phòng'] }],
     uc: ['Chọn địa điểm', 'Đặt nhu cầu lọc', 'Xem kết quả tìm kiếm', 'Chọn phòng', 'Đặt phòng'],
@@ -798,7 +934,7 @@ const useCases = {
       'Kiểm tra phòng trống chạy trong transaction mức SERIALIZABLE nên hai khách cùng đặt một khung giờ chỉ có một đơn được tạo.',
     ],
   },
-  '3-05-use-case-quan-ly-dat-phong': {
+  '3-04-use-case-quan-ly-dat-phong': {
     ten: 'Quản lý đặt phòng',
     tacNhan: [
       { ten: 'Khách', dung: ['Xem đơn của tôi', 'Lọc đơn theo trạng thái', 'Xem chi tiết & lịch sử đơn', 'Huỷ đơn', 'Đánh giá sau khi hoàn thành'] },
@@ -820,7 +956,7 @@ const useCases = {
       'Khi đơn chuyển sang COMPLETED, hệ thống mở phiếu thu và sinh thông báo cho khách — xem Hình 3.7 và 3.8.',
     ],
   },
-  '3-06-use-case-quan-ly-phong': {
+  '3-05-use-case-quan-ly-phong': {
     ten: 'Quản lý phòng',
     tacNhan: [
       { ten: 'Admin', dung: ['Thêm phòng', 'Sửa phòng', 'Đổi trạng thái phòng', 'Xoá phòng', 'Gán tiện nghi', 'Quản lý cơ sở'] },
@@ -838,7 +974,7 @@ const useCases = {
       'Sau check-out, phòng chuyển sang CLEANING; chỉ coi là trống khi đủ số giờ vệ sinh. Không xoá được phòng đang có đơn.',
     ],
   },
-  '3-07-use-case-thanh-toan': {
+  '3-06-use-case-thanh-toan': {
     ten: 'Thanh toán',
     tacNhan: [
       { ten: 'Khách', dung: ['Xem lịch sử thanh toán', 'Chọn phương thức thanh toán'] },
@@ -859,7 +995,7 @@ const useCases = {
       'Một đơn có đúng một phiếu thu (ràng buộc UNIQUE trên BookingId); thu hai lần sẽ bị từ chối với mã 409.',
     ],
   },
-  '3-08-use-case-thong-bao': {
+  '3-07-use-case-thong-bao': {
     ten: 'Thông báo',
     tacNhan: [
       { ten: 'Hệ thống', loai: 'may', dung: ['Sinh thông báo khi đổi trạng thái đơn'] },
@@ -878,7 +1014,7 @@ const useCases = {
       'Khách tự huỷ đơn thì không sinh thông báo — chính họ biết, gửi thêm chỉ làm nhiễu.',
     ],
   },
-  '3-09-use-case-quan-tri-he-thong': {
+  '3-08-use-case-quan-tri-he-thong': {
     ten: 'Quản trị hệ thống',
     tacNhan: [
       { ten: 'Admin', dung: ['Xem thống kê', 'Doanh thu theo tháng', 'Tỷ lệ lấp đầy', 'Doanh thu theo phòng', 'Ẩn / hiện đánh giá', 'Khoá khách hàng'] },
@@ -897,172 +1033,228 @@ const useCases = {
   },
 }
 
+/**
+ * Dữ liệu 6 sơ đồ tuần tự (Hình 3.11 – 3.16).
+ *
+ * Số thứ tự thông điệp **không viết tay** — `veSequence` tự sinh theo chiều sâu lồng
+ * nhau. Vì vậy ở đây chỉ cần đúng thứ tự các dòng và đúng cột nguồn/đích, không sợ
+ * đánh số lệch với nhau khi thêm bước mới.
+ *
+ * `kieu: 'traVe'` = trả về (nét đứt). `tu === den` = gọi lại chính đối tượng đó.
+ * `alt` khoá theo chỉ số trong `moc` — 0 là dòng đầu tiên.
+ */
 const sequences = {
-  '3-13-sequence-dang-nhap': {
+  '3-11-sequence-dang-nhap': {
     ten: 'Đăng nhập',
     cot: [
-      { ten: 'Khách' },
-      { ten: 'AuthController', he: true },
-      { ten: 'AuthService', he: true },
+      { ten: 'Khách', loai: 'nguoi' },
+      { ten: 'AuthController' },
+      { ten: 'AuthService' },
       { ten: 'HomeStayDbContext' },
       { ten: 'MySQL' },
     ],
     moc: [
-      { tu: 0, den: 1, nhan: 'POST /api/auth/login' },
+      { tu: 0, den: 1, nhan: 'POST /api/auth/login (email, matKhau)' },
       { tu: 1, den: 2, nhan: 'DangNhapAsync(email, matKhau)' },
-      { tu: 2, den: 3, nhan: 'Tìm User theo email' },
-      { tu: 3, den: 4, nhan: 'SELECT … FROM Users' },
-      { tu: 4, den: 3, nhan: '1 dòng + PasswordHash', kieu: 'traVe' },
-      { tu: 3, den: 2, nhan: 'User', kieu: 'traVe' },
-      { tu: 2, den: 2, nhan: 'BCrypt.Verify(mật khẩu, hash)', tho: true },
-      { tu: 2, den: 1, nhan: 'TokenResponse', kieu: 'traVe' },
-      { tu: 1, den: 0, nhan: '200 OK + accessToken', kieu: 'traVe' },
+      { tu: 2, den: 2, nhan: 'Kiểm tra email có định dạng hợp lệ' },
+      { tu: 2, den: 3, nhan: 'Users.Where(email)' },
+      { tu: 3, den: 4, nhan: 'SELECT Id, FullName, PasswordHash, Role, Status FROM Users' },
+      { tu: 4, den: 3, nhan: 'return 1 dòng hoặc rỗng', kieu: 'traVe' },
+      { tu: 3, den: 2, nhan: 'return User hoặc null', kieu: 'traVe' },
+      { tu: 2, den: 2, nhan: 'BCrypt.Verify(matKhau, PasswordHash)' },
+      { tu: 2, den: 2, nhan: 'Kiểm tra Status = ACTIVE' },
+      { tu: 2, den: 2, nhan: 'Tạo accessToken (15 phút) và refreshToken (7 ngày)' },
+      { tu: 2, den: 2, nhan: 'Ghi lần đăng nhập vào nhật ký' },
+      { tu: 2, den: 1, nhan: 'return TokenResponse', kieu: 'traVe' },
+      { tu: 1, den: 0, nhan: 'return 200 OK + token', kieu: 'traVe' },
+    ],
+    alt: [
+      { ten: 'alt', tu: 7, den: 10, dieuKien: ['[bốn bước kiểm tra — một bước sai là ném AppException → 401]', '[cả bốn bước đúng thì đi tiếp tới tạo token]'] },
     ],
   },
-  '3-14-sequence-tim-kiem-phong': {
+  '3-12-sequence-tim-kiem-phong': {
     ten: 'Tìm kiếm phòng',
     cot: [
-      { ten: 'Khách' },
+      { ten: 'Khách', loai: 'nguoi' },
       { ten: 'RoomsController' },
-      { ten: 'RoomService', he: true },
+      { ten: 'RoomService' },
       { ten: 'HomeStayDbContext' },
       { ten: 'MySQL' },
     ],
     moc: [
-      { tu: 0, den: 1, nhan: 'GET /api/rooms/search?bộ lọc' },
+      { tu: 0, den: 1, nhan: 'GET /api/rooms/search?coSo&vaoLuc&raLuc&soKhach&page' },
       { tu: 1, den: 2, nhan: 'TimPhongAsync(bộ lọc, page, pageSize)' },
       { tu: 2, den: 3, nhan: 'Rooms JOIN Locations' },
-      { tu: 3, den: 4, nhan: 'SELECT … WHERE … ORDER BY … LIMIT/OFFSET' },
-      { tu: 4, den: 3, nhan: 'items + tổng số', kieu: 'traVe' },
-      { tu: 3, den: 2, nhan: 'Danh sách phòng', kieu: 'traVe' },
-      { tu: 2, den: 1, nhan: 'PagedResult<RoomSearchDto>', kieu: 'traVe' },
-      { tu: 1, den: 0, nhan: '200 OK — không kèm Id', kieu: 'traVe' },
+      { tu: 3, den: 4, nhan: 'SELECT … WHERE trạng thái & thời gian & giá' },
+      { tu: 4, den: 3, nhan: 'return danh sách dòng', kieu: 'traVe' },
+      { tu: 3, den: 2, nhan: 'return IQueryable<Phong>', kieu: 'traVe' },
+      { tu: 2, den: 2, nhan: 'Sắp xếp: giá ↑ hoặc điểm đánh giá ↓' },
+      { tu: 2, den: 4, nhan: 'SELECT COUNT(*) để biết tổng số trang' },
+      { tu: 4, den: 2, nhan: 'return tổng số bản ghi', kieu: 'traVe' },
+      { tu: 2, den: 2, nhan: 'Cắt trang: Skip((page-1)*size).Take(size)' },
+      { tu: 2, den: 1, nhan: 'return PagedResult<RoomSearchDto>', kieu: 'traVe' },
+      { tu: 1, den: 0, nhan: 'return 200 OK — không kèm khoá Id', kieu: 'traVe' },
+    ],
+    alt: [
+      { ten: 'alt', tu: 2, den: 10, dieuKien: ['[bộ lọc hợp lệ]', '[đếm tổng số rồi mới cắt trang]'] },
     ],
   },
-  '3-15-sequence-dat-phong': {
+  '3-13-sequence-dat-phong': {
     ten: 'Đặt phòng',
     cot: [
-      { ten: 'Khách' },
+      { ten: 'Khách', loai: 'nguoi' },
       { ten: 'BookingsController' },
-      { ten: 'BookingService', he: true },
-      { ten: 'RoomService', he: true },
+      { ten: 'BookingService' },
+      { ten: 'RoomService' },
       { ten: 'MySQL' },
     ],
     moc: [
       { tu: 0, den: 1, nhan: 'POST /api/bookings' },
-      { tu: 1, den: 2, nhan: 'TaoDonAsync(userId, req)' },
-      { tu: 2, den: 4, nhan: 'BEGIN — mức SERIALIZABLE', tho: true },
-      { tu: 2, den: 3, nhan: 'KiemTraTrongAsync()' },
+      { tu: 1, den: 2, nhan: 'TaoDonAsync(userId, yeuCau)' },
+      { tu: 2, den: 4, nhan: 'BEGIN — mức SERIALIZABLE' },
+      { tu: 2, den: 3, nhan: 'KiemTraTrongAsync(maPhong, vaoLuc, raLuc)' },
       { tu: 3, den: 4, nhan: 'SELECT EXISTS — đơn có chồng lịch không' },
-      { tu: 4, den: 3, nhan: 'false = còn trống', kieu: 'traVe' },
-      { tu: 3, den: 2, nhan: 'isAvailable = true', kieu: 'traVe' },
-      { tu: 2, den: 2, nhan: 'Tính tiền + sinh mã HS-yyMMdd-xxxx', tho: true },
-      { tu: 2, den: 4, nhan: 'INSERT Bookings + BookingStatusHistory' },
-      { tu: 4, den: 2, nhan: 'OK', kieu: 'traVe' },
-      { tu: 2, den: 4, nhan: 'COMMIT', tho: true },
-      { tu: 2, den: 1, nhan: '201 Created + mã đơn', kieu: 'traVe' },
-      { tu: 1, den: 0, nhan: '201 OK', kieu: 'traVe' },
+      { tu: 4, den: 3, nhan: 'return true = còn trống', kieu: 'traVe' },
+      { tu: 3, den: 2, nhan: 'return isAvailable', kieu: 'traVe' },
+      { tu: 2, den: 2, nhan: 'Kiểm tra thời gian: ≥ 3 giờ nếu thuê theo giờ' },
+      { tu: 2, den: 2, nhan: 'BookingCalculator.TinhTien(loại, giá giờ, giá ngày)' },
+      { tu: 2, den: 2, nhan: 'Sinh mã đơn HS-yyMMdd-xxxx' },
+      { tu: 2, den: 4, nhan: 'INSERT Bookings (PENDING)' },
+      { tu: 2, den: 4, nhan: 'INSERT BookingStatusHistory' },
+      { tu: 2, den: 4, nhan: 'UPDATE Rooms SET trangThai = BOOKED' },
+      { tu: 4, den: 2, nhan: 'return OK', kieu: 'traVe' },
+      { tu: 2, den: 4, nhan: 'COMMIT' },
+      { tu: 2, den: 1, nhan: 'return 201 Created + mã đơn', kieu: 'traVe' },
+      { tu: 1, den: 0, nhan: 'return 201 OK', kieu: 'traVe' },
+    ],
+    alt: [
+      { ten: 'alt', tu: 4, den: 6, dieuKien: ['[phòng còn trống]', '[tiếp tục tạo đơn]'] },
+      { ten: 'alt', tu: 7, den: 8, dieuKien: ['[lỗi bất kỳ: ROLLBACK rồi trả mã lỗi]', '[409 khi trùng lịch · 400 khi sai quy tắc · 404 khi không có phòng]'] },
     ],
   },
-  '3-16-sequence-check-in-check-out': {
-    ten: 'Check-in / Check-out (kèm sinh thông báo và mở phiếu thu)',
+  '3-14-sequence-check-in-check-out': {
+    ten: 'Check-in / Check-out kèm sinh thông báo và mở phiếu thu',
     cot: [
-      { ten: 'Admin' },
+      { ten: 'Admin', loai: 'nguoi' },
       { ten: 'AdminBookingController' },
-      { ten: 'AdminBookingService', he: true },
-      { ten: 'NotificationTemplates', he: true },
+      { ten: 'AdminBookingService' },
+      { ten: 'NotificationTemplates' },
       { ten: 'MySQL' },
     ],
     moc: [
-      { tu: 0, den: 1, nhan: 'PATCH /api/admin/bookings/{code}/check-in' },
-      { tu: 1, den: 2, nhan: 'CheckInAsync(code, adminId)' },
-      { tu: 2, den: 4, nhan: 'BEGIN — mức SERIALIZABLE', tho: true },
-      { tu: 2, den: 2, nhan: 'Kiểm tra trạng thái đúng CONFIRMED', tho: true },
-      { tu: 2, den: 4, nhan: 'UPDATE Bookings (CHECKED_IN) + Rooms (OCCUPIED) + lịch sử', tho: true },
-      { tu: 2, den: 3, nhan: 'Tao(don, CHECKED_IN) → tiêu đề + nội dung', tho: true },
-      { tu: 2, den: 4, nhan: 'INSERT Notifications (IsRead = 0)', tho: true },
-      { tu: 4, den: 2, nhan: 'OK', kieu: 'traVe' },
-      { tu: 2, den: 4, nhan: 'COMMIT', tho: true },
-      { tu: 2, den: 1, nhan: 'AdminBookingDto', kieu: 'traVe' },
-      { tu: 0, den: 1, nhan: 'PATCH …/check-out' },
-      { tu: 2, den: 4, nhan: 'UPDATE Bookings (COMPLETED) + Rooms (CLEANING)', tho: true },
-      { tu: 2, den: 4, nhan: 'INSERT Payments (chờ thu, tiền mặt)', tho: true },
-      { tu: 2, den: 3, nhan: 'Tao(don, COMPLETED)', tho: true },
-      { tu: 2, den: 4, nhan: 'INSERT Notifications — mở phiếu thu', tho: true },
-      { tu: 4, den: 2, nhan: 'OK', kieu: 'traVe' },
-      { tu: 2, den: 4, nhan: 'COMMIT', tho: true },
-      { tu: 1, den: 0, nhan: '200 OK — khách thấy 1 thông báo + 1 phiếu thu', kieu: 'traVe' },
+      { tu: 0, den: 1, nhan: 'PATCH /api/admin/bookings/{ma}/check-in' },
+      { tu: 1, den: 2, nhan: 'CheckInAsync(maDon, adminId)' },
+      { tu: 2, den: 4, nhan: 'BEGIN — mức SERIALIZABLE' },
+      { tu: 2, den: 2, nhan: 'Kiểm tra đơn đang CONFIRMED' },
+      { tu: 2, den: 4, nhan: 'UPDATE Bookings SET trangThai = CHECKED_IN' },
+      { tu: 2, den: 4, nhan: 'UPDATE Rooms SET trangThai = OCCUPIED' },
+      { tu: 2, den: 4, nhan: 'INSERT BookingStatusHistory' },
+      { tu: 2, den: 3, nhan: 'Tao(don, CHECKED_IN)' },
+      { tu: 3, den: 2, nhan: 'return tiêu đề + nội dung', kieu: 'traVe' },
+      { tu: 2, den: 4, nhan: 'INSERT Notifications (daDoc = 0)' },
+      { tu: 4, den: 2, nhan: 'return OK', kieu: 'traVe' },
+      { tu: 2, den: 4, nhan: 'COMMIT' },
+      { tu: 2, den: 1, nhan: 'return AdminBookingDto', kieu: 'traVe' },
+      { tu: 1, den: 0, nhan: 'return 200 OK', kieu: 'traVe' },
+      { tu: 0, den: 1, nhan: 'PATCH /api/admin/bookings/{ma}/check-out' },
+      { tu: 2, den: 4, nhan: 'UPDATE Bookings SET trangThai = COMPLETED' },
+      { tu: 2, den: 4, nhan: 'UPDATE Rooms SET trangThai = CLEANING' },
+      { tu: 2, den: 4, nhan: 'INSERT Payments (chờ thu, tiền mặt)' },
+      { tu: 2, den: 3, nhan: 'Tao(don, COMPLETED)' },
+      { tu: 2, den: 4, nhan: 'INSERT Notifications — báo mở phiếu thu' },
+      { tu: 4, den: 2, nhan: 'return OK', kieu: 'traVe' },
+      { tu: 2, den: 4, nhan: 'COMMIT' },
+      { tu: 2, den: 1, nhan: 'return AdminBookingDto', kieu: 'traVe' },
+      { tu: 1, den: 0, nhan: 'return 200 OK — khách thấy 1 thông báo + 1 phiếu thu', kieu: 'traVe' },
+    ],
+    alt: [
+      { ten: 'alt', tu: 2, den: 10, dieuKien: ['[đơn đang CONFIRMED]', '[nhận phòng: đổi trạng thái, ghi lịch sử, sinh thông báo]'] },
+      { ten: 'alt', tu: 14, den: 22, dieuKien: ['[đơn đang CHECKED_IN]', '[trả phòng: đổi trạng thái, MỞ PHIẾU THU rồi sinh thông báo]'] },
     ],
   },
-  '3-17-sequence-quan-ly-phong': {
+  '3-15-sequence-quan-ly-phong': {
     ten: 'Quản lý phòng',
     cot: [
-      { ten: 'Admin' },
+      { ten: 'Admin', loai: 'nguoi' },
       { ten: 'AdminRoomsController' },
-      { ten: 'AdminRoomService', he: true },
+      { ten: 'AdminRoomService' },
       { ten: 'HomeStayDbContext' },
       { ten: 'MySQL' },
     ],
     moc: [
       { tu: 0, den: 1, nhan: 'POST /api/admin/rooms' },
-      { tu: 1, den: 2, nhan: 'TaoPhongAsync(req)' },
-      { tu: 2, den: 3, nhan: 'Rooms.AddAsync()' },
+      { tu: 1, den: 2, nhan: 'TaoPhongAsync(yeuCau)' },
+      { tu: 2, den: 2, nhan: 'Kiểm tra mã phòng chưa có trong cơ sở' },
+      { tu: 2, den: 3, nhan: 'Rooms.Add(phong)' },
+      { tu: 2, den: 3, nhan: 'RoomAmenities.Add(liên kết tiện nghi)' },
+      { tu: 2, den: 3, nhan: 'RoomImages.Add(ảnh)' },
       { tu: 3, den: 4, nhan: 'INSERT Rooms, tiện nghi, ảnh' },
-      { tu: 4, den: 3, nhan: 'Id mới', kieu: 'traVe' },
-      { tu: 3, den: 2, nhan: 'SaveChangesAsync()', kieu: 'traVe' },
-      { tu: 2, den: 1, nhan: '201 Created', kieu: 'traVe' },
+      { tu: 4, den: 3, nhan: 'return khoá mới', kieu: 'traVe' },
+      { tu: 3, den: 2, nhan: 'return số bản ghi', kieu: 'traVe' },
+      { tu: 2, den: 4, nhan: 'SaveChangesAsync()' },
+      { tu: 4, den: 2, nhan: 'return OK', kieu: 'traVe' },
+      { tu: 2, den: 1, nhan: 'return 201 Created', kieu: 'traVe' },
       { tu: 0, den: 1, nhan: 'PATCH /api/admin/rooms/{id}/status' },
-      { tu: 2, den: 4, nhan: 'UPDATE Rooms SET Status', tho: true },
-      { tu: 2, den: 1, nhan: '200 OK', kieu: 'traVe' },
+      { tu: 2, den: 4, nhan: 'UPDATE Rooms SET trangThai' },
+      { tu: 4, den: 2, nhan: 'return OK', kieu: 'traVe' },
+      { tu: 2, den: 1, nhan: 'return 200 OK', kieu: 'traVe' },
       { tu: 0, den: 1, nhan: 'DELETE /api/admin/rooms/{id}' },
-      { tu: 2, den: 4, nhan: 'Kiểm tra còn đơn không → xoá', tho: true },
-      { tu: 2, den: 1, nhan: '200 OK hoặc 400 "còn đơn"', kieu: 'traVe' },
+      { tu: 2, den: 4, nhan: 'Kiểm tra còn đơn chưa hoàn thành không' },
+      { tu: 4, den: 2, nhan: 'return còn đơn hoặc không', kieu: 'traVe' },
+      { tu: 2, den: 1, nhan: 'return 200 OK hoặc 400 "còn đơn"', kieu: 'traVe' },
+    ],
+    alt: [
+      { ten: 'alt', tu: 16, den: 18, dieuKien: ['[phòng còn đơn]', '[từ chối xoá, trả 400]'] },
     ],
   },
-  '3-18-sequence-thanh-toan': {
+  '3-16-sequence-thanh-toan': {
     ten: 'Chọn phương thức thanh toán và xác nhận đã thu',
-    // Cột xếp theo đúng thứ tự lời gọi để thông điệp của khách không cắt qua cột
-    // của Admin và ngược lại. Cột MySQL đặt cuối như quy ước các sơ đồ khác.
     cot: [
-      { ten: 'Khách' },
+      { ten: 'Khách', loai: 'nguoi' },
       { ten: 'PaymentsController' },
-      { ten: 'PaymentService', he: true },
-      { ten: 'Admin' },
+      { ten: 'PaymentService' },
+      { ten: 'Admin', loai: 'nguoi' },
       { ten: 'AdminPaymentsController' },
-      { ten: 'AdminPaymentService', he: true },
+      { ten: 'AdminPaymentService' },
       { ten: 'MySQL' },
     ],
     moc: [
       { tu: 0, den: 1, nhan: 'GET /api/payments/my' },
       { tu: 1, den: 2, nhan: 'LayCuaToiAsync(userId)' },
-      { tu: 2, den: 6, nhan: 'SELECT Payments JOIN Bookings…', tho: true },
-      { tu: 6, den: 2, nhan: 'Danh sách phiếu thu', kieu: 'traVe' },
-      { tu: 2, den: 1, nhan: 'List<PaymentDto>', kieu: 'traVe' },
-      { tu: 1, den: 0, nhan: '200 OK + tổng đã thanh toán', kieu: 'traVe' },
-      { tu: 0, den: 1, nhan: 'POST /api/payments/booking/{code}' },
-      { tu: 1, den: 2, nhan: 'ChonPhuongThucAsync(userId, code, req)' },
-      { tu: 2, den: 6, nhan: 'Đơn phải COMPLETED; phiếu đã thu thì 409', tho: true },
-      { tu: 2, den: 6, nhan: 'INSERT Payments hoặc UPDATE Method', tho: true },
-      { tu: 6, den: 2, nhan: 'OK', kieu: 'traVe' },
-      { tu: 2, den: 1, nhan: 'PaymentDto', kieu: 'traVe' },
-      { tu: 1, den: 0, nhan: '200 OK — ghi nhận lựa chọn của khách', kieu: 'traVe' },
-      { tu: 3, den: 4, nhan: 'GET /api/admin/payments?status=' },
-      { tu: 4, den: 5, nhan: 'LayDanhSachAsync(status, page, size)' },
-      { tu: 5, den: 6, nhan: 'SELECT … phân trang', tho: true },
-      { tu: 6, den: 5, nhan: 'Danh sách + tổng số trang', kieu: 'traVe' },
-      { tu: 5, den: 4, nhan: 'PagedResult<PaymentDto>', kieu: 'traVe' },
-      { tu: 4, den: 3, nhan: '200 OK — bảng phiếu thu', kieu: 'traVe' },
+      { tu: 2, den: 6, nhan: 'SELECT Payments JOIN Bookings WHERE UserId' },
+      { tu: 6, den: 2, nhan: 'return danh sách phiếu thu', kieu: 'traVe' },
+      { tu: 2, den: 1, nhan: 'return List<PaymentDto>', kieu: 'traVe' },
+      { tu: 1, den: 0, nhan: 'return 200 OK + tổng đã thanh toán', kieu: 'traVe' },
+      { tu: 0, den: 1, nhan: 'POST /api/payments/booking/{maDon}' },
+      { tu: 1, den: 2, nhan: 'ChonPhuongThucAsync(userId, maDon, yeuCau)' },
+      { tu: 2, den: 6, nhan: 'Đơn phải COMPLETED và thuộc đúng khách' },
+      { tu: 6, den: 2, nhan: 'return phiếu thu hiện có', kieu: 'traVe' },
+      { tu: 2, den: 2, nhan: 'Kiểm tra phiếu chưa đánh dấu đã thu' },
+      { tu: 2, den: 6, nhan: 'INSERT Payments hoặc UPDATE phuongThuc' },
+      { tu: 6, den: 2, nhan: 'return OK', kieu: 'traVe' },
+      { tu: 2, den: 1, nhan: 'return PaymentDto', kieu: 'traVe' },
+      { tu: 1, den: 0, nhan: 'return 200 OK — ghi nhận lựa chọn của khách', kieu: 'traVe' },
+      { tu: 3, den: 4, nhan: 'GET /api/admin/payments?trangThai&page' },
+      { tu: 4, den: 5, nhan: 'LayDanhSachAsync(trangThai, page, pageSize)' },
+      { tu: 5, den: 6, nhan: 'SELECT … phân trang' },
+      { tu: 6, den: 5, nhan: 'return danh sách + tổng số trang', kieu: 'traVe' },
+      { tu: 5, den: 4, nhan: 'return PagedResult<PaymentDto>', kieu: 'traVe' },
+      { tu: 4, den: 3, nhan: 'return 200 OK — bảng phiếu thu', kieu: 'traVe' },
       { tu: 3, den: 4, nhan: 'PATCH /api/admin/payments/{id}/paid' },
-      { tu: 4, den: 5, nhan: 'DanhDauDaThuAsync(id, method, note)' },
-      { tu: 5, den: 6, nhan: 'Số tiền phải khớp tổng tiền của đơn', tho: true },
-      { tu: 5, den: 6, nhan: 'UPDATE Status = PAID, PaidAt = now', tho: true },
-      { tu: 6, den: 5, nhan: 'OK', kieu: 'traVe' },
-      { tu: 5, den: 4, nhan: 'PaymentDto', kieu: 'traVe' },
-      { tu: 4, den: 3, nhan: '200 OK — doanh thu tăng tương ứng', kieu: 'traVe' },
+      { tu: 4, den: 5, nhan: 'DanhDauDaThuAsync(id, phuongThuc, ghiChu)' },
+      { tu: 5, den: 6, nhan: 'Đối chiếu số tiền với tổng tiền của đơn' },
+      { tu: 6, den: 5, nhan: 'return khớp hoặc lệch', kieu: 'traVe' },
+      { tu: 5, den: 4, nhan: 'return 400 "số tiền không khớp đơn"', kieu: 'traVe' },
+      { tu: 5, den: 6, nhan: 'UPDATE Payments SET trangThai = DA_THU, thoiDiemThu' },
+      { tu: 6, den: 5, nhan: 'return OK', kieu: 'traVe' },
+      { tu: 5, den: 4, nhan: 'return PaymentDto', kieu: 'traVe' },
+      { tu: 4, den: 3, nhan: 'return 200 OK — doanh thu tăng tương ứng', kieu: 'traVe' },
+    ],
+    alt: [
+      { ten: 'alt', tu: 23, den: 25, dieuKien: ['[số tiền không khớp tổng tiền của đơn]', '[trả 400, không ghi nhận đã thu]'] },
     ],
   },
 }
-
 const erd = {
   ten: 'Sơ đồ quan hệ thực thể (ERD) — 11 bảng',
   bang: [
@@ -1083,11 +1275,9 @@ const erd = {
 /* ------------------------------------------------------------------- ghi file */
 
 const tatCa = [
-  ['3-01-bieu-do-tac-nhan', veHoatDong()],
   ...Object.entries(useCases).map(([ten, d]) => [ten, veUseCase(d)]),
-  ['3-10-kien-truc-he-thong', veKienTruc()],
-  ['3-11-bieu-do-lop-thuc-thi', veLopThucThi()],
-  ['3-12-so-do-erd', veErd(erd)],
+  ['3-09-bieu-do-lop-thuc-thi', veLopThucThi()],
+  ['3-10-so-do-erd', veErd(erd)],
   ...Object.entries(sequences).map(([ten, d]) => [ten, veSequence(d)]),
 ]
 

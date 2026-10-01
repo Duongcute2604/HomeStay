@@ -29,18 +29,19 @@
 | | 16 | Đánh giá & nhận xét | ✅ API 21/21 + đối chiếu SQL 7/7 + UI 6/6 | **358 pass (thêm 25)** | ✅ Xong (01/10) |
 | | 17 | Responsive, Loading/Error/Empty, Toast | ✅ 7/7 (5+6 qua unit test) | **258 pass (thêm 14)** | ✅ Xong (01/10) |
 | 01/10 | 18 | Bộ test tích hợp Postman (41 request, 7 nhóm) | ✅ **41/41 request · 115/115 kiểm chứng · 12/12 lần chạy** | **380/380** (thêm 11) | ✅ Xong (01/10) |
-| 01/10 | 19 | 22 hình cho Chương 3 (15 sơ đồ SVG + 7 ảnh giao diện) | ✅ 22/22 hình · 15/15 SVG | giữ nguyên | ✅ Xong (01/10) |
+| 01/10 | 19 | 23 hình cho Chương 3 (16 sơ đồ SVG + 7 ảnh giao diện) | ✅ 23/23 hình · 16/16 SVG | giữ nguyên | ✅ Xong (01/10) |
 | 01/10 | 20 | **Viết Chương 4 — 17 mục + 17 hình (4.1 – 4.17) + bảng 18 test case + đóng góp & triển khai** | ✅ đủ 17/17 mục · **phát hiện & sửa 1 lỗi thật** (gửi giờ UTC làm hỏng chống đặt trùng) | **380/380** · **269/269** (thêm 5) · build **0 error 0 warning** | ✅ Xong (01/10) |
 | 01/10 | 21 | **Ket luan + TLTK + slide + luyen trinh bay**: `docs/KET_LUAN.md` (4 phan) · `docs/TLTK.md` (10 mau + 15 cong nghe) · `docs/SLIDE.md` (16 slide, 13 phut 30 giay) · `docs/DAU_HOI_GVHD.md` (10 cau hoi) · `docs/LUYEN_TRINH_BAY.md` (3 lan luyen) | ✅ 4/4 hang muc | Backend **380/380** · Frontend **269/269** · build **0 error 0 warning** | Xong (01/10) · con: sinh vien tu luyen noi 3 lan |
-| | 22 | **Thanh toán** (mở rộng, tuỳ chọn) | ⬜ | ⬜ | ⬜ Chỉ làm nếu còn thời gian |
-| | 23 | **Thông báo** (mở rộng, tuỳ chọn) | ⬜ | ⬜ | ⬜ Chỉ làm nếu còn thời gian |
+| 01/10 | 22 | **Thanh toán** — bảng `Payments` + 3 API khách · 3 API admin · mở phiếu thu khi đơn `COMPLETED` | ✅ 6 API · ✅ đối chiếu SQL 6/6 · ✅ UI 4/4 | **414/414** (thêm 34) | ✅ Xong (01/10) |
+| 01/10 | 23 | **Thông báo** — bảng `Notifications` + 3 API · sinh thông báo trong cùng transaction chuyển trạng thái | ✅ 3 API · ✅ đối chiếu SQL 4/4 · ✅ UI 3/3 | **414/414** (thêm 13) · FE **287/287** | ✅ Xong (01/10) |
 
 **Ký hiệu:** ⬜ Chưa làm · 🟨 Đang làm · ✅ Xong · ❌ Cắt (ghi lý do)
 
-> ⚠️ **Bước 22 & 23 KHÔNG nằm trong phạm vi đã chốt của báo cáo.**
-> Chỉ bắt tay vào khi Bước 1–21 xong hết **và** còn ≥ 3 ngày trước ngày bảo vệ.
-> Làm thì **phải bổ sung mục vào báo cáo cho khớp**, nếu không sẽ tự tạo mâu thuẫn.
-> Điều kiện & phạm vi chi tiết: `todo.md` → Giai đoạn 8.
+> ⚠️ **Bước 22 & 23 vốn KHÔNG nằm trong phạm vi đã chốt của báo cáo.**
+> Đã bắt tay vào sau khi Bước 1–21 xong hết và còn thời gian.
+> Vì đã làm nên **đã bổ sung mục vào `docs/CHUONG_4.md` cho khớp** — không có
+> tính năng nào trong code mà thiếu mô tả trong báo cáo.
+> Phạm vi và ranh giới chi tiết: `todo.md` → Giai đoạn 8.
 
 ---
 

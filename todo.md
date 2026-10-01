@@ -845,12 +845,13 @@ Trang báo *"Unable to render this definition"* dù `swagger.json` hợp lệ. N
 | Kiểm thử tích hợp | **41/41** request · **115/115** kiểm chứng · **12/12** lần chạy liên tiếp |
 
 > **Bài học 75–77:** đọc `DbException.ErrorCode` cho lỗi MySQL là luôn sai (phải đọc `MySqlException.Number`) · package không dùng có thể phá chức năng của package khác · bộ test tích hợp tự làm bẩn dữ liệu thì không phải bộ test, chỉ chạy được đúng một lần.
-### [x] BƯỚC 19 — 25 hình cho Chương 3 của báo cáo · **XONG 01/10/2026**
-- **Mục tiêu đo được:** chụp đủ 25 hình (3.1–3.25), **không được để trống "Hình 3.x" nào trong báo cáo** — ảnh chụp phải là của hệ thống đang chạy
-- **Kết quả:** **25/25 hình** trong `docs/anh/` — **7 ảnh giao diện** (3.19–3.25, chụp từ hệ thống chạy thật, khung 1440×900) + **18 sơ đồ** (3.1–3.18)
-- **Bằng chứng:** `docs/anh/3-*.png` (18 sơ đồ) · `docs/anh/3-*.jpg` (7 ảnh giao diện) · `docs/anh/so-do/*.svg` (18 file) · `docs/anh/README.md` bảng đối chiếu 25 hình với mẫu báo cáo
-- **Chi tiết:** `docs/anh/README.md`
-- **Bổ sung sau Bước 22–23 (01/10/2026):** thêm 3 sơ đồ (3.7 thanh toán, 3.8 thông báo, 3.18 tuần tự thanh toán), đánh số lại toàn bộ Chương 3, ERD lên 11 bảng, biểu đồ lớp thực thi thêm 5 lớp. Dùng `docs/anh/svg-2-png.mjs` (Chrome headless, hệ số phóng 2×) dựng PNG thay vì chụp tay.
+### [x] BƯỚC 19 — 23 hình cho Chương 3 của báo cáo · **XONG 01/10/2026**
+- **Mục tiêu đo được:** chụp đủ 23 hình (3.1–3.23), **không được để trống "Hình 3.x" nào trong báo cáo** — ảnh chụp phải là của hệ thống đang chạy
+- **Kết quả:** **23/23 hình** trong `docs/anh/` — **7 ảnh giao diện** (3.17–3.23, chụp từ hệ thống chạy thật, khung 1440×900) + **16 sơ đồ** (3.1–3.16)
+- **Bằng chứng:** `docs/anh/3-*.png` (16 sơ đồ) · `docs/anh/3-*.jpg` (7 ảnh giao diện) · `docs/anh/so-do/*.svg` (16 file) · `docs/anh/README.md` bảng đối chiếu 23 hình với mẫu báo cáo
+- **Chi tiết:** `docs/anh/README.md` — mở `docs/anh/so-do/index.html` để xem cả 16 sơ đồ trong một trang
+- **Bổ sung sau Bước 22–23 (01/10/2026):** thêm 3 sơ đồ (thanh toán, thông báo, tuần tự thanh toán), đánh số lại toàn bộ Chương 3, ERD lên 11 bảng. Dùng `docs/anh/svg-2-png.mjs` (Chrome headless, hệ số phóng 2×) dựng PNG thay vì chụp tay.
+- **Rút 2 hình (01/10/2026):** bỏ *Biểu đồ tác nhân nhân* và *Kiến trúc hệ thống* — nội dung đã có trong mục phân tích và mô tả kiến trúc của báo cáo, vẽ thêm chỉ chiếm trang mà không thêm thông tin. Đồng thời vẽ lại toàn bộ theo đúng kiểu mẫu PlantUML: use case xếp dọc kèm `«include»`, biểu đồ lớp thực thể có `+`/`-` và tam giác rỗng, tuần tự có thanh kích hoạt + khối `alt` + đánh số phân cấp sinh tự động.
 
 #### Quyết định đã chốt (trước khi code)
 
@@ -887,7 +888,7 @@ Lưu ý mẫu vẫn ghi **"Kiến trúc hệ thống StayEasy"** — tên cũ, p
 | Hạng mục | Kết quả |
 |----------|---------|
 | Ảnh giao diện | **7/7** — trang chủ, tìm kiếm, chi tiết phòng, đặt phòng, quản lý đơn, thống kê, quản lý phòng |
-| Sơ đồ | **18/18** — tác nhân, 8 use case, kiến trúc, lớp thực thi, ERD 11 bảng, 6 tuần tự |
+| Sơ đồ | **16/16** — 8 use case, lớp thực thi 13 lớp, ERD 11 bảng, 6 tuần tự |
 | Tổng | **25/25** — không còn ô "Hình 3.x" nào bị trống |
 | Frontend | **287/287** test · `npm run build` 0 error |
 

@@ -1,6 +1,6 @@
 # Bộ hình cho báo cáo (Chương 3 và Chương 4)
 
-**57 hình = 25 hình Chương 3 + 32 hình Chương 4.**
+**46 hình = 23 hình Chương 3 + 23 hình Chương 4.**
 
 Mục tiêu: **không để trống ô "Hình 3.x" hay "Hình 4.x" nào** trong báo cáo, và mỗi hình
 đều là hình thật — giao diện chụp từ hệ thống đang chạy, sơ đồ dựng từ dữ liệu của chính
@@ -8,53 +8,51 @@ dự án.
 
 | Mục | Nội dung |
 |-----|----------|
-| [Danh sách 25 hình Chương 3](#danh-sách-25-hình-chương-3) | 18 sơ đồ (3.1 – 3.18) + 7 ảnh giao diện (3.19 – 3.25) |
-| [Danh sách 32 hình Chương 4](#32-ảnh-giao-diện-cho-chương-4-hình-41--423) | 32 ảnh giao diện (4.1 – 4.23), xem cuối file |
+| [Danh sách 23 hình Chương 3](#danh-sách-23-hình-chương-3) | 16 sơ đồ (3.1 – 3.16) + 7 ảnh giao diện (3.17 – 3.23) |
+| [Danh sách 23 ảnh Chương 4](#23-ảnh-giao-diện-cho-chương-4-hình-41--423) | 32 ảnh giao diện (4.1 – 4.23), xem cuối file |
 
 ## Hai loại hình
 
 | Nhóm | Số | Cách tạo | Nguồn |
 |------|----|----------|-------|
-| Sơ đồ | 18 (3.1 – 3.18) | Sinh bằng script `ve-so-do.mjs` ra SVG, rồi `svg-2-png.mjs` dựng ra PNG | Nội dung lấy từ **code thật**: endpoint, entity, tầng kiến trúc, luồng nghiệp vụ |
-| Giao diện | 32 (3.19 – 3.25 và 4.1 – 4.23) | Chụp trực tiếp hệ thống đang chạy | Khung 1440 × 900 |
+| Sơ đồ | 16 (3.1 – 3.16) | Sinh bằng script `ve-so-do.mjs` ra SVG, rồi `svg-2-png.mjs` dựng ra PNG | Nội dung lấy từ **code thật**: endpoint, entity, tầng kiến trúc, luồng nghiệp vụ |
+| Giao diện | 30 (3.17 – 3.23 và 4.1 – 4.23) | Chụp trực tiếp hệ thống đang chạy | Khung 1440 × 900 |
 
 > Sơ đồ lưu `.png` chứ không phải `.jpg`: sơ đồ nhiều chữ nhỏ và nét mảnh, JPEG bóp mép
 > chữ. File `.svg` vẫn giữ nguyên để dựng lại bất cứ lúc nào.
 
-## Danh sách 25 hình Chương 3
+## Danh sách 23 hình Chương 3
 
 | Hình | Tên trong báo cáo | File ảnh | File SVG |
 |------|-------------------|-----------|----------|
-| 3.1 | Biểu đồ tác nhân nhân | `3-01-bieu-do-tac-nhan.png` | `so-do/3-01-bieu-do-tac-nhan.svg` |
-| 3.2 | Use Case tổng quát | `3-02-use-case-tong-quat.png` | `so-do/3-02-…svg` |
-| 3.3 | Use Case quản lý tài khoản | `3-03-use-case-quan-ly-tai-khoan.png` | `so-do/3-03-…svg` |
-| 3.4 | Use Case tìm kiếm & đặt phòng | `3-04-use-case-tim-kiem-va-dat-phong.png` | `so-do/3-04-…svg` |
-| 3.5 | Use Case quản lý đặt phòng | `3-05-use-case-quan-ly-dat-phong.png` | `so-do/3-05-…svg` |
-| 3.6 | Use Case quản lý phòng | `3-06-use-case-quan-ly-phong.png` | `so-do/3-06-…svg` |
-| 3.7 | Use Case thanh toán | `3-07-use-case-thanh-toan.png` | `so-do/3-07-…svg` |
-| 3.8 | Use Case thông báo | `3-08-use-case-thong-bao.png` | `so-do/3-08-…svg` |
-| 3.9 | Use Case quản trị hệ thống | `3-09-use-case-quan-tri-he-thong.png` | `so-do/3-09-…svg` |
-| 3.10 | Kiến trúc hệ thống | `3-10-kien-truc-he-thong.png` | `so-do/3-10-kien-truc-he-thong.svg` |
-| 3.11 | Biểu đồ lớp thực thi | `3-11-bieu-do-lop-thuc-thi.png` | `so-do/3-11-…svg` |
-| 3.12 | Sơ đồ ERD của hệ thống | `3-12-so-do-erd.png` | `so-do/3-12-so-do-erd.svg` |
-| 3.13 | Tuần tự: đăng nhập | `3-13-sequence-dang-nhap.png` | `so-do/3-13-…svg` |
-| 3.14 | Tuần tự: tìm kiếm phòng | `3-14-sequence-tim-kiem-phong.png` | `so-do/3-14-…svg` |
-| 3.15 | Tuần tự: đặt phòng | `3-15-sequence-dat-phong.png` | `so-do/3-15-…svg` |
-| 3.16 | Tuần tự: check-in / check-out | `3-16-sequence-check-in-check-out.png` | `so-do/3-16-…svg` |
-| 3.17 | Tuần tự: quản lý phòng | `3-17-sequence-quan-ly-phong.png` | `so-do/3-17-…svg` |
-| 3.18 | Tuần tự: thanh toán | `3-18-sequence-thanh-toan.png` | `so-do/3-18-…svg` |
-| 3.19 | Giao diện trang chủ | `3-19-trang-chu.jpg` | — |
-| 3.20 | Giao diện tìm kiếm phòng | `3-20-tim-kiem-phong.jpg` | — |
-| 3.21 | Giao diện chi tiết phòng | `3-21-chi-tiet-phong.jpg` | — |
-| 3.22 | Giao diện đặt phòng | `3-22-dat-phong.jpg` | — |
-| 3.23 | Giao diện quản lý đặt phòng | `3-23-quan-ly-don-dat-phong.jpg` | — |
-| 3.24 | Giao diện quản trị hệ thống | `3-24-quan-tri-he-thong.jpg` | — |
-| 3.25 | Giao diện quản lý phòng | `3-25-quan-ly-phong.jpg` | — |
+| 3.1 | Use Case tổng quát | `3-01-use-case-tong-quat.png` | `so-do/3-01-…svg` |
+| 3.2 | Use Case quản lý tài khoản | `3-02-use-case-quan-ly-tai-khoan.png` | `so-do/3-02-…svg` |
+| 3.3 | Use Case tìm kiếm & đặt phòng | `3-03-use-case-tim-kiem-va-dat-phong.png` | `so-do/3-03-…svg` |
+| 3.4 | Use Case quản lý đặt phòng | `3-04-use-case-quan-ly-dat-phong.png` | `so-do/3-04-…svg` |
+| 3.5 | Use Case quản lý phòng | `3-05-use-case-quan-ly-phong.png` | `so-do/3-05-…svg` |
+| 3.6 | Use Case thanh toán | `3-06-use-case-thanh-toan.png` | `so-do/3-06-…svg` |
+| 3.7 | Use Case thông báo | `3-07-use-case-thong-bao.png` | `so-do/3-07-…svg` |
+| 3.8 | Use Case quản trị hệ thống | `3-08-use-case-quan-tri-he-thong.png` | `so-do/3-08-…svg` |
+| 3.9 | Biểu đồ lớp thực thi | `3-09-bieu-do-lop-thuc-thi.png` | `so-do/3-09-…svg` |
+| 3.10 | Sơ đồ ERD của hệ thống | `3-10-so-do-erd.png` | `so-do/3-10-…svg` |
+| 3.11 | Tuần tự: đăng nhập | `3-11-sequence-dang-nhap.png` | `so-do/3-11-…svg` |
+| 3.12 | Tuần tự: tìm kiếm phòng | `3-12-sequence-tim-kiem-phong.png` | `so-do/3-12-…svg` |
+| 3.13 | Tuần tự: đặt phòng | `3-13-sequence-dat-phong.png` | `so-do/3-13-…svg` |
+| 3.14 | Tuần tự: check-in / check-out | `3-14-sequence-check-in-check-out.png` | `so-do/3-14-…svg` |
+| 3.15 | Tuần tự: quản lý phòng | `3-15-sequence-quan-ly-phong.png` | `so-do/3-15-…svg` |
+| 3.16 | Tuần tự: thanh toán | `3-16-sequence-thanh-toan.png` | `so-do/3-16-…svg` |
+| 3.17 | Giao diện trang chủ | `3-17-trang-chu.jpg` | — |
+| 3.18 | Giao diện tìm kiếm phòng | `3-18-tim-kiem-phong.jpg` | — |
+| 3.19 | Giao diện chi tiết phòng | `3-19-chi-tiet-phong.jpg` | — |
+| 3.20 | Giao diện đặt phòng | `3-20-dat-phong.jpg` | — |
+| 3.21 | Giao diện quản lý đặt phòng | `3-21-quan-ly-don-dat-phong.jpg` | — |
+| 3.22 | Giao diện quản trị hệ thống | `3-22-quan-tri-he-thong.jpg` | — |
+| 3.23 | Giao diện quản lý phòng | `3-23-quan-ly-phong.jpg` | — |
 
 ## ⚠️ Những chỗ mẫu báo cáo còn sai so với hệ thống
 
 Mẫu `.docx` viết tên hệ thống là **StayEasy**; dự án này tên là **HomeStay**. Kiến trúc
-nay đã đánh số lại (Hình 3.10, không còn là 3.8) và sơ đồ `3-10-kien-truc-he-thong.svg`
+nay đã đánh số lại (Hình 3.10, không còn là 3.8) và sơ đồ `3-10-so-do-erd.svg`
 đã ghi đúng tên.
 
 Danh sách đầy đủ các chỗ phải sửa tay trong mẫu nằm ở `docs/CHINH_SUA_MAU_BAO_CAO.md` —
@@ -66,8 +64,8 @@ Sơ đồ được sinh từ script, **không vẽ tay** — nên khi code đổ
 lớp, đổi luồng) chỉ cần sửa dữ liệu trong script rồi chạy lại:
 
 ```powershell
-node docs/anh/ve-so-do.mjs          # ghi 18 file .svg vào docs/anh/so-do/
-node docs/anh/svg-2-png.mjs         # dựng 18 file .png để nhúng vào Word
+node docs/anh/ve-so-do.mjs          # ghi 16 file .svg vào docs/anh/so-do/
+node docs/anh/svg-2-png.mjs         # dựng 16 file .png để nhúng vào Word
 ```
 
 Hai lệnh phải chạy **theo thứ tự**: PNG là ảnh chụp từ SVG, sửa SVG mà không chạy lại
@@ -79,7 +77,7 @@ Muốn xem/chụp lại: chạy server tĩnh nhỏ rồi mở trình duyệt
 node docs/anh/xem-so-do.mjs         # http://localhost:5199/anh/so-do/index.html
 ```
 
-> `index.html` là **trang xem tất cả 18 sơ đồ trong một trang**, do chính `ve-so-do.mjs`
+> `index.html` là **trang xem tất cả 16 sơ đồ trong một trang**, do chính `ve-so-do.mjs`
 > sinh ra nên không bao giờ lệch với danh sách hình. Muốn xem toàn bộ sơ đồ thì mở
 > trang này thay vì bấm từng file.
 
@@ -109,7 +107,7 @@ qua, không có nét nào cắt ngang chữ bên trong hộp.
 - Đã dọn sạch dữ liệu rác do các lần chạy test tích hợp (Bước 18), chỉ xoá theo
   `Note` đúng của test, **không** `TRUNCATE`
 
-## 32 ảnh giao diện cho Chương 4 (Hình 4.1 – 4.23)
+## 23 ảnh giao diện cho Chương 4 (Hình 4.1 – 4.23)
 
 Chụp từ hệ thống đang chạy thật, dùng cho `docs/CHUONG_4.md`.
 Mọi ảnh quy ước nền trắng, không có viền đen của trình duyệt.

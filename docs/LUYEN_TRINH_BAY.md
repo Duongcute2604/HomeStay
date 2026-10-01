@@ -160,7 +160,7 @@ em chỉ làm theo hướng dẫn.
 | 6 | Đăng nhập được `admin@homestay.vn` / `123456` | ⬜ |
 | 7 | Mở sẵn 2 tab trình duyệt (khách + Admin) | ⬜ |
 | 8 | Tắt thông báo trình duyệt và thông báo email | ⬜ |
-| 9 | Báo cáo có đủ **57 hình** (25 hình Chương 3 + 32 hình Chương 4), không ô nào trống | ⬜ |
+| 9 | Báo cáo có đủ **46 hình** (23 hình Chương 3 + 23 hình Chương 4), không ô nào trống | ⬜ |
 | 10 | Không có chỗ nào trong báo cáo ghi "nhân viên" | ⬜ |
 | 11 | Đã đọc mục **Vibe Coding** trong báo cáo để trả lời câu hỏi về AI | ⬜ |
 | 12 | Mang theo **USB hoặc in phụ** báo cáo và file slide | ⬜ |
