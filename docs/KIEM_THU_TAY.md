@@ -814,7 +814,15 @@ Bằng chứng: `RaceConditionTests.cs` — 11 test cho hàm dò mã lỗi, gồ
 | Sau khi sửa test sai + sửa lỗi race | 34/34, 97/99 |
 | Sau khi thêm dọn dẹp + tách dải ngày | 41/41, **115/115** |
 | **10 lần liên tiếp** | **10/10 trong hết** |
-| **12 lần liên tiếp** (lần cuối) | **12/12 trong hết** |
+| **12 lần liên tiếp** | **12/12 trong hết** |
+| **Sau khi thêm Thanh toán (Bước 22) + Thông báo (Bước 23)** | 41/41, **115/115** |
+| **Sau khi đổi ảnh phòng sang 12 phòng (Bước 25) — lần cuối** | 41/41, **115/115** |
+
+Hai lần chạy sau cùng nhằm chứng minh bộ test vẫn xanh **sau khi** thêm 2 bảng CSDL
+(`Payments`, `Notifications`) và sau khi đổi toàn bộ dữ liệu ảnh phòng — tức là nó
+bảo vệ được phần mới chứ không chỉ phần cũ. Lần chạy cuối để lại CSDL ở trạng
+thái seed (đã `DROP` + `CREATE DATABASE` + `dotnet ef database update` rồi chạy
+lại app), nên không còn dữ liệu do test sinh ra.
 
 Bằng chứng lưu tại `docs/api/ket-qua-chay-lan-1.txt` (209 dòng, kết quả từng request) và
 `docs/api/ket-qua-chay-lien-tiep.txt`.
