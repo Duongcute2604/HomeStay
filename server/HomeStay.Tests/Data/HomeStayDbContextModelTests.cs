@@ -18,25 +18,27 @@ public class HomeStayDbContextModelTests
     private static readonly string[] ExpectedEntityNames =
     [
         "User", "Location", "Room", "RoomImage", "Amenity",
-        "RoomAmenity", "Booking", "BookingStatusHistory", "Review", "Payment"
+        "RoomAmenity", "Booking", "BookingStatusHistory", "Review", "Payment", "Notification"
     ];
 
     private static readonly string[] ExpectedTableNames =
     [
-        "Amenities", "BookingStatusHistory", "Bookings", "Locations",
+        "Amenities", "BookingStatusHistory", "Bookings", "Locations", "Notifications",
         "Payments", "Reviews", "RoomAmenities", "RoomImages", "Rooms", "Users"
     ];
 
     // ---------- Cấu trúc ----------
 
     [Fact]
-    public void Model_ChuaDung10Bang_DuDoiLuongBang()
+    public void Model_ChiCoDungCacEntityDaKhaiBaos()
     {
         using HomeStayDbContext context = TestDbContextFactory.CreateForSchemaInspection();
 
         string[] actualNames = GetDesignTimeModel(context).GetEntityTypes().Select(x => x.ClrType.Name).ToArray();
 
-        Assert.Equal(10, actualNames.Length);
+        // Số bảng lấy từ chính danh sách kỳ vọng thay vì viết cứng "10": viết cứng thì
+        // thêm bảng mới là test đỏ, và phải sửa hai chỗ cho một thay đổi.
+        Assert.Equal(ExpectedEntityNames.Length, actualNames.Length);
         Assert.All(ExpectedEntityNames, expectedName => Assert.Contains(expectedName, actualNames));
     }
 

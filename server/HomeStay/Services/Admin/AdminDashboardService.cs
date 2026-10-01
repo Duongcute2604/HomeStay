@@ -145,8 +145,12 @@ public class AdminDashboardService : IAdminDashboardService
             {
                 Thang = thang.ToString("yyyy-MM"),
                 Nhan = $"T{thang.Month}",
+                // Dùng `is DateTime` thay vì `.Value`: cột `PaidAt` là nullable, nên
+                // `.Value` sẽ ném `InvalidOperationException` nếu có phiếu đã đánh dấu
+                // thu mà chưa ghi thời điểm — và trình biên dịch cảnh báo đúng điểm đó.
                 DoanhThu = phieuDaThu
-                    .Where(phieu => phieu.PaidAt.Value.Year == thang.Year && phieu.PaidAt.Value.Month == thang.Month)
+                    .Where(phieu => phieu.PaidAt is DateTime daThu
+                        && daThu.Year == thang.Year && daThu.Month == thang.Month)
                     .Sum(phieu => phieu.Amount),
                 SoDon = donTrongKy.Count(
                     don => don.CreatedAt.Year == thang.Year && don.CreatedAt.Month == thang.Month),

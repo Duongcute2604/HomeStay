@@ -7,6 +7,7 @@ using HomeStay.DTOs;
 using HomeStay.Entities;
 using HomeStay.Enums;
 using HomeStay.Services.Booking;
+using HomeStay.Services.Notifications;
 
 namespace HomeStay.Services.Admin;
 
@@ -237,6 +238,12 @@ public class AdminBookingService : IAdminBookingService
                 MoPhieuThu(don, ct);
             }
 
+            // Mọi lần chuyển trạng thái đều sinh thông báo cho khách trong cùng
+            // transaction: có đơn chuyển trạng thái mà không có thông báo thì khách
+            // phải tự vào đơn kiểm tra, đúng cái trải nghiệm mà chuông thông báo sinh ra
+            // để loại bỏ.
+            TaoThongBao(don, denTrangThai, ganLyDoHuy);
+
             await _db.SaveChangesAsync(ct);
             await giaoDich.CommitAsync(ct);
 
@@ -271,6 +278,31 @@ public class AdminBookingService : IAdminBookingService
             Status = PaymentStatus.PENDING,
             CreatedAt = now,
             UpdatedAt = now,
+        });
+    }
+
+    /// <summary>
+    /// Sinh thông báo cho khách khi đơn vừa chuyển trạng thái.
+    /// </summary>
+    /// <remarks>
+    /// Gọi trong transaction của <see cref="ChuyenTrangThaiAsync"/> nên không cần
+    /// <c>SaveChanges</c>. Câu chữ do <see cref="NotificationTemplates"/> sinh để sửa
+    /// văn bản không đụng vào logic ở đây.
+    /// </remarks>
+    /// <param name="don">Đơn vừa chuyển trạng thái.</param>
+    /// <param name="denTrangThai">Trạng thái mới.</param>
+    /// <param name="lyDo">Lý do từ chối/hủy, có ở các trạng thái cần giải thích.</param>
+    private void TaoThongBao(Entities.Booking don, BookingStatus denTrangThai, string? lyDo)
+    {
+        (string tieuDe, string noiDung) = NotificationTemplates.Tao(don, denTrangThai, lyDo);
+
+        _db.Notifications.Add(new Notification
+        {
+            UserId = don.UserId,
+            Title = tieuDe,
+            Content = noiDung,
+            IsRead = false,
+            CreatedAt = DateTime.Now,
         });
     }
 

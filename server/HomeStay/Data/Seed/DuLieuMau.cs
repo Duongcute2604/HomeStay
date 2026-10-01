@@ -1,6 +1,7 @@
 using HomeStay.Entities;
 using HomeStay.Enums;
 using HomeStay.Services.Booking;
+using HomeStay.Services.Notifications;
 
 namespace HomeStay.Data.Seed;
 
@@ -562,5 +563,74 @@ public static class DuLieuMau
         }
 
         return ketQua;
+    }
+
+    /// <summary>
+    /// Sinh thông báo cho các lần Admin chuyển trạng thái đơn.
+    /// </summary>
+    /// <remarks>
+    /// Dựng lại đúng những thông báo mà hệ thống thật sẽ sinh: mỗi dòng lịch sử trạng
+    /// thái do Admin thực hiện ứng với một thông báo. Nếu seed tự chế câu chữ riêng thì
+    /// dữ liệu mẫu lệch với hành vi thật — và giáo viên bấm thử sẽ thấy không khớp.
+    ///
+    /// Cố ý để **vài thông báo chưa đọc**: badge trên icon chuông là thứ dễ nhất để
+    /// chứng minh tính năng chạy thật, mà tất cả đều đã đọc thì badge luôn bằng 0.
+    /// </remarks>
+    public static List<Notification> TaoThongBao(
+        List<Booking> donList,
+        List<BookingStatusHistory> lichSuList)
+    {
+        // Chỉ những trạng thái mà Admin thao tác mới sinh thông báo (khớp với
+        // `NotificationTemplates`). Khách tự huỷ đơn thì không sinh.
+        BookingStatus[] trangThaiSinhThongBao =
+        [
+            BookingStatus.CONFIRMED,
+            BookingStatus.CHECKED_IN,
+            BookingStatus.COMPLETED,
+            BookingStatus.REJECTED,
+        ];
+
+        List<Notification> thongBaoList = [];
+
+        foreach (BookingStatusHistory buoc in lichSuList
+                     .Where(x => trangThaiSinhThongBao.Contains(x.ToStatus))
+                     .OrderBy(x => x.ChangedAt))
+        {
+            // Tra theo `Booking.Code` chứ không theo `BookingId`: trong lúc seed,
+            // thuộc tính khoá ngoại chưa được sinh nên `BookingId` còn bằng 0.
+            Booking don = donList.First(x => x.Code == buoc.Booking!.Code);
+            (string tieuDe, string noiDung) = NotificationTemplates.Tao(don, buoc.ToStatus, don.CancelReason);
+
+            thongBaoList.Add(new Notification
+            {
+                // Gắn navigation `User` chứ không điền `UserId`: lúc seed khoá ngoại
+                // chưa được sinh nên `don.UserId` còn bằng 0 → MySQL báo lỗi khoá ngoại.
+                // EF tự điền khoá từ navigation, giống cách `TaoPhieuThu` gắn `Booking`.
+                User = don.User,
+                Title = tieuDe,
+                Content = noiDung,
+                IsRead = false,
+                CreatedAt = buoc.ChangedAt,
+            });
+        }
+
+        // Mặc định coi như đã đọc, rồi chừa lại: cứ 3 cái một cái chưa đọc, cộng thêm
+        // 3 thông báo mới nhất. Phải tách hai lượt vì "cái mới nhất" chỉ biết được sau
+        // khi đã dựng xong danh sách.
+        const int SoChuaDocDinhKy = 3;
+        const int SoChuaDocMoiNhat = 3;
+
+        for (int i = 0; i < thongBaoList.Count; i++)
+        {
+            thongBaoList[i].IsRead = i % SoChuaDocDinhKy != 0;
+        }
+
+        foreach (Notification thongBao in thongBaoList
+                     .Skip(Math.Max(0, thongBaoList.Count - SoChuaDocMoiNhat)))
+        {
+            thongBao.IsRead = false;
+        }
+
+        return thongBaoList;
     }
 }

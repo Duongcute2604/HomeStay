@@ -47,6 +47,7 @@ public static class SeedData
         List<BookingStatusHistory> lichSuList = DuLieuMau.TaoLichSuTrangThai(donList, taiKhoanList);
         List<Review> danhGiaList = DuLieuMau.TaoDanhGia(donList);
         List<Payment> phieuThuList = DuLieuMau.TaoPhieuThu(donList, now);
+        List<Notification> thongBaoList = DuLieuMau.TaoThongBao(donList, lichSuList);
 
         DuLieuMau.TinhLaiDiemPhong(phongList, danhGiaList);
 
@@ -60,6 +61,7 @@ public static class SeedData
         await db.BookingStatusHistory.AddRangeAsync(lichSuList, ct);
         await db.Reviews.AddRangeAsync(danhGiaList, ct);
         await db.Payments.AddRangeAsync(phieuThuList, ct);
+        await db.Notifications.AddRangeAsync(thongBaoList, ct);
 
         await db.SaveChangesAsync(ct);
     }

@@ -24,6 +24,7 @@ public class HomeStayDbContext : DbContext
     public DbSet<BookingStatusHistory> BookingStatusHistory => Set<BookingStatusHistory>();
     public DbSet<Review> Reviews => Set<Review>();
     public DbSet<Payment> Payments => Set<Payment>();
+    public DbSet<Notification> Notifications => Set<Notification>();
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {
@@ -51,6 +52,7 @@ public class HomeStayDbContext : DbContext
         ConfigureBookingStatusHistory(modelBuilder);
         ConfigureReviews(modelBuilder);
         ConfigurePayments(modelBuilder);
+        ConfigureNotifications(modelBuilder);
     }
 
     private static void ConfigureUsers(ModelBuilder modelBuilder)
@@ -281,6 +283,31 @@ public class HomeStayDbContext : DbContext
         payment.HasOne(x => x.Booking)
             .WithMany(x => x.Payments)
             .HasForeignKey(x => x.BookingId)
+            .OnDelete(DeleteBehavior.Cascade);
+    }
+
+    /// <summary>
+    /// Cấu hình bảng thông báo trong ứng dụng.
+    /// </summary>
+    /// <remarks>
+    /// Index trên <c>(UserId, CreatedAt)</c> phục vụ đúng hai truy vấn nóng của màn hình
+    /// chuông: lấy danh sách mới nhất và đếm số chưa đọc. Không có index này thì mỗi lần
+    /// mở trang phải quét cả bảng.
+    /// </remarks>
+    private static void ConfigureNotifications(ModelBuilder modelBuilder)
+    {
+        var notification = modelBuilder.Entity<Notification>();
+        notification.ToTable("Notifications");
+        notification.HasKey(x => x.Id);
+        notification.Property(x => x.Title).HasMaxLength(200).IsRequired();
+        notification.Property(x => x.Content).HasMaxLength(500);
+        notification.HasIndex(x => new { x.UserId, x.CreatedAt });
+        // Đếm số chưa đọc chỉ quét thông báo của chính người đó.
+        notification.HasIndex(x => new { x.UserId, x.IsRead });
+        notification.HasOne(x => x.User)
+            .WithMany(x => x.Notifications)
+            .HasForeignKey(x => x.UserId)
+            // Xoá tài khoản thì thông báo của họ cũng không còn ý nghĩa gì.
             .OnDelete(DeleteBehavior.Cascade);
     }
 

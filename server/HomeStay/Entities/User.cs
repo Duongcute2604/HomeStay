@@ -68,6 +68,7 @@ public class User
 
     /// <summary>Các đánh giá do tài khoản này viết.</summary>
     public ICollection<Review> Reviews { get; set; } = new List<Review>();
+    public ICollection<Notification> Notifications { get; set; } = new List<Notification>();
 
     /// <summary>Các lần thay đổi trạng thái đơn do tài khoản này thực hiện.</summary>
     public ICollection<BookingStatusHistory> StatusChanges { get; set; } = new List<BookingStatusHistory>();
