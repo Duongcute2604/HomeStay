@@ -100,10 +100,11 @@ qua, không có nét nào cắt ngang chữ bên trong hộp.
 ## Dữ liệu dùng để chụp 7 ảnh giao diện
 
 - Tài khoận: `admin@homestay.vn` (Admin) · `khach1@gmail.com` (khách) — mật khẩu `123456`
-- Dữ liệu: **đúng trạng thái seed** — 4 tài khoản · 10 phòng · 15 đơn · 6 đánh giá ·
-  7 phiếu thu · 26 thông báo (11 chưa đọc)
-- Muốn trả về đúng trạng thái seed: `DROP DATABASE homestay` rồi chạy lại app; seed chỉ
-  nạp khi bảng `Users` còn trống
+- Dữ liệu: **đúng trạng thái seed** — 4 tài khoản · 12 phòng · 48 ảnh phòng ·
+  15 đơn · 6 đánh giá · 7 phiếu thu · 26 thông báo (11 chưa đọc)
+- Muốn trả về đúng trạng thái seed: `DROP DATABASE homestay` rồi `CREATE DATABASE
+  homestay` (app không tự tạo database) rồi chạy lại app; seed chỉ nạp khi bảng
+  `Users` còn trống
 - Đã dọn sạch dữ liệu rác do các lần chạy test tích hợp (Bước 18), chỉ xoá theo
   `Note` đúng của test, **không** `TRUNCATE`
 

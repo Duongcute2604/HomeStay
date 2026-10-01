@@ -17,7 +17,17 @@ namespace HomeStay.Tests.Services;
 /// </summary>
 public class RoomSearchTests
 {
-    /// <summary>Dựng database đã seed đủ 3 địa điểm + 10 phòng như dữ liệu thật.</summary>
+    /// <summary>
+    /// Số phòng và cơ cấu phòng của dữ liệu mẫu. Gom vào hằng số để thêm hoặc bớt
+    /// phòng trong <c>DuLieuMau</c> chỉ phải sửa một chỗ, thay vì rà lại mọi con số
+    /// viết cứng rải khắp các test.
+    /// </summary>
+    private const int TongSoPhong = 12;
+    private const int SoPhongDiaDiemDau = 5;   // Hưng Yên
+    private const int SoPhongDiaDiemGiua = 4;  // Đà Lạt
+    private const int SoPhongDiaDiemCuoi = 3;  // Hội An
+
+    /// <summary>Dựng database đã seed đủ 3 địa điểm + 12 phòng như dữ liệu thật.</summary>
     private static async Task<HomeStayDbContext> TaoDbDaSeedAsync()
     {
         HomeStayDbContext db = TestDbContextFactory.Create();
@@ -38,16 +48,18 @@ public class RoomSearchTests
     // ---------------- Bộ lọc ----------------
 
     [Fact]
-    public async Task SearchAsync_KhongLoc_TraVeCa10Phong()
+    public async Task SearchAsync_KhongLoc_TraVeCa12Phong()
     {
         await using HomeStayDbContext db = await TaoDbDaSeedAsync();
         RoomService service = TaoService(db);
 
         PagedResultDto<RoomSearchItemDto> result = await service.SearchAsync(TaoYeuCau(), CancellationToken.None);
 
-        Assert.Equal(10, result.TotalItems);
-        Assert.Equal(10, result.Items.Count);
+        Assert.Equal(TongSoPhong, result.TotalItems);
+        Assert.Equal(TongSoPhong, result.Items.Count);
         Assert.Equal(1, result.TotalPages);
+        // 5 + 4 + 3 = 12: cơ cấu 3 địa điểm phải khớp với dữ liệu mẫu
+        Assert.Equal(SoPhongDiaDiemDau + SoPhongDiaDiemGiua + SoPhongDiaDiemCuoi, result.TotalItems);
     }
 
     [Fact]
@@ -62,7 +74,7 @@ public class RoomSearchTests
 
         PagedResultDto<RoomSearchItemDto> result = await service.SearchAsync(request, CancellationToken.None);
 
-        Assert.Equal(4, result.TotalItems);
+        Assert.Equal(SoPhongDiaDiemDau, result.TotalItems);
         Assert.All(result.Items, phong => Assert.Equal("Hưng Yên Ven Biển", phong.LocationName));
     }
 
@@ -213,10 +225,10 @@ public class RoomSearchTests
         PagedResultDto<RoomSearchItemDto> ketQua1 = await service.SearchAsync(trang1, CancellationToken.None);
         PagedResultDto<RoomSearchItemDto> ketQua2 = await service.SearchAsync(trang2, CancellationToken.None);
 
-        Assert.Equal(10, ketQua1.TotalItems);
+        Assert.Equal(TongSoPhong, ketQua1.TotalItems);
         Assert.Equal(2, ketQua1.TotalPages);
         Assert.Equal(6, ketQua1.Items.Count);
-        Assert.Equal(4, ketQua2.Items.Count);
+        Assert.Equal(6, ketQua2.Items.Count);
         // Hai trang không có phòng nào trùng nhau — STT giao diện mới liên tục được.
         Assert.Empty(ketQua1.Items.Select(p => p.Name).Intersect(ketQua2.Items.Select(p => p.Name)));
     }
@@ -294,11 +306,13 @@ public class RoomSearchTests
         List<RoomSearchItemDto> items = (await service.SearchAsync(request, CancellationToken.None)).Items;
 
         // Dù sắp theo giá, chỉ số vẫn neo theo thứ tự OrderBy Id của locations:
-        // Hưng Yên = 0 (4 phòng, roomIndex 0–3), Đà Lạt = 1, Hội An = 2.
+        // Hưng Yên = 0 (5 phòng, roomIndex 0–4), Đà Lạt = 1, Hội An = 2.
         var hungYen = items.Where(p => p.LocationName == "Hưng Yên Ven Biển").ToList();
-        Assert.Equal(4, hungYen.Count);
+        Assert.Equal(SoPhongDiaDiemDau, hungYen.Count);
         Assert.All(hungYen, p => Assert.Equal(0, p.LocationIndex));
-        Assert.Equal(new[] { 0, 1, 2, 3 }, hungYen.Select(p => p.RoomIndex).OrderBy(i => i).ToArray());
+        Assert.Equal(
+            Enumerable.Range(0, SoPhongDiaDiemDau).ToArray(),
+            hungYen.Select(p => p.RoomIndex).OrderBy(i => i).ToArray());
     }
 
     [Fact]

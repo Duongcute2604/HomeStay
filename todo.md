@@ -121,7 +121,7 @@ dotnet run            Now listening on: http://localhost:5080  (không có fail/
   3. **Tách 2 file ra khỏi seed** để tái dùng cho Bước 9/10: `Services/Booking/BookingRules.cs` (hằng số: tối thiểu 3 giờ, báo trước 2 giờ, dọn phòng 2 giờ, giờ nhận/trả 14h/12h) + `BookingCalculator.cs` (hàm thuần tính tiền theo giờ/ngày).
   4. `Program.cs` gọi seed trong block `CreateAsyncScope` — dùng scope thay vì singleton để không giữ `DbContext` sống quá lâu.
   5. 8 ảnh SVG sinh bằng code, UTF-8 có dấu, đặt đúng chỗ: `client/public/images/rooms/` (5 ảnh) + `locations/` (3 ảnh).
-  6. Dữ liệu: 4 user (1 ADMIN + 3 CUSTOMER, trong đó 1 tài khoản `LOCKED`) · 3 địa điểm · 8 tiện nghi · 10 phòng (đủ 4 loại + đủ 5 trạng thái) · 59 liên kết tiện nghi · 20 ảnh phòng · 15 đơn (đủ 6 trạng thái) · 42 dòng lịch sử trạng thái · 6 đánh giá (1 đánh giá bị ẩn) · điểm phòng tính lại từ đánh giá chưa ẩn.
+  6. Dữ liệu: 4 user (1 ADMIN + 3 CUSTOMER, trong đó 1 tài khoản `LOCKED`) · 3 địa điểm · 8 tiện nghi · 12 phòng (đủ 3 loại + đủ 5 trạng thái) · 59 liên kết tiện nghi · 48 ảnh phòng (4 ảnh/phòng, cùng một phòng) · 15 đơn (đủ 6 trạng thái) · 42 dòng lịch sử trạng thái · 6 đánh giá (1 đánh giá bị ẩn) · điểm phòng tính lại từ đánh giá chưa ẩn.
   7. Ngày tháng **tương đối so với `DateTime.Now`** thay vì ghi cứng ⇒ dữ liệu demo luôn "sống" dù GVHD chạy demo vào ngày nào.
   8. Tài khoản demo: `admin@homestay.vn` · `khach1@gmail.com` · `khach2@gmail.com` · `khach3@gmail.com` — mật khẩu đều `123456`.
 - **Bằng chứng:**
@@ -410,7 +410,7 @@ từ query string) nên không có cách kích hoạt. Vẫn cần nói rõ vớ
 ### [x] BƯỚC 6 — Xem địa điểm · **XONG 30/09/2026**
 - **Mục tiêu đo được:** `GET /api/locations` trả 3 địa điểm KHÔNG có `Id`, kèm phòng tóm tắt · trang `/locations` + `/locations/:chiSo` chạy được · 3/3 test tay · **≥ 8 unit test backend** + **≥ 10 unit test frontend**
 - **Kết quả đo được:**
-  - API: 200, 3 địa điểm + 10 phòng, không lộ `Id`, public không cần token
+  - API: 200, 3 địa điểm + 12 phòng, không lộ `Id`, public không cần token
   - Test tay: **9/9 ca đạt** (HP 3 · EC 3 · AB 3), ghi ở `docs/KIEM_THU_TAY.md` mục 2
   - Unit test backend: `dotnet test --filter "LocationService"` → **10/10**
   - Unit test frontend: `npm test` → **87/87** (thêm 27: format 8 · locationService 4 · Locations 7 · LocationDetail 8)
@@ -423,12 +423,12 @@ từ query string) nên không có cách kích hoạt. Vẫn cần nói rõ vớ
 
 | # | Vấn đề | Chốt | Lý do |
 |---|--------|------|-------|
-| 1 | List có trả `Id` không? | **Không** (`AGENTS.md` 6.3). Nhúng luôn phòng tóm tắt vào response list | Dữ liệu nhỏ (3 địa điểm, 10 phòng). Tránh endpoint chi tiết chết (YAGNI): trang chi tiết đọc từ cache TanStack Query của list |
+| 1 | List có trả `Id` không? | **Không** (`AGENTS.md` 6.3). Nhúng luôn phòng tóm tắt vào response list | Dữ liệu nhỏ (3 địa điểm, 12 phòng). Tránh endpoint chi tiết chết (YAGNI): trang chi tiết đọc từ cache TanStack Query của list |
 | 2 | Điều hướng tới chi tiết bằng gì? | **Chỉ số trong danh sách** (`/locations/0`, `/locations/1`...) | Không lộ `Id` ở đâu. STT = chỉ số + 1 khớp luôn quy tắc hiển thị. Gõ thẳng URL vẫn chạy (tải list rồi chọn theo chỉ số). Chỉ số sai → thông báo không tìm thấy |
 | 3 | Thứ tự sắp xếp | `OrderBy Id` cả địa điểm lẫn phòng | Ổn định giống nhau trên MySQL thật và InMemory của test (sắp theo tên thì collation hai nơi khác nhau, test chập chờn). Sắp theo `Id` không lộ `Id` ra response |
 | 4 | Địa điểm ngừng hoạt động | **Lọc `IsActive` ở Service**, không dùng global filter | Entity đã ghi "ngừng hoạt động thì không hiện cho khách". Test được (global filter khó test riêng từng trường hợp) |
 | 5 | Phòng nào hiện trong chi tiết? | **Hiện tất cả kèm nhãn trạng thái** (Trống/Đã đặt/Đang ở/Đang dọn/Bảo trì) | Kiểm tra trống thật là Bước 9. Hiện tại chỉ gắn nhãn, không cho đặt |
-| 6 | Ảnh đại diện phòng | Ảnh `IsPrimary`, không có thì ảnh `SortOrder` nhỏ nhất | Mỗi phòng seed 2 ảnh (chính + nội thất) |
+| 6 | Ảnh đại diện phòng | Ảnh `IsPrimary`, không có thì ảnh `SortOrder` nhỏ nhất | Mỗi phòng seed 4 ảnh — cả 4 đều là ảnh chụp của chính phòng đó |
 | 7 | `utils/format.ts` | **Tạo ở bước này** (`formatVnd`) | Bước 5 hoãn vì chưa màn hình nào hiện tiền; bước này hiện giá phòng nên đủ lý do (hết YAGNI) |
 
 #### File dự kiến
@@ -458,7 +458,7 @@ từ query string) nên không có cách kích hoạt. Vẫn cần nói rõ vớ
 ### [x] BƯỚC 7 — Tìm kiếm & lọc phòng · **XONG 30/09/2026**
 - **Mục tiêu đo được:** `GET /api/rooms/search` đúng 9 tham số + phân trang · STT liên tục qua các trang · 3/3 test tay · **≥ 10 unit test backend** + **≥ 12 unit test frontend**
 - **Kết quả đo được:**
-  - API: không lọc 10 phòng/2 trang · Hưng Yên 4 phòng · giá tăng dần đúng · trang 2 STT từ 7 · giá 0–1.000 rỗng · `locationIndex=99` rỗng không lỗi · min>max/type/sort sai đều 400 · không lộ `Id`
+  - API: không lọc 12 phòng/2 trang · Hưng Yên 5 phòng · giá tăng dần đúng · trang 2 STT từ 7 · giá 0–1.000 rỗng · `locationIndex=99` rỗng không lỗi · min>max/type/sort sai đều 400 · không lộ `Id`
   - Test tay: **11/11 ca đạt** (HP 4 · EC 4 · AB 3), ghi ở `docs/KIEM_THU_TAY.md` mục 3
   - Unit test backend: `dotnet test --filter "RoomSearch"` → **15/15**
   - Unit test frontend: `npm test` → **111/111** (thêm 24: roomSchemas 10 · roomService 5 · Rooms 9)
@@ -501,7 +501,7 @@ từ query string) nên không có cách kích hoạt. Vẫn cần nói rõ vớ
 
 | Lần | Loại | Kịch bản | Kỳ vọng |
 |-----|------|----------|---------|
-| 1 | **HP** | Mở `/rooms` không lọc → lọc Hưng Yên → sắp giá tăng dần → sang trang 2 | 10 phòng / 2 trang · chỉ còn 4 phòng Hưng Yên · giá tăng dần · STT trang 2 tiếp nối (7, 8…) |
+| 1 | **HP** | Mở `/rooms` không lọc → lọc Hưng Yên → sắp giá tăng dần → sang trang 2 | 12 phòng / 2 trang · chỉ còn 5 phòng Hưng Yên · giá tăng dần · STT trang 2 tiếp nối (7, 8…) |
 | 2 | **EC** | Giá 0–1.000 → từ khoá không có kết quả → `locationIndex=99` gõ tay → mobile 390px | Empty state "Không tìm thấy" · tương tự · tương tự · không tràn ngang |
 | 3 | **AB** | `minPrice > maxPrice` → tắt server → kiểm KHÔNG lộ `Id` | 400 kèm thông báo · lỗi + nút thử lại · JSON và màn hình sạch `Id` |
 
@@ -860,7 +860,7 @@ Trang báo *"Unable to render this definition"* dù `swagger.json` hợp lệ. N
 | 1 | 15 sơ đồ vẽ tay hay sinh bằng script? | **Sinh bằng script** `docs/anh/ve-so-do.mjs` ra SVG | 15 hình cùng dạng — vẽ tay thì mỗi hình lệch kiểu, mà code đổi (thêm endpoint, đổi tên lớp) thì phải vẽ lại từ đầu. Script thì sửa dữ liệu rồi chạy lại |
 | 2 | Nội dung sơ đồ lấy từ đâu? | Từ **code thật**: tên lớp trong `BookingService.cs`, tên bảng trong `HomeStayDbContext`, tên endpoint trong controller | Sơ đồ vẽ theo trí nhớ thì sai, GV hỏi một câu là lộ |
 | 3 | Định dạng nộp báo cáo? | Nộp cả **.svg** (sắc nét, không vỡ khi phóng) | Word 2016 trở lới hỗ trợ SVG; ảnh chụp .jpg chỉ dùng khi cần |
-| 4 | Dữ liệu để chụp 7 ảnh giao diện? | Đưa về **đúng trạng thái seed**: 15 đơn, 10 phòng `AVAILABLE` | Chụp lúc còn 105 đơn rác ngày 2035–2044 thì ảnh rất khó đọc và không đại diện cho hệ thống |
+| 4 | Dữ liệu để chụp 7 ảnh giao diện? | Đưa về **đúng trạng thái seed**: 15 đơn, 12 phòng `AVAILABLE` | Chụp lúc còn 105 đơn rác ngày 2035–2044 thì ảnh rất khó đọc và không đại diện cho hệ thống |
 
 #### Lỗi thật phát hiện khi chụp (đã sửa)
 
@@ -992,6 +992,20 @@ Lưu ý mẫu vẫn ghi **"Kiến trúc hệ thống StayEasy"** — tên cũ, p
   ```
 - **Nội dung mới viết:** `docs/CHUONG_1.md` (Tổng quan) · `docs/CHUONG_2.md` (Cơ sở lý thuyết) · `docs/CHUONG_3.md` (Phân tích thiết kế, nhúng đủ 23 ảnh)
 - **Bài học:** xem `lessons.md` mục 88–97 — 6 lỗi OOXML và 4 bẫy công cụ đều chỉ lộ ra khi mở bằng Word
+
+### [x] BƯỚC 25 — Ảnh phòng: 12 phòng × 4 ảnh cùng một phòng · **XONG 02/10/2026**
+- **Mục tiêu đo được:** mỗi phòng có 4 ảnh **chụp của chính căn phòng đó** ở 4 góc khác nhau — kiểm chứng bằng CSDL `GROUP BY` thư mục ảnh (12 phòng → 12 thư mục khác nhau) chứ không chỉ bằng mắt
+- **Vì sao làm:** 12 ảnh cũ gán **theo concept** (Cozy / Japandi / Signature) nên 4 ảnh của một phòng thực chất là 4 căn phòng khác nhau — khách bấm vào phòng thấy ảnh chỉ giống kiểu, không phải phòng mình sắp ở
+- **Tìm ảnh thế nào:** kho ảnh stock lưu **từng ảnh lẻ**, về bản chất không bao giờ có 4 ảnh cùng một phòng. Đã thử StockSnap (403), Openverse, Wikimedia Commons (duyệt 35 danh mục → 0 kết quả), Booking/Airbnb (có bản quyền). Cuối cùng lấy từ **Openverse** (CC0 / PDM) — ảnh của YellowstoneNPS và khách sạn Costa Calero, mỗi cơ sở có sẵn bộ nhiều ảnh cùng chủ thể
+- **Điều kiện chọn bộ ảnh:** cả 4 tiêu đề phải **cùng tên chủ thể** (`"Cove Patrol Cabin: interior views"` + `"... kitchen area"`). Chỉ dựa vào khoảng cách số ảnh sẽ gộp nhầm hai phòng khác nhau
+- **Kết quả:** **48 ảnh thật · 12 phòng · 4 ảnh/phòng**; thêm 2 phòng mới (A401 Gió Mùa, B301 Mộng Mơ) để đủ 12; gán ảnh theo từng phòng thay vì theo concept
+- **2 lỗi gốc đã sửa:**
+  1. Thêm 2 phòng làm **mọi đơn mẫu trỏ nhầm phòng** vì đơn tham chiếu theo **chỉ số** → 10 test đỏ. Sửa tận gốc: đổi `int SoPhong` → `string MaPhong` ("A101")
+  2. Ảnh nền hero ở trang chủ trỏ tệp đã bị xoá → đổi sang ảnh suite mới
+- **Bằng chứng:** `dotnet build` 0 error 0 warning · `dotnet test` **415/415** (thêm test `SeedAsync_AnhCuaMoiPhongDeuLaCungMotPhongThat`) · `npm test` **287/287** · `npm run build` sạch · 48/48 ảnh HTTP 200 · thư viện 4 ảnh chạy đúng trên desktop lẫn 390px
+- **Tài liệu:** `docs/NGUON_ANH.md` viết lại (bảng 12 bộ ảnh + giấy phép + 4 nguồn đã thử) · `KIEM_THU_TAY.md` mục 15 (13 kịch bản) · `BAO_CAO_TIEN_DO.md` dòng 25 · `lessons.md` mục 98–100
+- **Bài học:** xem `lessons.md` mục 98–100 — kho ảnh stock không có quan hệ "cùng chủ thể"; dữ liệu mẫu phải tham chiếu bằng khóa kinh doanh chứ không bằng vị trí
+
 ## Danh sách cắt được (nếu trượt tiến độ)
 
 | Thứ tự | Cắt gì | Bước liên quan |

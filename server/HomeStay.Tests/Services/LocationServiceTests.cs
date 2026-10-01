@@ -18,7 +18,7 @@ namespace HomeStay.Tests.Services;
 /// </summary>
 public class LocationServiceTests
 {
-    /// <summary>Dựng database đã seed đủ 3 địa điểm + 10 phòng như dữ liệu mẫu thật.</summary>
+    /// <summary>Dựng database đã seed đủ 3 địa điểm + 12 phòng như dữ liệu mẫu thật.</summary>
     private static async Task<HomeStayDbContext> TaoDbDaSeedAsync()
     {
         HomeStayDbContext db = TestDbContextFactory.Create();
@@ -46,14 +46,14 @@ public class LocationServiceTests
     }
 
     [Fact]
-    public async Task LayDanhSachAsync_DuLieuMau_TongCong10Phong()
+    public async Task LayDanhSachAsync_DuLieuMau_TongCong12Phong()
     {
         await using HomeStayDbContext db = await TaoDbDaSeedAsync();
         LocationService service = TaoService(db);
 
         List<LocationListItemDto> result = await service.LayDanhSachAsync(CancellationToken.None);
 
-        Assert.Equal(10, result.Sum(diaDiem => diaDiem.Rooms.Count));
+        Assert.Equal(12, result.Sum(diaDiem => diaDiem.Rooms.Count));
     }
 
     [Fact]
@@ -222,7 +222,7 @@ public class LocationServiceTests
     }
 
     [Fact]
-    public async Task LayDanhSachAsync_MoiPhongCo2Anh_AnhChinhDauTien()
+    public async Task LayDanhSachAsync_MoiPhongCo4Anh_AnhChinhDauTien()
     {
         await using HomeStayDbContext db = await TaoDbDaSeedAsync();
         LocationService service = TaoService(db);
@@ -231,7 +231,7 @@ public class LocationServiceTests
 
         foreach (RoomDetailDto phong in result.SelectMany(diaDiem => diaDiem.Rooms))
         {
-            Assert.Equal(2, phong.Images.Count);
+            Assert.Equal(4, phong.Images.Count);
             Assert.Equal(phong.ThumbnailUrl, phong.Images[0]);
         }
     }

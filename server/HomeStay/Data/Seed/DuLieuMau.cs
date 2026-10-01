@@ -6,7 +6,8 @@ using HomeStay.Services.Notifications;
 namespace HomeStay.Data.Seed;
 
 /// <summary>
-/// Bộ dữ liệu mẫu của dự án: 4 tài khoản · 3 địa điểm · 10 phòng · 8 tiện nghi · 15 đơn · 6 đánh giá.
+/// Bộ dữ liệu mẫu của dự án: 4 tài khoản · 3 địa điểm · 12 phòng · 8 tiện nghi · 15 đơn · 6 đánh giá.
+/// Mỗi phòng có 4 ảnh chụp của chính căn phòng đó (nguồn ảnh: docs/NGUON_ANH.md).
 ///
 /// Vì sao không nhập tay vào database: nhập tay thì mỗi lần xoá bảng là phải làm lại từ đầu,
 /// và không ai kiểm tra được dữ liệu mẫu có đúng luật nghiệp vụ không (không trùng lịch, đủ sức chứa, đủ 6 trạng thái).
@@ -103,8 +104,8 @@ public static class DuLieuMau
     }
 
     /// <summary>
-    /// Ghép 10 phòng từ 3 địa điểm. Chia theo địa điểm để mỗi hàm nằm gọn trong một nhóm phòng,
-    /// dễ đối chiếu khi sửa giá hoặc thêm phòng mới.
+    /// Ghép 12 phòng từ 3 địa điểm, mỗi địa điểm 4 phòng. Chia theo địa điểm để mỗi hàm
+    /// nằm gọn trong một nhóm phòng, dễ đối chiếu khi sửa giá hoặc thêm phòng mới.
     /// </summary>
     public static List<Room> TaoPhong(List<Location> diaDiemList)
     {
@@ -148,6 +149,12 @@ public static class DuLieuMau
                 Location = diaDiem, Name = "Phòng Xuân Hương", RoomNumber = "A301", RoomType = RoomType.SIGNATURE,
                 Capacity = 5, PricePerHour = 180_000m, PricePerDay = 1_250_000m, Status = RoomStatus.AVAILABLE,
                 Description = "Phòng lớn 2 giường, có khu sinh hoạt chung cho cả gia đình."
+            },
+            new Room
+            {
+                Location = diaDiem, Name = "Phòng Gió Mùa", RoomNumber = "A401", RoomType = RoomType.COZY,
+                Capacity = 2, PricePerHour = 80_000m, PricePerDay = 490_000m, Status = RoomStatus.AVAILABLE,
+                Description = "Góc trên lầu, có giường tầng cho bạn bè đi chơi cùng."
             }
         ];
     }
@@ -173,6 +180,12 @@ public static class DuLieuMau
                 Location = diaDiem, Name = "Phòng Đồi Thông", RoomNumber = "B201", RoomType = RoomType.SIGNATURE,
                 Capacity = 4, PricePerHour = 200_000m, PricePerDay = 1_350_000m, Status = RoomStatus.AVAILABLE,
                 Description = "Nhà 2 tầng, thích hợp tiệc cưới gia đình nhỏ."
+            },
+            new Room
+            {
+                Location = diaDiem, Name = "Phòng Mộng Mơ", RoomNumber = "B301", RoomType = RoomType.JAPANDI,
+                Capacity = 2, PricePerHour = 140_000m, PricePerDay = 880_000m, Status = RoomStatus.AVAILABLE,
+                Description = "Sàn gỗ ấm, hợp khách muốn ngồi đọc sách cả buổi chiều."
             }
         ];
     }
@@ -203,55 +216,93 @@ public static class DuLieuMau
     }
 
     /// <summary>
-    /// Ảnh của từng concept, theo thứ tự giá trị `RoomType` (COZY = 0).
-    /// Mỗi concept có 4 ảnh thật, nguồn CC0 (xem docs/NGUON_ANH.md).
-    /// Mảng đánh số nên thêm concept mới chỉ cần thêm một dòng.
+    /// Bộ 4 ảnh của từng phòng, theo đúng thứ tự phòng trong <see cref="TaoPhong"/>.
+    /// Mỗi dòng là 4 góc khác nhau **của cùng một phòng thật**, ảnh chụp bởi cơ quan
+    /// nhà nước Hoa Kỳ hoặc khách sạn, giấy phép CC0 / public domain.
+    /// Nguồn và nội dung từng bộ ghi ở <c>docs/NGUON_ANH.md</c>.
+    ///
+    /// Gắn ảnh theo từng phòng chứ không theo concept là để khách xem thấy đúng
+    /// căn phòng mình sẽ ở: bấm vào phòng nào thì thấy chính phòng đó, không phải
+    /// một căn tương tự. Ảnh đầu tiên của mỗi dòng là ảnh chính hiện ở danh sách.
     /// </summary>
-    private static readonly string[][] DuongDanAnhTheoLoai =
+    private static readonly string[][] DuongDanAnhTheoPhong =
     {
-        ["/images/rooms/cozy/cozy-1.jpg", "/images/rooms/cozy/cozy-2.jpg",
-         "/images/rooms/cozy/cozy-3.jpg", "/images/rooms/cozy/cozy-4.jpg"],
-        ["/images/rooms/japandi/japandi-1.jpg", "/images/rooms/japandi/japandi-2.jpg",
-         "/images/rooms/japandi/japandi-3.jpg", "/images/rooms/japandi/japandi-4.jpg"],
-        ["/images/rooms/signature/signature-1.jpg", "/images/rooms/signature/signature-2.jpg",
-         "/images/rooms/signature/signature-3.jpg", "/images/rooms/signature/signature-4.jpg"],
+        ["/images/rooms/cove-patrol-cabin/cove-patrol-cabin-1.jpg",
+         "/images/rooms/cove-patrol-cabin/cove-patrol-cabin-2.jpg",
+         "/images/rooms/cove-patrol-cabin/cove-patrol-cabin-3.jpg",
+         "/images/rooms/cove-patrol-cabin/cove-patrol-cabin-4.jpg"],
+        ["/images/rooms/harebell-patrol-cabin/harebell-patrol-cabin-1.jpg",
+         "/images/rooms/harebell-patrol-cabin/harebell-patrol-cabin-2.jpg",
+         "/images/rooms/harebell-patrol-cabin/harebell-patrol-cabin-3.jpg",
+         "/images/rooms/harebell-patrol-cabin/harebell-patrol-cabin-4.jpg"],
+        ["/images/rooms/cache-creek-patrol-cabin/cache-creek-patrol-cabin-1.jpg",
+         "/images/rooms/cache-creek-patrol-cabin/cache-creek-patrol-cabin-2.jpg",
+         "/images/rooms/cache-creek-patrol-cabin/cache-creek-patrol-cabin-3.jpg",
+         "/images/rooms/cache-creek-patrol-cabin/cache-creek-patrol-cabin-4.jpg"],
+        ["/images/rooms/peale-island-cabin/peale-island-cabin-1.jpg",
+         "/images/rooms/peale-island-cabin/peale-island-cabin-2.jpg",
+         "/images/rooms/peale-island-cabin/peale-island-cabin-3.jpg",
+         "/images/rooms/peale-island-cabin/peale-island-cabin-4.jpg"],
+        ["/images/rooms/mary-lake-patrol-cabin/mary-lake-patrol-cabin-1.jpg",
+         "/images/rooms/mary-lake-patrol-cabin/mary-lake-patrol-cabin-2.jpg",
+         "/images/rooms/mary-lake-patrol-cabin/mary-lake-patrol-cabin-3.jpg",
+         "/images/rooms/mary-lake-patrol-cabin/mary-lake-patrol-cabin-4.jpg"],
+        ["/images/rooms/fox-creek-patrol-cabin/fox-creek-patrol-cabin-1.jpg",
+         "/images/rooms/fox-creek-patrol-cabin/fox-creek-patrol-cabin-2.jpg",
+         "/images/rooms/fox-creek-patrol-cabin/fox-creek-patrol-cabin-3.jpg",
+         "/images/rooms/fox-creek-patrol-cabin/fox-creek-patrol-cabin-4.jpg"],
+        ["/images/rooms/superior-1-bedroom-suite/superior-1-bedroom-suite-1.jpg",
+         "/images/rooms/superior-1-bedroom-suite/superior-1-bedroom-suite-2.jpg",
+         "/images/rooms/superior-1-bedroom-suite/superior-1-bedroom-suite-3.jpg",
+         "/images/rooms/superior-1-bedroom-suite/superior-1-bedroom-suite-4.jpg"],
+        ["/images/rooms/sportsman-lake-patrol-cabin/sportsman-lake-patrol-cabin-1.jpg",
+         "/images/rooms/sportsman-lake-patrol-cabin/sportsman-lake-patrol-cabin-2.jpg",
+         "/images/rooms/sportsman-lake-patrol-cabin/sportsman-lake-patrol-cabin-3.jpg",
+         "/images/rooms/sportsman-lake-patrol-cabin/sportsman-lake-patrol-cabin-4.jpg"],
+        ["/images/rooms/outlet-patrol-cabin/outlet-patrol-cabin-1.jpg",
+         "/images/rooms/outlet-patrol-cabin/outlet-patrol-cabin-2.jpg",
+         "/images/rooms/outlet-patrol-cabin/outlet-patrol-cabin-3.jpg",
+         "/images/rooms/outlet-patrol-cabin/outlet-patrol-cabin-4.jpg"],
+        ["/images/rooms/lower-blacktail-patrol-cabin/lower-blacktail-patrol-cabin-1.jpg",
+         "/images/rooms/lower-blacktail-patrol-cabin/lower-blacktail-patrol-cabin-2.jpg",
+         "/images/rooms/lower-blacktail-patrol-cabin/lower-blacktail-patrol-cabin-3.jpg",
+         "/images/rooms/lower-blacktail-patrol-cabin/lower-blacktail-patrol-cabin-4.jpg"],
+        ["/images/rooms/nha-o-hai-phong-ngu/nha-o-hai-phong-ngu-1.jpg",
+         "/images/rooms/nha-o-hai-phong-ngu/nha-o-hai-phong-ngu-2.jpg",
+         "/images/rooms/nha-o-hai-phong-ngu/nha-o-hai-phong-ngu-3.jpg",
+         "/images/rooms/nha-o-hai-phong-ngu/nha-o-hai-phong-ngu-4.jpg"],
+        ["/images/rooms/select-2-bedroom-suite/select-2-bedroom-suite-1.jpg",
+         "/images/rooms/select-2-bedroom-suite/select-2-bedroom-suite-2.jpg",
+         "/images/rooms/select-2-bedroom-suite/select-2-bedroom-suite-3.jpg",
+         "/images/rooms/select-2-bedroom-suite/select-2-bedroom-suite-4.jpg"]
     };
 
-    /// <summary>
-    /// Chọn ảnh chính và ảnh phụ cho một phòng dựa trên concept của phòng đó.
-    /// </summary>
-    private static (string Chinh, string Phu) DuongDanAnhChinh(RoomType loai, int viTriPhong)
-    {
-        if ((int)loai >= DuongDanAnhTheoLoai.Length)
-        {
-            throw new ArgumentOutOfRangeException(nameof(loai), loai, "Loại phòng chưa có ảnh đại diện.");
-        }
-
-        string[] bo = DuongDanAnhTheoLoai[(int)loai];
-
-        // Ảnh thứ hai lấy theo vị trí phòng để các phòng cùng concept không bị
-        // trùng ảnh — 10 phòng chia cho 3 ảnh phụ thì không chia hết.
-        return (bo[0], bo[1 + viTriPhong % (bo.Length - 1)]);
-    }
-
-    /// <summary>Mỗi phòng có 1 ảnh chính và 1 ảnh phụ, đều theo concept của phòng.</summary>
+    /// <summary>Mỗi phòng có 4 ảnh của chính phòng đó: 1 ảnh chính + 3 ảnh phụ.</summary>
     public static List<RoomImage> TaoAnhPhong(List<Room> phongList)
     {
+        if (phongList.Count != DuongDanAnhTheoPhong.Length)
+        {
+            throw new ArgumentException(
+                $"Bảng ảnh mô tả {DuongDanAnhTheoPhong.Length} phòng nhưng lại có {phongList.Count} phòng.",
+                nameof(phongList));
+        }
+
         List<RoomImage> anhList = [];
 
         for (int i = 0; i < phongList.Count; i++)
         {
             Room phong = phongList[i];
-            (string chinh, string phu) = DuongDanAnhChinh(phong.RoomType, i);
 
-            anhList.Add(new RoomImage
+            for (int j = 0; j < DuongDanAnhTheoPhong[i].Length; j++)
             {
-                Room = phong, ImageUrl = chinh, IsPrimary = true, SortOrder = 0
-            });
-            anhList.Add(new RoomImage
-            {
-                Room = phong, ImageUrl = phu, IsPrimary = false, SortOrder = 1
-            });
+                anhList.Add(new RoomImage
+                {
+                    Room = phong,
+                    ImageUrl = DuongDanAnhTheoPhong[i][j],
+                    IsPrimary = j == 0,
+                    SortOrder = j
+                });
+            }
         }
 
         return anhList;
@@ -267,8 +318,10 @@ public static class DuLieuMau
         [1, 2, 3, 4, 5, 8],
         [1, 2, 3, 4, 8],
         [1, 2, 3, 4, 6, 7, 8],
+        [1, 2, 3, 4, 5, 7, 8],
         [1, 2, 3, 4, 8],
-        [1, 2, 3, 4, 5, 8],
+        [1, 2, 3, 4, 5, 7, 8],
+        [1, 2, 3, 4, 6, 7, 8],
         [1, 2, 3, 4, 5, 7, 8]
     ];
 
@@ -298,10 +351,15 @@ public static class DuLieuMau
     /// <summary>
     /// Một dòng mô tả đơn đặt phòng mẫu. Dùng bản ghi này để khai báo cho gọn chữ,
     /// sau đó mới đổi thành entity <see cref="Booking"/> ở <see cref="TaoBooking"/>.
+    ///
+    /// Phòng được ghi bằng <c>MaPhong</c> ("A101") chứ không phải số thứ tự. Trước đây
+    /// dùng chỉ số nên chỉ cần thêm một phòng vào giữa danh sách là mọi đơn phía sau
+    /// trỏ nhầm sang phòng khác — đã xảy ra và test bắt được. Mã phòng không đổi khi
+    /// thêm, xoá hay sắp xếp lại phòng.
     /// </summary>
     private sealed record DonMau(
         int SoTaiKhoan,
-        int SoPhong,
+        string MaPhong,
         BookingType Loai,
         DateTime CheckIn,
         DateTime CheckOut,
@@ -324,23 +382,23 @@ public static class DuLieuMau
 
         return
         [
-            new(2, 1, BookingType.DAY, Luc(-119, nhanPhong), Luc(-117, traPhong), Luc(-121, 9), 2,
+            new(2, "A101", BookingType.DAY, Luc(-119, nhanPhong), Luc(-117, traPhong), Luc(-121, 9), 2,
                 BookingStatus.COMPLETED, "Đi cùng gia đình nghỉ cuối tuần"),
-            new(3, 5, BookingType.HOUR, Luc(-112, 15), Luc(-112, 20), Luc(-114, 10), 2,
+            new(3, "B101", BookingType.HOUR, Luc(-112, 15), Luc(-112, 20), Luc(-114, 10), 2,
                 BookingStatus.COMPLETED, "Họp nhóm, cần phòng yên tĩnh để làm việc"),
-            new(4, 7, BookingType.DAY, Luc(-98, nhanPhong), Luc(-94, traPhong), Luc(-101, 9), 4,
+            new(4, "B201", BookingType.DAY, Luc(-98, nhanPhong), Luc(-94, traPhong), Luc(-101, 9), 4,
                 BookingStatus.COMPLETED, "Đi cắm trại rừng cả nhà"),
-            new(2, 3, BookingType.DAY, Luc(-84, nhanPhong), Luc(-81, traPhong), Luc(-88, 9), 2,
+            new(2, "A201", BookingType.DAY, Luc(-84, nhanPhong), Luc(-81, traPhong), Luc(-88, 9), 2,
                 BookingStatus.COMPLETED, "Đi biển cùng bạn bè"),
-            new(3, 9, BookingType.HOUR, Luc(-70, 14), Luc(-70, 19), Luc(-72, 10), 3,
+            new(3, "C102", BookingType.HOUR, Luc(-70, 14), Luc(-70, 19), Luc(-72, 10), 3,
                 BookingStatus.COMPLETED, "Tham quan phố cổ lúc chiều tà"),
-            new(4, 2, BookingType.HOUR, now.AddHours(-5), now.AddHours(-1), Luc(-2, 8), 2,
+            new(4, "A102", BookingType.HOUR, now.AddHours(-5), now.AddHours(-1), Luc(-2, 8), 2,
                 BookingStatus.COMPLETED, "Nghỉ ngắm biển vài tiếng giữa chuyến đi"),
-            new(2, 6, BookingType.DAY, Luc(-20, nhanPhong), Luc(-18, traPhong), Luc(-23, 9), 2,
+            new(2, "B102", BookingType.DAY, Luc(-20, nhanPhong), Luc(-18, traPhong), Luc(-23, 9), 2,
                 BookingStatus.COMPLETED, "Ngắm hoa Tử Đài"),
-            new(2, 4, BookingType.DAY, Luc(-35, nhanPhong), Luc(-33, traPhong), Luc(-37, 14), 5,
+            new(2, "A301", BookingType.DAY, Luc(-35, nhanPhong), Luc(-33, traPhong), Luc(-37, 14), 5,
                 BookingStatus.CANCELLED, "Gia đình đổi kế hoạch", "Khách báo đổi lịch, hẹn đặt lại lần sau"),
-            new(4, 10, BookingType.DAY, Luc(-28, nhanPhong), Luc(-26, traPhong), Luc(-30, 16), 2,
+            new(4, "C201", BookingType.DAY, Luc(-28, nhanPhong), Luc(-26, traPhong), Luc(-30, 16), 2,
                 BookingStatus.REJECTED, "Mong muốn mang theo chó cảnh", "Homestay không nhận thú cưng")
         ];
     }
@@ -357,17 +415,17 @@ public static class DuLieuMau
 
         return
         [
-            new(3, 8, BookingType.DAY, Luc(-1, nhanPhong), Luc(1, traPhong), Luc(-3, 9), 2,
+            new(3, "C101", BookingType.DAY, Luc(-1, nhanPhong), Luc(1, traPhong), Luc(-3, 9), 2,
                 BookingStatus.CHECKED_IN, "Ngắm phố cổ ban đêm"),
-            new(2, 5, BookingType.DAY, Luc(3, nhanPhong), Luc(5, traPhong), Luc(-2, 10), 2,
+            new(2, "B101", BookingType.DAY, Luc(3, nhanPhong), Luc(5, traPhong), Luc(-2, 10), 2,
                 BookingStatus.CONFIRMED, "Khách quen, thuê dài ngày"),
-            new(4, 10, BookingType.DAY, Luc(9, nhanPhong), Luc(11, traPhong), Luc(-1, 16), 4,
+            new(4, "C201", BookingType.DAY, Luc(9, nhanPhong), Luc(11, traPhong), Luc(-1, 16), 4,
                 BookingStatus.CONFIRMED, "Cả nhóm đi Hội An 4 ngày"),
-            new(3, 4, BookingType.HOUR, now.AddHours(6), now.AddHours(11), now.AddHours(-1), 4,
+            new(3, "A301", BookingType.HOUR, now.AddHours(6), now.AddHours(11), now.AddHours(-1), 4,
                 BookingStatus.PENDING, "Đặt phòng theo giờ chờ tàu"),
-            new(4, 1, BookingType.DAY, Luc(4, nhanPhong), Luc(6, traPhong), now.AddHours(-3), 2,
+            new(4, "A101", BookingType.DAY, Luc(4, nhanPhong), Luc(6, traPhong), now.AddHours(-3), 2,
                 BookingStatus.PENDING, "Đặt trước cho chuyến đi sắp tới"),
-            new(2, 3, BookingType.HOUR, Luc(30, 15), Luc(30, 19), now.AddHours(-2), 2,
+            new(2, "A201", BookingType.HOUR, Luc(30, 15), Luc(30, 19), now.AddHours(-2), 2,
                 BookingStatus.PENDING, "Đặt trước phòng cho ngày sinh nhật")
         ];
     }
@@ -387,7 +445,8 @@ public static class DuLieuMau
     /// </summary>
     private static Booking TaoBooking(DonMau mau, List<User> taiKhoanList, List<Room> phongList, int soThu)
     {
-        Room phong = phongList[mau.SoPhong - 1];
+        Room phong = phongList.FirstOrDefault(p => p.RoomNumber == mau.MaPhong)
+            ?? throw new InvalidOperationException($"Đơn mẫu tham chiếu phòng '{mau.MaPhong}' không tồn tại.");
         User khach = taiKhoanList[mau.SoTaiKhoan - 1];
 
         return new Booking

@@ -245,15 +245,15 @@
 
 | # | Kịch bản | Kỳ vọng | Thực tế | Kết quả |
 |---|----------|---------|---------|---------|
-| 1.1 | `GET /api/locations` không gửi token | 200, 3 địa điểm, mỗi địa điểm kèm phòng | 200, Hưng Yên (4 phòng) + Đà Lạt (3) + Hội An (3) = 10 phòng | ✅ |
-| 1.2 | Mở `/locations` | 3 thẻ địa điểm: ảnh, tên, địa chỉ, số phòng, giá thấp nhất | Đủ 3 thẻ, ảnh SVG hiện, "Từ 520.000 ₫/ngày" | ✅ |
-| 1.3 | Bấm vào địa điểm đầu | Sang `/locations/0`, hiện thông tin + 4 phòng kèm giá giờ/ngày, đánh giá, nhãn trạng thái | Hiện đủ: "Phòng tại Hưng Yên Ven Biển (4)", "90.000 ₫/giờ", "★ 5,0 (1 đánh giá)", "Còn trống"/"Đang dọn dẹp" | ✅ |
+| 1.1 | `GET /api/locations` không gửi token | 200, 3 địa điểm, mỗi địa điểm kèm phòng | 200, Hưng Yên (5 phòng) + Đà Lạt (4) + Hội An (3) = 12 phòng | ✅ |
+| 1.2 | Mở `/locations` | 3 thẻ địa điểm: ảnh, tên, địa chỉ, số phòng, giá thấp nhất | Đủ 3 thẻ, ảnh SVG hiện, "Từ 490.000 ₫/ngày" | ✅ |
+| 1.3 | Bấm vào địa điểm đầu | Sang `/locations/0`, hiện thông tin + 4 phòng kèm giá giờ/ngày, đánh giá, nhãn trạng thái | Hiện đủ: "Phòng tại Hưng Yên Ven Biển (5)", "90.000 ₫/giờ", "★ 5,0 (1 đánh giá)", "Còn trống"/"Đang dọn dẹp" | ✅ |
 
 **Kịch bản 2 — Edge case**
 
 | # | Kịch bản | Kỳ vọng | Thực tế | Kết quả |
 |---|----------|---------|---------|---------|
-| 2.1 | Gõ thẳng `/locations/1` chưa vào list | Vẫn hiện đúng Đà Lạt (tự tải list rồi chọn) | Hiện "Đà Lạt Đồi Thông" + 3 phòng | ✅ |
+| 2.1 | Gõ thẳng `/locations/1` chưa vào list | Vẫn hiện đúng Đà Lạt (tự tải list rồi chọn) | Hiện "Đà Lạt Đồi Thông" + 4 phòng | ✅ |
 | 2.2 | Gõ `/locations/99` | Báo không tìm thấy, không trắng màn | Hiện "Không tìm thấy địa điểm" + nút "Về danh sách địa điểm" | ✅ |
 | 2.3 | Màn hình điện thoại 390px | Không tràn ngang | Thẻ xếp 1 cột, rộng 343px trong 390px | ✅ |
 
@@ -277,10 +277,10 @@
 
 | # | Loại | Kịch bản | Kỳ vọng | Thực tế | Kết quả |
 |---|------|----------|---------|---------|---------|
-| 1 | HP | Không lọc | Hiện tất cả phòng, phân trang đúng | 10 phòng / 2 trang (6 + 4), "Tìm thấy 10 phòng · Trang 1/2" | ✅ |
+| 1 | HP | Không lọc | Hiện tất cả phòng, phân trang đúng | 12 phòng / 2 trang (6 + 6), "Tìm thấy 12 phòng · Trang 1/2" | ✅ |
 | 2 | HP | Lọc theo địa điểm Hưng Yên | Chỉ còn phòng của Hưng Yên | `locationIndex=0` → 4 phòng, toàn "Hưng Yên Ven Biển" | ✅ |
 | 3 | EC | Lọc giá 0 – 1.000 | Danh sách rỗng, hiện trạng thái "Không tìm thấy" | Hiện "Không tìm thấy phòng nào" + hướng dẫn nới điều kiện | ✅ |
-| 4 | EC | Lọc giá 0 – 1.000.000.000 | Hiện tất cả phòng, không lỗi | 10/10 phòng (giá cao nhất seed là 1.800.000/ngày) | ✅ |
+| 4 | EC | Lọc giá 0 – 1.000.000.000 | Hiện tất cả phòng, không lỗi | 12/12 phòng (giá cao nhất seed là 1.800.000/ngày) | ✅ |
 | 5 | AB | Số khách vượt sức chứa mọi phòng | Danh sách rỗng | `capacity=6` → 0 phòng (sức chứa lớn nhất là 5) | ✅ |
 | 6 | HP | Sắp xếp giá tăng dần | Đúng thứ tự từ thấp đến cao | 520.000 → ... → 1.800.000, kiểm bằng script so sánh từng cặp | ✅ |
 | 7 | AB | Tìm kiếm từ khóa không có kết quả | Danh sách rỗng + thông báo | Từ khoá lạ → 0 phòng + Empty state | ✅ |
@@ -436,16 +436,16 @@
 | 4 | AB | Tạo cơ sở với tên rỗng | 400 kèm thông báo tiếng Việt | HTTP 400 `{"success":false,"message":"Vui lòng nhập tên cơ sở"}` | ✅ |
 | 5 | AB | Xoá cơ sở **đang có phòng** | Bị từ chối, báo lý do | HTTP 400 `"Không thể xoá cơ sở đang có phòng. Vui lòng xoá hoặc chuyển các phòng trước"` | ✅ |
 | 6 | EC | Xoá cơ sở đã rỗng | Xoá được | HTTP 200 `"Xoá cơ sở thành công"` | ✅ |
-| 7 | HP | Tạo phòng + 2 ảnh + 2 tiện nghi | Ảnh đầu là ảnh chính, tiện nghi gắn đủ | `images: [cozy-1.jpg, cozy-2.jpg]`, `amenityNames: ["WiFi miễn phí","Máy lạnh"]`, `status: 0` | ✅ |
+| 7 | HP | Tạo phòng + 2 ảnh + 2 tiện nghi | Ảnh đầu là ảnh chính, tiện nghi gắn đủ | `images: [4 ảnh cùng một phòng]`, `amenityNames: ["WiFi miễn phí","Máy lạnh"]`, `status: 0` | ✅ |
 | 8 | AB | Tạo phòng với giá giờ = 0 | Bị chặn | HTTP 400 `"Giá theo giờ phải lớn hơn 0"` | ✅ |
 | 9 | HP | Đổi trạng thái phòng sang `MAINTENANCE` | Chỉ đổi trạng thái, không đụng tên/giá | `status: 4`, `name` và `pricePerHour` giữ nguyên | ✅ |
 | 10 | AB | Xoá phòng đã có đơn | Bị từ chối, giữ nguyên phòng | HTTP 400 `"Không thể xoá phòng đã có đơn đặt. Vui lòng chuyển phòng sang bảo trì"`; kiểm CSDL phòng vẫn còn | ✅ |
 | 11 | AB | Tạo khách với email đã tồn tại | 409 Conflict | HTTP 409 `"Email này đã được đăng ký. Vui lòng đăng nhập hoặc dùng email khác"` | ✅ |
 | 12 | HP | Tạo khách mới + danh sách khách | Không lẫn tài khoản Admin | 4 khách, `totalBookings` lần lượt 6/4/5/0 — không có dòng nào là `admin@homestay.vn` | ✅ |
-| 13 | GIAO DIỆN | `/admin/facilities` — 3 cơ sở, 10 phòng | Bảng hiển thị đúng, STT tự tính | Header "Tổng 3 cơ sở · 10 phòng"; STT 1, 2, 3; **không hiển thị Id** | ✅ |
+| 13 | GIAO DIỆN | `/admin/facilities` — 3 cơ sở, 12 phòng | Bảng hiển thị đúng, STT tự tính | Header "Tổng 3 cơ sở · 12 phòng"; STT 1, 2, 3; **không hiển thị Id** | ✅ |
 | 14 | GIAO DIỆN | Mở form "Thêm cơ sở", bấm Lưu khi tên rỗng | Chặn ngay, chưa gọi API | Hiện đỏ "Vui lòng nhập tên cơ sở" trong form, danh sách không đổi | ✅ |
 | 15 | GIAO DIỆN | Bấm "Xoá" cơ sở đang có phòng | Bấm 1 lần hỏi lại, bấm 2 lần mới xoá | Nút đổi thành "Chắc chắn xoá?"; sau cú bấm 2 hiện đỏ "Không thể xoá cơ sở đang có phòng…" | ✅ |
-| 16 | GIAO DIỆN | `/admin/rooms` — 10 phòng | Giá đúng định dạng VND, căn phải | "90.000 ₫", "1.800.000 ₫" căn phải; concept hiện Cozy / Japandi / Signature | ✅ |
+| 16 | GIAO DIỆN | `/admin/rooms` — 12 phòng | Giá đúng định dạng VND, căn phải | "90.000 ₫", "1.800.000 ₫" căn phải; concept hiện Cozy / Japandi / Signature | ✅ |
 | 17 | GIAO DIỆN | `/admin/rooms` — đổi trạng thái bằng dropdown | Ô chọn hiện 5 trạng thái tiếng Việt | "Còn trống / Đã được đặt / Đang có khách / Đang dọn dẹp / Bảo trì" | ✅ |
 
 > **Lỗi phát hiện trong lúc kiểm thử:** 22 ảnh trong `public/images/rooms/{cozy,japandi,signature}/` **không phải ảnh phòng** mà là poster quảng cáo của một dự án khác ("Nhà Ở Hẻm": banner, bản đồ tiện ích, poster khuyến mãi). Xem trực tiếp `cozy-1.jpg`, `cozy-2.jpg`, `cozy-3.jpg`, `signature-1.jpg` để xác nhận. **Đã sửa xong:** thay bằng 12 ảnh CC0 của StockSnap (xem `docs/NGUON_ANH.md`), vẽ lại logo bằng SVG, sửa ảnh hero + 3 địa chỉ trong footer.
@@ -546,7 +546,7 @@ Cách sửa: cắt về ngày trước rồi mới trừ — `(den.Date - tu.Dat
 | # | Loại | Kịch bản | Kỳ vọng | Thực tế | Kết quả |
 |---|------|----------|---------|---------|---------|
 | 1 | EC | `soThang=0` | Tự chuẩn về mặc định | `theoThang` trả về **6** cột | PASS |
-| 2 | EC | `soNgay=9999` | Tự chuẩn về mặc định | `demTongCong` = 10 phòng × 30 = **300** | PASS |
+| 2 | EC | `soNgay=9999` | Tự chuẩn về mặc định | `demTongCong` = 12 phòng × 30 = **360** | PASS |
 | 3 | AB | `soThang=-5&soNgay=-5` (số âm) | Không được làm hỏng server | Chuẩn về 6 và 30, **không** lỗi 500 | PASS |
 | 4 | EC | `soThang=3&soNgay=7` | 7 ngày tính cả hôm nay | `2026-09-24` → `2026-09-30`, `demTongCong` = 70 | PASS |
 | 5 | EC | Tháng không có đơn (T4, T5) | Vẫn có cột giá trị **0** | `doanhThu = 0`, `soDon = 0`, cột không biến mất | PASS |
@@ -932,3 +932,48 @@ chưa tồn tại dù `todo.md` đã đánh dấu Bước 11 là xong. Đã làm
 |---|------|-----------|
 | 1 | Xoá tài khoản rác `khachdienthoai@gmail.com` | Tạo lúc kiểm thử Bước 5, 0 đơn. Hệ thống **không có** chức năng xoá khách (xoá sẽ mất lịch sử đơn — chốt ở Bước 12) |
 | 2 | Trang chủ hiện 3 phòng "nổi bật" viết cứng trong code | Hôm nay khớp CSDL, nhưng đổi tên phòng là trang chủ hiện sai |
+
+---
+
+## 15. Đổi ảnh phòng sang 12 phòng × 4 ảnh cùng một phòng (02/10)
+
+Trước đợt này mỗi phòng có 2 ảnh, và 4 ảnh của một concept (Cozy / Japandi /
+Signature) là **4 căn phòng khác nhau** — khách bấm vào phòng thấy ảnh chỉ giống
+kiểu, không phải phòng mình sắp ở. Nay mỗi phòng có 4 ảnh chụp của chính căn phòng
+đó, và số phòng tăng từ 10 lên 12.
+
+Nguồn ảnh và lý do chọn nguồn đó ghi ở `docs/NGUON_ANH.md`.
+
+**Kịch bản 1 — Happy path**
+
+| # | Kịch bản | Kỳ vọng | Thực tế | Kết quả |
+|---|----------|---------|---------|---------|
+| 15.1 | `GET /api/locations` | 3 địa điểm, 12 phòng, mỗi phòng 4 ảnh | Hưng Yên 5 + Đà Lạt 4 + Hội An 3 = 12; mỗi phòng đúng 4 ảnh | ✅ |
+| 15.2 | Truy vấn CSDL `GROUP BY` thư mục ảnh | 12 phòng → 12 thư mục ảnh khác nhau, không phòng nào dùng lại ảnh phòng khác | 12 dòng, mỗi dòng 1 thư mục riêng, đều có `anh_chinh = 1` | ✅ |
+| 15.3 | Mở `/rooms` | "Tìm thấy 12 phòng", phân trang 2 trang, STT từ 1 | "Tìm thấy 12 phòng · Trang 1/2", STT 1…6 | ✅ |
+| 15.4 | Mở `/locations/0/rooms/0` | 1 ảnh lớn + 4 ảnh nhỏ bấm đổi được | Đủ 4 nút "Xem ảnh 1…4", bấm đổi ảnh lớn | ✅ |
+| 15.5 | Màn hình điện thoại 390 px | 4 ảnh nhỏ vừa một hàng, không tràn | 4 nút rộng 73 px, xếp ngang trong 341 px | ✅ |
+| 15.6 | 48 tệp ảnh qua dev server | Tất cả trả HTTP 200 | 48/48 trả 200 | ✅ |
+| 15.7 | Xem 4 ảnh của phòng A101 bằng mắt | Cùng một căn phòng, khác góc | Cùng cabin gỗ: lò sưởi đen, bàn gỗ, kệ, cửa sổ đều trùng ở cả 4 ảnh | ✅ |
+
+**Kịch bản 2 — Edge case**
+
+| # | Kịch bản | Kỳ vọng | Thực tế | Kết quả |
+|---|----------|---------|---------|---------|
+| 15.8 | Phòng mới thêm vào giữa danh sách | Đơn cũ không bị trỏ nhầm phòng | Trước khi sửa: 10 test đỏ với lỗi "đặt 4 khách cho phòng chỉ chứa 2". Sau khi đổi đơn mẫu sang tham chiếu bằng mã phòng: 415/415 xanh | ✅ |
+| 15.9 | Đếm ảnh bằng phép nhánh thay vì viết cứng | Tổng ảnh luôn bằng số phòng × 4 | `SoPhong * SoAnhMoiPhong` = 12 × 4 = 48 | ✅ |
+| 15.10 | Trang chủ — ảnh nền hero | Ảnh nền không bị hỏng sau khi xoá ảnh cũ | `background-image` trỏ `superior-1-bedroom-suite-1.jpg`, tải 200 | ✅ |
+
+**Kịch bản 3 — Bất thường**
+
+| # | Kịch bản | Kỳ vọng | Thực tế | Kết quả |
+|---|----------|---------|---------|---------|
+| 15.11 | Ảnh tải từ Flickr trả về trang lỗi HTML thay vì ảnh | Không lưu nhầm tệp hỏng | Kiểm chữ ký tệp (`ffd8ff` JPEG / `89504e` PNG); hậu tố kích thước `_b` bị chặn 403 nên đổi sang `_z` | ✅ |
+| 15.12 | Gán ảnh lệch phòng (lỗi đã xảy ra 2 lần trước) | Test chặn được | Test `SeedAsync_AnhCuaMoiPhongDeuLaCungMotPhongThat` kiểm 4 ảnh của mỗi phòng nằm cùng một thư mục, và 12 phòng là 12 thư mục khác nhau | ✅ |
+| 15.13 | Nạp lại dữ liệu mẫu | 12 phòng / 48 ảnh thay vì 10 / 20 | `DROP` + `CREATE DATABASE` + `dotnet ef database update` rồi chạy app → 12 / 48 / 15 đơn / 4 tài khoản | ✅ |
+
+### Bằng chứng
+
+- Backend: `dotnet build` 0 error 0 warning · `dotnet test` **415/415 pass**
+- Frontend: `npm test` **287/287 pass** · `npm run build` không lỗi
+- CSDL: 12 phòng · 48 dòng `RoomImages` · 15 đơn · 4 tài khoản

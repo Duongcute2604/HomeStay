@@ -51,7 +51,7 @@ export default function Home(): JSX.Element {
         className="relative py-20 bg-cover bg-center"
         style={{
           backgroundImage:
-            'linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url(/images/rooms/cozy/cozy-2.jpg)',
+            'linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url(/images/rooms/superior-1-bedroom-suite/superior-1-bedroom-suite-1.jpg)',
         }}
       >
         <div className="mx-auto max-w-6xl px-4 text-center text-white">

@@ -2472,3 +2472,79 @@ else { i++ }   // dòng lạ khớp biểu thức dừng: không tăng i thì qu
 > **Quy tắc tránh lặp:** mỗi nhánh xử lý dòng phải **tăng chỉ số ở mọi đường thoát**. Với
 > nhánh cuối cùng ("gom các dòng còn lại"), luôn kèm `else { i++ }` để một dòng lạ không làm
 > treo cả chương trình.
+## 98. Kho anh stock khong bao gio co nhieu anh cua mot phong that
+
+Yeu cau: 12 phong, moi phong 4 anh **cung mot phong** o cac goc khac nhau. Da thu 4 nguon
+truoc khi ket luan:
+
+| Nguon | Ket qua do that |
+|-------|----------------|
+| StockSnap.io | HTTP 403 — chan truy cap |
+| Openverse (tu khoa `hotel room`) | Tim duoc nhieu anh le nhung khong co bo 4 anh cung phong |
+| Wikimedia Commons | Duyet 35 danh muc anh phong khach san — **0** danh muc nao co tu 4 anh tro len |
+| Booking / Airbnb | Co dung thu can nhung co ban quyen |
+
+**Ly do:** kho anh stock luu **tung anh le**. Mot quan he "4 anh cung mot phong" khong ton
+tai trong du lieu cua ho — no chi ton tai trong **album cua nguoi chup**. Khi gap yeu cau
+"nhieu goc cua mot chu the", phai tim theo **nguoi chup / album**, khong tim theo tu khoa.
+
+**Cach phat hien ra bo anh dung:** gom anh theo **ten chu the** tach tu tieu de (phan truoc
+dau hai cham), vi du `"Cove Patrol Cabin: interior views"` + `"Cove Patrol Cabin: interior
+views kitchen area"` la cung mot cabin. Chi dua vao khoang cach so anh se gop nham hai
+phong khac nhau cua cung mot chuyen chup.
+
+> **Quy tac tranh lap:** truoc khi cam ket "lay anh tu dau", kiem tra nguon co **cau truc
+> nhom theo chu the** khong. Neu khong, tim nguon khac ngay — do la dau hieu nguoi thu
+> thap hon la doc het danh sach phong.
+
+## 99. Them mot ban ghi vao giua danh sach lam lech moi tham chieu theo chi so
+
+Them 2 phong vao `DuLieuMau` de co 12 phong. Build van sach, test chay **10 loi**:
+don mau van tham chieu phong bang **chi so** nen phan thoi gian viet sai phong.
+
+```
+Error: Don HS-260626-0003 dat 4 khach cho phong chi chua 2.
+```
+
+Chi so la thu **de bi doi** va **khong doc duoc**. Chi can them mot phong vao giua danh
+sach la moi tham chieu phia sau lech — va loi khong lo ra khi xem code, chi lo ra khi
+chay.
+
+**Sua tap goc, khong sua con so:** doi `int SoPhong` thanh `string MaPhong` ("A101") va tra
+bang `FirstOrDefault(p => p.RoomNumber == mau.MaPhong)`. Ma phong khong doi khi them, xoa
+hay sap xep lai phong — loi nay khong quay lai duoc.
+
+```csharp
+Room phong = phongList.FirstOrDefault(p => p.RoomNumber == mau.MaPhong)
+    ?? throw new InvalidOperationException($"Don mau tham chieu phong '{mau.MaPhong}' khong ton tai.");
+```
+
+> **Quy tac tranh lap:** du lieu mau **bao gio cung tham chieu bang khoa kinh doanh**
+> (`RoomNumber`, `Email`), khong bao gio bang vi tri. Test bat loi ngay la day ro toi
+> nhat — neu khong co test, loi nay se ra giao dien demo truoc GVHD.
+
+## 100. Them anh moi phai doi ca du lieu mau, ca test, ca giao dien
+
+Doi 12 anh cu (3 concept) sang 48 anh moi (12 phong x 4 anh) thi lan luot phai sua:
+`DuLieuMau.cs` · `Home.tsx` (anh nen hero) · `SeedDataTests` · `RoomSearchTests` ·
+`LocationServiceTests` · `NGUON_ANH.md`. Toan co so du lieu dung `so luong` viet cuung
+nen moi doi la doi hang loat.
+
+**Hai thu rut ra tu lan nay:**
+
+1. Gom so lieu ky vong vao **hang so** o dau class test thay vi viet cuung rai rac:
+
+   ```csharp
+   private const int TongSoPhong = 12;
+   Assert.Equal(SoPhong * SoAnhMoiPhong, await db.RoomImages.CountAsync());
+   ```
+
+2. Test khai bao kiem tra **dung thu muc anh** — chan dung loi "anh lech phong":
+
+   ```csharp
+   Assert.Single(x.Images.Select(i => /* thu muc */).Distinct());
+   ```
+
+> **Quy tac tranh lap:** khi doi du lieu mau, hay grep so luong cu truoc khi sua — `grep -rn
+> "10 phong"`. Va them test bao ve **bat bien** (moi phong mot thu muc anh rieng), khong chi
+> kiem tra so luong, de loi quay lai khong con duong lot.

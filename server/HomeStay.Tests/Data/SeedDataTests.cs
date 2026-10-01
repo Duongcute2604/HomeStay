@@ -16,6 +16,13 @@ namespace HomeStay.Tests.Data;
 /// </summary>
 public class SeedDataTests
 {
+    /// <summary>
+    /// Mỗi phòng có 4 ảnh chụp cùng một phòng đó, nên tổng ảnh = số phòng × 4.
+    /// Viết bằng phép nhân thay vì con số cứng để không phải sửa lại khi thêm phòng.
+    /// </summary>
+    private const int SoPhong = 12;
+    private const int SoAnhMoiPhong = 4;
+
     [Fact]
     public async Task SeedAsync_LanDau_TaoDungDayDuSoLuong()
     {
@@ -24,9 +31,9 @@ public class SeedDataTests
 
         Assert.Equal(4, await db.Users.CountAsync());
         Assert.Equal(3, await db.Locations.CountAsync());
-        Assert.Equal(10, await db.Rooms.CountAsync());
+        Assert.Equal(SoPhong, await db.Rooms.CountAsync());
         Assert.Equal(8, await db.Amenities.CountAsync());
-        Assert.Equal(20, await db.RoomImages.CountAsync());
+        Assert.Equal(SoPhong * SoAnhMoiPhong, await db.RoomImages.CountAsync());
         Assert.Equal(15, await db.Bookings.CountAsync());
         Assert.Equal(6, await db.Reviews.CountAsync());
     }
@@ -61,7 +68,7 @@ public class SeedDataTests
         await SeedData.SeedAsync(db, CancellationToken.None);
 
         Assert.Equal(4, await db.Users.CountAsync());
-        Assert.Equal(10, await db.Rooms.CountAsync());
+        Assert.Equal(SoPhong, await db.Rooms.CountAsync());
         Assert.Equal(15, await db.Bookings.CountAsync());
         Assert.Equal(6, await db.Reviews.CountAsync());
     }
@@ -219,7 +226,51 @@ public class SeedDataTests
         List<Room> phongList = await db.Rooms.Include(x => x.Images).AsNoTracking().ToListAsync();
 
         Assert.All(phongList, x => Assert.Equal(1, x.Images.Count(i => i.IsPrimary)));
-        Assert.All(phongList, x => Assert.Equal(2, x.Images.Count));
+        Assert.All(phongList, x => Assert.Equal(SoAnhMoiPhong, x.Images.Count));
+        // Ảnh chính phải là ảnh đứng đầu, và 4 ảnh phải là 4 tệp khác nhau —
+        // trùng tệp thì giao diện hiện cùng một ảnh 4 lần.
+        Assert.All(phongList, x =>
+        {
+            Assert.Equal(0, x.Images.Single(i => i.IsPrimary).SortOrder);
+            Assert.Equal(SoAnhMoiPhong, x.Images.Select(i => i.ImageUrl).Distinct().Count());
+        });
+    }
+
+    [Fact]
+    public async Task SeedAsync_AnhCuaMoiPhongDeuLaCungMotPhongThat()
+    {
+        await using HomeStayDbContext db = TestDbContextFactory.Create();
+        await SeedData.SeedAsync(db, CancellationToken.None);
+
+        List<Room> phongList = await db.Rooms.Include(x => x.Images).AsNoTracking().ToListAsync();
+
+        /*
+         * Mỗi phòng phải có 4 ảnh chụp **cùng một căn phòng**, nên 4 đường dẫn phải
+         * nằm trong cùng một thư mục `/images/rooms/<ten-phong>/`. Trước đây ảnh được
+         * gán theo concept nên 4 ảnh của một phòng là 4 căn phòng khác nhau — khách
+         * bấm vào phòng thấy không đúng phòng mình sắp ở. Test này chặn lỗi đó quay
+         * lại.
+         */
+        Assert.All(phongList, x =>
+        {
+            string[] thuMucAnh = x.Images
+                .Select(i => i.ImageUrl.Split('/').SkipLast(1).ToArray())
+                .Select(p => string.Join('/', p))
+                .Distinct()
+                .ToArray();
+
+            Assert.Single(thuMucAnh);
+        });
+
+        // 12 phòng phải là 12 thư mục ảnh khác nhau, không phòng nào dùng lại ảnh phòng khác.
+        Assert.Equal(
+            SoPhong,
+            phongList
+                .SelectMany(x => x.Images)
+                .Select(i => i.ImageUrl.Split('/').SkipLast(1).ToArray())
+                .Select(p => string.Join('/', p))
+                .Distinct()
+                .Count());
     }
 
     [Fact]
