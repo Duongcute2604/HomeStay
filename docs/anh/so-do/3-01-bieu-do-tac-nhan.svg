@@ -1,4 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="880" height="730" viewBox="0 0 880 730" font-family="'Segoe UI', 'Noto Sans', Arial, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="730" viewBox="0 0 880 730" font-family="'Segoe UI', 'Noto Sans', Arial, sans-serif" role="img">
+<title>Biểu đồ hoạt động của hệ thống HomeStay</title>
 <rect width="880" height="730" fill="#ffffff"/>
 
 <rect x="40" y="46" width="800" height="620" rx="8" fill="#ffffff" stroke="#9ca3af" stroke-width="1.4"/><line x1="240" y1="46" x2="240" y2="666" stroke="#9ca3af" stroke-width="1.2" stroke-dasharray="6 4"/><text x="140" y="34" font-size="13" text-anchor="middle" fill="#1f2937" font-weight="700">Khách</text><text x="560" y="34" font-size="13" text-anchor="middle" fill="#1f2937" font-weight="700">Hệ thống HomeStay</text><circle cx="140" cy="144" r="7" fill="none" stroke="#7c3aed" stroke-width="1.8"/>

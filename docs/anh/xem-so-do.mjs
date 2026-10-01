@@ -56,8 +56,18 @@ const server = createServer((req, res) => {
   }
 
   if (extname(dich) === '.svg') {
-    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' })
-    res.end(trangTrang(readFileSync(dich, 'utf8')))
+    // Mở trực tiếp trong trình duyệt thì bọc SVG vào trang HTML trắng — mục đích của
+    // script này là chụp hình không có viền đen của trình duyệt.
+    //
+    // Nhưng `<img src="…svg">` thì phải nhận đúng `image/svg+xml`, nếu không ảnh sẽ
+    // hỏng. Phân biệt bằng `Sec-Fetch-Dest`: trình duyệt gửi `image` cho thẻ `<img>`
+    // và `document` khi người dùng mở đường dẫn. Không có header này (curl, công cụ
+    // kiểm tra) thì giữ nguyên hành vi bọc HTML.
+    const dichNhan = req.headers['sec-fetch-dest']
+    const laAnh = dichNhan === 'image' || dichNhan === 'object'
+
+    res.writeHead(200, { 'Content-Type': laAnh ? 'image/svg+xml' : 'text/html; charset=utf-8' })
+    res.end(laAnh ? readFileSync(dich) : trangTrang(readFileSync(dich, 'utf8')))
     return
   }
 

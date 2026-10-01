@@ -44,9 +44,16 @@ const MAU = {
 
 const CHU = "'Segoe UI', 'Noto Sans', Arial, sans-serif"
 
-/** Bọc nội dung thành file SVG hoàn chỉnh. */
-function svg(rong, cao, thanh, noiDung) {
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${rong}" height="${cao}" viewBox="0 0 ${rong} ${cao}" font-family="${CHU}">
+/**
+ * Bọc nội dung thành file SVG hoàn chỉnh.
+ *
+ * `tenHinh` được ghi thành thẻ `<title>` — vừa để trình đọc màn hình đọc được tên
+ * hình, vừa để `index.html` lấy đúng tiêu đề mà không phải viết thêm bảng tên ở nơi
+ * khác (bảng riêng dễ lệch với hình khi thêm sơ đồ mới).
+ */
+function svg(rong, cao, thanh, noiDung, tenHinh = '') {
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${rong}" height="${cao}" viewBox="0 0 ${rong} ${cao}" font-family="${CHU}" role="img">
+${tenHinh === '' ? '' : `<title>${esc(tenHinh)}</title>`}
 <rect width="${rong}" height="${cao}" fill="${MAU.nen}"/>
 ${thanh}
 ${noiDung}
@@ -154,84 +161,108 @@ ${chu(x, y + 42, ten, { size: 12, dam: 600 })}`
  * Sơ đồ use case: khung hệ thống + tác nhân bên ngoài + các bầu dục use case.
  * @param {{ten:string, tacNhan:Array, uc:Array, ghiChu?:Array}} d
  */
+/**
+ * Sơ đồ use case theo kiểu chuẩn: **mỗi use case một dòng, xếp dọc**, tác nhân bên
+ * trái, khung hệ thống bao quanh, quan hệ `«include»` vẽ sang cột phải.
+ *
+ * Vì sao xếp dọc chứ không xếp lưới: sơ đồ xếp lưới 3 cột khi có hơn mười use case
+ * thì nét nối từ tác nhân phải vòng qua mấy hàng, đọc lưỡng lự ngay chỗ giao nhau.
+ * Xếp một dòng một cái thì mọi quan hệ là đường ngang, không cắt nhau.
+ *
+ * @param {{ten:string, tacNhan:Array, uc:Array, include?:Array, ghiChu?:Array}} d
+ *        `include` = [{tu, den}] — use case `tu` luôn kéo theo `den`.
+ */
 function veUseCase(d) {
-  const cot = 3
+  const khungX = 190
+  const khungY = 20
   const ucRong = 250
-  const ucCao = 62
-  const khoangX = 30
-  const khoangY = 22
-  const khungX = 250
-  const khungY = 60
-  const benRong = 230 // chừa chỗ cho tác nhân bên phải
-  const soHang = Math.ceil(d.uc.length / cot)
-  const khungRong = cot * ucRong + (cot - 1) * khoangX + 60
-  const khungCao = soHang * ucCao + (soHang - 1) * khoangY + 70
-  // Chiều rộng phải tính từ nội dung, không đặt cứng — nếu không khung sẽ tràn và
-  // cắt mất cột cuối cùng.
-  const W = khungX + khungRong + benRong
-  const H = khungY + khungCao + 40 + (d.ghiChu?.length ?? 0) * 18
-  const cxKhung = khungX + khungRong / 2
+  const ucCao = 52 // cao đủ cho nhãn hai dòng, không tràn ra ngoài bầu dục
+  const buocY = 66
+  const kheCot = 200 // khoảng hở giữa hai cột, chừa chỗ cho nhãn «include»
+  const y0 = khungY + 62
+
+  /* ---- Sắp xếp hàng: mỗi use case chính một hàng, các use case «include» của nó
+     nằm ở cột phải. Use case đầu tiên của một nhóm đi kèm hàng chính, những cái
+     sau mỗi cái một hàng riêng — nhờ vậy không có hai nhóm tranh nhau một hàng nên
+     nét nối gần như luôn là đường ngang, không cắt qua bầu dục khác. ---- */
+  const hang = []
+  for (const chinh of d.uc) {
+    const nhom = (d.include ?? []).filter((q) => q.tu === chinh)
+    // Use case «include» đầu tiên đi kèm ngay hàng của use case chính. Các cái sau
+    // (ít gặp) mỗi cái một hàng riêng, cột chính để trống — giống cách PlantUML dựng.
+    hang.push({ chinh, include: nhom[0]?.den ?? null })
+    for (const q of nhom.slice(1)) {
+      hang.push({ chinh: null, include: q.den })
+    }
+  }
+
+  const soHang = hang.length
+  const khungCao = 62 + soHang * buocY + 16
+  const W = khungX + 26 + ucRong + kheCot + ucRong + 30
+  const H = khungY + khungCao + 34 + (d.ghiChu?.length ?? 0) * 17
+
+  const xChinh = khungX + 26 + ucRong / 2
+  const xPhu = khungX + 26 + ucRong + kheCot + ucRong / 2
+  const viTri = new Map()
+  hang.forEach((r, i) => {
+    if (r.chinh !== null) viTri.set(r.chinh, { x: xChinh, y: y0 + i * buocY })
+    if (r.include !== null) viTri.set(r.include, { x: xPhu, y: y0 + i * buocY })
+  })
+
+  for (const q of d.include ?? []) {
+    // Ném lỗi thay vì bỏ qua: sai tên làm quan hệ biến mất lặng lẽ, người đọc báo
+    // cáo thấy sơ đồ thiếu mà không biết vì sao.
+    if (viTri.get(q.tu) === undefined || viTri.get(q.den) === undefined) {
+      throw new Error(`«include» nhắc tới use case không có trong danh sách: "${q.tu}" → "${q.den}"`)
+    }
+  }
+  for (const t of d.tacNhan) {
+    for (const u of t.dung) {
+      if (viTri.get(u) === undefined) {
+        throw new Error(`Tác nhân "${t.ten}" nối tới use case không có: "${u}"`)
+      }
+    }
+  }
 
   let s = ''
-  s += `<rect x="${khungX}" y="${khungY}" width="${khungRong}" height="${khungCao}" rx="10" fill="${MAU.heThong}" stroke="${MAU.heThongBien}" stroke-width="1.5"/>`
-  s += chu(cxKhung, khungY + 28, d.ten, { size: 15, dam: 700, mau: MAU.heThongBien })
+  s += `<rect x="${khungX}" y="${khungY}" width="${W - khungX}" height="${khungCao}" rx="4" fill="#ffffff" stroke="#1f2937" stroke-width="1.4"/>`
+  s += chu(khungX + (W - khungX) / 2, khungY + 28, d.ten, { size: 15, dam: 700 })
 
-  const ucCua = (ten) => {
-    const i = d.uc.indexOf(ten)
-    if (i < 0) return null
-    const c = i % cot
-    const r = Math.floor(i / cot)
-    return {
-      x: khungX + 30 + ucRong / 2 + c * (ucRong + khoangX),
-      y: khungY + 60 + ucCao / 2 + r * (ucCao + khoangY),
-    }
+  // Nét vẽ TRƯỚC bầu dục: bầu dục có nền sẽ che nét chạy qua.
+  for (const q of d.include ?? []) {
+    const a = viTri.get(q.tu)
+    const b = viTri.get(q.den)
+    s += muiTen(a.x + ucRong / 2, a.y, b.x - ucRong / 2, b.y, { gach: '5 4', mau: '#1f2937', nhan: '«include»' })
   }
-  const viTriNhan = (i) => {
-    const c = i % cot
-    const r = Math.floor(i / cot)
-    return {
-      x: khungX + 30 + ucRong / 2 + c * (ucRong + khoangX),
-      y: khungY + 60 + ucCao / 2 + r * (ucCao + khoangY),
-    }
-  }
-
-  // 1) Vẽ nét nối TRƯỚC. Bầu dục có nền trắng sẽ che các đoạn nét chạy qua, nhờ vậy
-  // không có nét nào cắt ngang chữ trong bầu dục.
-  const benTrai = d.tacNhan.filter((t) => t.viTri === 'trai')
-  const benPhai = d.tacNhan.filter((t) => t.viTri !== 'trai')
-  const noiToc = (t, ben) => {
-    const y = khungY + khungCao / 2 - ((ben.length - 1) * 90) / 2 + ben.indexOf(t) * 90
-    const xTac = ben === benTrai ? khungX - 100 : khungX + khungRong + 100
-    // `mayTinh` vẽ hộp rộng 92 nên phải neo nét từ mép hộp, không neo từ tâm như
-    // hình người (bán kính ~18) — nếu không nét sẽ bắt đầu bên trong hộp.
-    const banKinh = t.loai === 'may' ? 46 : 18
-    let noiDung = t.loai === 'may' ? mayTinh(xTac, y, t.ten) : nguoi(xTac, y, t.ten)
+  for (const t of d.tacNhan) {
+    const xa = khungX - 95
+    const ya = khungY + khungCao / 2 - ((d.tacNhan.length - 1) * 118) / 2 + d.tacNhan.indexOf(t) * 118
     for (const u of t.dung) {
-      const p = ucCua(u)
-      if (!p) continue
-      const dich = ben === benTrai ? p.x - ucRong / 2 + 6 : p.x + ucRong / 2 - 6
-      noiDung += duong(xTac + (ben === benTrai ? banKinh : -banKinh), y - 20, dich, p.y, { rong: 1.1 })
+      const p = viTri.get(u)
+      const dich = p.x - ucRong / 2
+      const g = `M ${xa + 20} ${ya - 20} C ${khungX - 45} ${ya - 20}, ${dich - 55} ${p.y}, ${dich} ${p.y}`
+      s += `<path d="${g}" fill="none" stroke="#1f2937" stroke-width="1.2"/>`
+      s += `<polygon points="${dich},${p.y} ${dich - 8},${p.y - 3.4} ${dich - 8},${p.y + 3.4}" fill="#1f2937"/>`
     }
-    return noiDung
   }
-  for (const t of benTrai) s += noiToc(t, benTrai)
-  for (const t of benPhai) s += noiToc(t, benPhai)
 
-  // 2) Vẽ bầu dục use case đè lên nét nối
-  d.uc.forEach((u, i) => {
-    const p = viTriNhan(i)
-    s += bauDuc(p.x, p.y, ucRong / 2, ucCao / 2, u, { fill: '#ffffff', bien: MAU.heThongBien })
-  })
+  // Tác nhân vẽ sau nét để nét không đè lên người.
+  for (const t of d.tacNhan) {
+    const xa = khungX - 95
+    const ya = khungY + khungCao / 2 - ((d.tacNhan.length - 1) * 118) / 2 + d.tacNhan.indexOf(t) * 118
+    // `loai: 'may'` vẽ hộp thay vì hình người: hệ thống tự sinh thông báo thì không
+    // phải là ai cả, vẽ người là sai ngữ nghĩa.
+    s += t.loai === 'may' ? mayTinh(xa, ya, t.ten, '#1f2937') : nguoi(xa, ya, t.ten, '#1f2937')
+  }
 
-  // Chú thích xếp chồng theo dòng, tính từ đáy hình lên để không đè lên khung.
+  for (const [ten, p] of viTri) {
+    s += bauDuc(p.x, p.y, ucRong / 2, ucCao / 2, ten, { fill: '#fbf7d5', bien: '#1f2937', size: 12.5 })
+  }
+
   ;(d.ghiChu ?? []).forEach((g, i) => {
-    s += chu(30, H - 20 - ((d.ghiChu?.length ?? 1) - 1 - i) * 18, g, {
-      size: 11,
-      an: 'start',
-      mau: MAU.chuNho,
-    })
+    s += chu(24, H - 16 - ((d.ghiChu?.length ?? 1) - 1 - i) * 17, g, { size: 11.5, an: 'start', mau: MAU.chuNho })
   })
-  return svg(W, H, '', s)
+  return svg(W, H, '', s, d.ten)
 }
 
 /* ----------------------------------------------- sơ đồ dùng chung: sequence */
@@ -272,7 +303,7 @@ function veSequence(d) {
   })
 
   s += chu(20, H - 16, d.ten, { size: 13, an: 'start', dam: 600 })
-  return svg(W, H, '', s)
+  return svg(W, H, '', s, d.ten)
 }
 
 /**
@@ -341,7 +372,7 @@ function veErd(d) {
     an: 'start',
     mau: MAU.chuNho,
   })
-  return svg(W, H, '', s)
+  return svg(W, H, '', s, erd.ten)
 }
 
 /* --------------------------------------------------------- 3.1 hoạt động */
@@ -418,7 +449,7 @@ function veHoatDong() {
     an: 'start',
     mau: MAU.chuNho,
   })
-  return svg(W, H, '', s)
+  return svg(W, H, '', s, 'Biểu đồ hoạt động của hệ thống HomeStay')
 }
 
 /* ------------------------------------------------------------ 3.8 kiến trúc */
@@ -476,7 +507,7 @@ function veKienTruc() {
     'MySQL 8.0 chạy trong Docker (cổng 3307)',
   ])
 
-  return svg(W, H, '', s)
+  return svg(W, H, '', s, 'Kiến trúc 3 tầng của hệ thống HomeStay')
 }
 
 /* ------------------------------------------------------- 3.11 lớp thực thi */
@@ -491,110 +522,189 @@ const caoLop = (t, p) => 26 + (t + p) * 15 + 26
  * hay bớt một hộp là các nét cũ lệch, và không ai nhớ đường nào còn đúng. Ở đây mỗi
  * quan hệ chỉ cần nêu `từ → đến`; mép hộp và tâm theo chiều dọc được suy ra.
  */
+/**
+ * Chiều cao một khối lớp: 30 (đầu khối) + 18 mỗi dòng thuộc tính
+ * + 8 và 18 mỗi dòng phương thức + 12 (đáy). Lớp trừu tượng thêm 10 cho dòng `«abstract»`.
+ */
+const caoKhoi = (soThuocTinh, soPhuongThuc, truuTượng = false) =>
+  30 + (truuTượng ? 10 : 0) + soThuocTinh * 18 + (soPhuongThuc > 0 ? 8 + soPhuongThuc * 18 : 0) + 12
+
+/**
+ * Biểu đồ lớp thực thể (Hình 3.11) — lớp miền bài toán, đúng kiểu UML.
+ *
+ * Vì sao không vẽ lớp Service / Controller ở đây: những lớp đó thuộc **kiến trúc** đã
+ * có sơ đồ riêng (Hình 3.10). Sơ đồ lớp phải trả lời "dữ liệu nghiệp vụ quan hệ với
+ * nhau thế nào" — đó là câu hỏi của giảng viên khi nhìn sơ đồ lớp.
+ *
+ * Ký hiệu chuẩn UML: `+` công khai, `-` riêng tư, `«abstract»` cho lớp trừu tượng,
+ * tam giác rỗng ở đầu quan hệ kế thừa, số lượng nhiều ở hai đầu đường liên kết.
+ */
 function veLopThucThi() {
-  const W = 1240
-  const cotX = [40, 330, 720]
-  const cotRong = [240, 260, 260]
-  const kheY = 34
-  const yDau = 62
+  const khung = { trang: '#fffbe6', vien: '#1f2937' }
 
-  // Mỗi lớp: tên, thành viên, phương thức. Thứ tự trong mảng là thứ tự vẽ.
-  const dinhNghia = [
-    [
-      ['AuthService', ['IAuthService'], ['DangNhapAsync(email, matKhau)']],
-      ['RoomService', ['IRoomService'], ['KiemTraTrongAsync(req)', 'TimPhongAsync(bộ lọc)']],
-      ['BookingService', ['IBookingService'], ['TaoDonAsync(userId, req)', 'HuyDonAsync(userId, code)']],
-      ['PaymentService', ['IPaymentService'], ['ChonPhuongThucAsync(userId, code, req)', 'LayTheoDonAsync(userId, code)']],
-      ['NotificationService', ['INotificationService'], ['LayDanhSachAsync(userId)', 'DanhDauDaDocAsync(id, userId)']],
-    ],
-    [
-      ['BookingCalculator', ['(hàm tĩnh)'], ['TinhTien(loai, giaGio, giaNgay, vao, ra)']],
-      ['BookingStateMachine', ['(hàm tĩnh)'], ['CoTheChuyen(from, to)', 'LaTrangThaiKetThuc(s)']],
-      ['HomeStayDbContext', ['DbSet<Bookings>', 'DbSet<Payments>', '… 11 bảng'], ['SaveChangesAsync()']],
-      ['PaymentRules', ['(hằng số)'], ['SoTienToiDa', 'PhuongThucChoPhep']],
-      ['NotificationRules', ['(hằng số)'], ['DoDaiTieuDeToiDa', 'SoToiDaMoiTrang']],
-      ['NotificationTemplates', ['(hàm tĩnh)'], ['Tao(don, trangThai, lyDo)', '→ tiêu đề + nội dung']],
-      ['AppException', ['StatusCode', 'Message'], ['→ ExceptionMiddleware trả JSON thống nhất']],
-    ],
-    [
-      ['BookingController', ['IBookingService'], ['POST /api/bookings', 'GET /api/bookings/my']],
-      ['AdminBookingController', ['IAdminBookingService'], ['PATCH …/confirm · …/reject', 'PATCH …/check-in · …/check-out']],
-      ['PaymentsController', ['IPaymentService'], ['GET /api/payments/my', 'POST /api/payments/booking/{code}']],
-      ['AdminPaymentsController', ['IAdminPaymentService'], ['GET /api/admin/payments', 'PATCH …/{id}/paid · …/failed']],
-      ['NotificationsController', ['INotificationService'], ['GET /api/notifications/my', 'PATCH …/{id}/read']],
-    ],
+  /* --- Khối lớp. `truong` = (vị trí cột, danh sách thuộc tính, danh sách phương thức). --- */
+  const lop = [
+    { ten: 'NguoiDung', truuTượng: true, cot: 1, hang: 0,
+      thuocTinh: ['- id: int', '- hoTen: Chuoi · không rỗng', '- email: Chuoi · duy nhất', '- matKhauHash: Chuoi · BCrypt', '- vaiTro: VaiTro · CUSTOMER | ADMIN', '- trangThai: TrangTaiKhoan'],
+      phuongThuc: [] },
+    { ten: 'KhachHang', keThua: 'NguoiDung', cot: 0, hang: 0,
+      thuocTinh: ['- soDienThoai: Chuoi · duy nhất', '- diaChi: Chuoi'],
+      phuongThuc: ['+ capNhatHoSo(hoSo): Bo'] },
+    { ten: 'QuanTri', keThua: 'NguoiDung', cot: 2, hang: 0, thuocTinh: [], phuongThuc: [] },
+    { ten: 'ThongBao', cot: 0, hang: 1,
+      thuocTinh: ['- id: int', '- tieuDe: Chuoi · ≤ 200', '- noiDung: Chuoi · ≤ 500', '- daDoc: bool', '- thoiDiemTao: NgayGio'],
+      phuongThuc: [] },
+    { ten: 'DonDatPhong', cot: 1, hang: 1,
+      thuocTinh: ['- id: int', '- maDon: Chuoi · duy nhất', '- loai: LoaiThue · GIO | NGAY', '- trangThai: TrangThaiDon', '- vaoLuc: NgayGio', '- raLuc: NgayGio', '- soKhach: int · > 0', '- tongTien: ThapHien(18,2)', '- ghiChu: Chuoi'],
+      phuongThuc: ['+ tinhTien(): ThapHien'] },
+    { ten: 'LichSuTrangThai', cot: 1, hang: 2,
+      thuocTinh: ['- id: int', '- tuTrangThai: TrangThaiDon?', '- denTrangThai: TrangThaiDon', '- nguoiThucHien: NguoiDung', '- ghiChu: Chuoi', '- thoiDiem: NgayGio'],
+      phuongThuc: [] },
+    { ten: 'PhieuThu', cot: 2, hang: 2,
+      thuocTinh: ['- id: int', '- soTien: ThapHien(18,2) · > 0', '- phuongThuc: PhuongThuc', '- trangThai: TrangThaiThanhToan', '- thoiDiemThu: NgayGio?', '- ghiChu: Chuoi'],
+      phuongThuc: [] },
+    { ten: 'DanhGia', cot: 0, hang: 2,
+      thuocTinh: ['- id: int', '- soSao: int · 1..5', '- nhanXet: Chuoi · ≤ 500', '- biAn: bool'],
+      phuongThuc: [] },
+    { ten: 'CoSo', cot: 3, hang: 0,
+      thuocTinh: ['- id: int', '- ten: Chuoi · duy nhất', '- diaChi: Chuoi', '- moTa: Chuoi', '- hoatDong: bool'],
+      phuongThuc: ['+ timPhong(bộ lọc): Tap[Phong]'] },
+    { ten: 'Phong', cot: 3, hang: 1,
+      thuocTinh: ['- id: int', '- maPhong: Chuoi · duy nhất trong cơ sở', '- ten: Chuoi', '- giaGio: ThapHien(18,2)', '- giaNgay: ThapHien(18,2)', '- soNguoiToiDa: int', '- trangThai: TrangThaiPhong', '- diemTrungBinh: ThapHien(3,2)', '- soDanhGia: int'],
+      phuongThuc: ['+ conTrong(khoang): bool'] },
+    { ten: 'AnhPhong', cot: 3, hang: 2,
+      thuocTinh: ['- id: int', '- duongDan: Chuoi', '- chinh: bool'],
+      phuongThuc: [] },
+    { ten: 'PhongTienNghi', cot: 4, hang: 2,
+      thuocTinh: ['- phong: Phong', '- tienNghi: TienNghi'],
+      phuongThuc: [] },
+    { ten: 'TienNghi', cot: 4, hang: 1,
+      thuocTinh: ['- id: int', '- ten: Chuoi · duy nhất', '- bieuTuong: Chuoi'],
+      phuongThuc: [] },
   ]
 
-  // Quan hệ "dùng" (composition): nguồn dùng đích.
-  const quanHe = [
-    ['BookingService', 'BookingCalculator'],
-    ['BookingService', 'BookingStateMachine'],
-    ['BookingService', 'HomeStayDbContext'],
-    ['RoomService', 'HomeStayDbContext'],
-    ['PaymentService', 'HomeStayDbContext'],
-    ['NotificationService', 'HomeStayDbContext'],
-    ['NotificationService', 'NotificationRules'],
-    ['BookingController', 'BookingService'],
-    ['AdminBookingController', 'BookingStateMachine'],
-    ['PaymentsController', 'PaymentService'],
-    ['AdminPaymentsController', 'HomeStayDbContext'],
-    ['NotificationsController', 'NotificationService'],
-    ['PaymentService', 'PaymentRules'],
-    ['BookingController', 'AppException'],
-    ['NotificationsController', 'AppException'],
-    ['AdminPaymentsController', 'AppException'],
+  /* Quan hệ: [lớp A, lớp B, nhãn, số lượng ở A, số lượng ở B] */
+  const lienKet = [
+    ['KhachHang', 'DonDatPhong', 'đặt', '1', '0..*'],
+    ['KhachHang', 'ThongBao', 'nhận', '1', '0..*'],
+    ['DonDatPhong', 'LichSuTrangThai', 'ghi nhận', '1', '0..*'],
+    ['DonDatPhong', 'PhieuThu', 'có phiếu thu', '1', '0..1'],
+    ['DonDatPhong', 'DanhGia', 'được đánh giá', '1', '0..1'],
+    ['DonDatPhong', 'Phong', 'thuê', '0..*', '1'],
+    ['CoSo', 'Phong', 'chứa', '1', '0..*'],
+    ['Phong', 'AnhPhong', 'có ảnh', '1', '0..*'],
+    ['PhongTienNghi', 'Phong', 'gắn', '*', '1'],
+    ['PhongTienNghi', 'TienNghi', 'gồm', '*', '1'],
+    ['QuanTri', 'DonDatPhong', 'xử lý', '1', '0..*'],
+    ['QuanTri', 'PhieuThu', 'xác nhận thu', '1', '0..*'],
   ]
 
-  /* --- 1) Tính vị trí từng hộp, không vẽ vội: cần biết mép trước khi nối nét. --- */
-  const hop = new Map()
-  let yMax = yDau
-  dinhNghia.forEach((cot, ci) => {
-    let y = yDau
-    for (const [ten, tv, ph] of cot) {
-      const h = caoLop(tv.length, ph.length)
-      hop.set(ten, { x: cotX[ci], y, w: cotRong[ci], h, tam: y + h / 2 })
-      y += h + kheY
+  /* --- Sắp xếp khối theo cột; mỗi cột xếp dọc, chiều cao tính từ nội dung. --- */
+  const rong = 268
+  const kheCot = 66
+  const kheHang = 34
+  const soCot = 5
+  const xCot = (c) => 26 + c * (rong + kheCot)
+
+  const o = new Map()
+  let maxY = 0
+
+  // Tính cao từng cột bằng cách cộng dồn, theo thứ tự `hang` trong từng cột.
+  for (let c = 0; c < soCot; c++) {
+    let y = 46
+    for (const l of lop.filter((k) => k.cot === c).sort((a, b) => a.hang - b.hang)) {
+      const h = caoKhoi(l.thuocTinh.length, l.phuongThuc.length, l.truuTượng)
+      o.set(l.ten, { x: xCot(c), y, w: rong, h, tamY: y + h / 2, lop: l })
+      y += h + kheHang
     }
-    yMax = Math.max(yMax, y - kheY)
-  })
-  const H = yMax + 44
-
-  /* --- 2) Nét nối: neo ở MÉP hộp, không phải tâm, để không mọc ra từ giữa chữ. --- */
-  const neo = (tu, den) => {
-    const a = hop.get(tu)
-    const b = hop.get(den)
-    if (!a || !b) return ''
-    const sangPhai = b.x > a.x
-    const x1 = sangPhai ? a.x + a.w : a.x
-    const x2 = sangPhai ? b.x : b.x + b.w
-    return duoyDep(x1, a.tam, x2, b.tam)
+    maxY = Math.max(maxY, y)
   }
 
-  let s = chu(W / 2, 30, 'Biểu đồ lớp thực thi (rút gọn)', { size: 16, dam: 700 })
+  const W = xCot(soCot - 1) + rong + 40
+  const H = maxY + 46
 
-  // Nét vẽ TRƯỚC: hộp có nền trắng sẽ che đoạn nét chạy qua, nhờ vậy không nét nào
-  // cắt ngang chữ bên trong hộp.
-  s += quanHe.map(([a, b]) => neo(a, b)).join('\n')
-
-  /* --- 3) Vẽ hộp. --- */
-  for (const [ten, tv, ph] of dinhNghia.flat()) {
-    const b = hop.get(ten)
-    s += `<rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" rx="6" fill="#ffffff" stroke="${MAU.vungBien}" stroke-width="1.5"/>`
-    s += `<rect x="${b.x}" y="${b.y}" width="${b.w}" height="26" rx="6" fill="${MAU.vung}"/>`
-    s += `<rect x="${b.x}" y="${b.y + 16}" width="${b.w}" height="10" fill="${MAU.vung}"/>`
-    s += chu(b.x + b.w / 2, b.y + 18, ten, { size: 12, dam: 700, mau: MAU.vungBien })
-    tv.forEach((v, i) => s += chu(b.x + 10, b.y + 42 + i * 15, v, { size: 10.5, an: 'start', mau: MAU.chuNho }))
-    const y2 = b.y + 42 + tv.length * 15
-    s += `<line x1="${b.x}" y1="${y2}" x2="${b.x + b.w}" y2="${y2}" stroke="${MAU.vungBien}" stroke-width="0.8"/>`
-    ph.forEach((v, i) => s += chu(b.x + 10, y2 + 16 + i * 15, v, { size: 10.5, an: 'start', mau: MAU.chu }))
+  /* Điểm giao giữa hai khối trên cùng một đường thẳng — dùng chung cho mọi liên kết
+     nên không phải tính tay từng cái. */
+  function canh(a, b) {
+    const A = o.get(a)
+    const B = o.get(b)
+    if (A === undefined || B === undefined) throw new Error(`Lớp không có trong sơ đồ: ${a} / ${b}`)
+    const g = (p, q) => ({ x: p.x + p.w / 2, y: p.y + p.h / 2 })
+    const P = g(A)
+    const Q = g(B)
+    const dx = Q.x - P.x
+    const dy = Q.y - P.y
+    // Cắt đường nối tâm–tâm với mép hình chữ nhật.
+    const tx = dx === 0 ? Infinity : A.w / 2 / Math.abs(dx)
+    const ty = dy === 0 ? Infinity : A.h / 2 / Math.abs(dy)
+    const t = Math.min(tx, ty)
+    return {
+      x1: P.x + dx * t, y1: P.y + dy * t,
+      x2: Q.x - dx * t, y2: Q.y - dy * t,
+      goc: (Math.atan2(dy, dx) * 180) / Math.PI,
+    }
   }
 
-  s += chu(20, H - 14, 'Đường đứt = quan hệ "dùng" (composition). Controller chỉ nhận dữ liệu và trả response, mọi quy tắc nghiệp vụ nằm ở Service.', {
+  let s = chu(W / 2, 26, 'Biểu đồ lớp thực thể — 13 lớp, 5 kiểu enum', { size: 17, dam: 700 })
+
+  /* Liên kết vẽ TRƯỚC khối: khối có nền che nét chạy qua. */
+  for (const [a, b, nhan, soA, soB] of lienKet) {
+    const c = canh(a, b)
+    s += muiTen(c.x1, c.y1, c.x2, c.y2, { mau: '#1f2937', rong: 1.2 })
+
+    // Nền trắng sau nhãn: đường liên kết đi qua nhãn của quan hệ khác thì chữ bị cắt,
+    // nhìn vào không biết nhãn viết gì.
+    const cx = (c.x1 + c.x2) / 2
+    const cy = (c.y1 + c.y2) / 2 - 6
+    s += `<rect x="${(cx - nhan.length * 2.9).toFixed(1)}" y="${cy - 10}" width="${nhan.length * 5.8}" height="13" fill="#ffffff"/>`
+    s += chu(cx, cy, nhan, { size: 10.5, mau: MAU.chuNho })
+
+    const gocRad = (c.goc * Math.PI) / 180
+    s += chu(c.x1 - Math.cos(gocRad) * 16, c.y1 - Math.sin(gocRad) * 16 + 4, soA, { size: 10, mau: MAU.chuNho })
+    s += chu(c.x2 + Math.cos(gocRad) * 18, c.y2 + Math.sin(gocRad) * 18 + 4, soB, { size: 10, mau: MAU.chuNho })
+  }
+
+  /* Kế thừa: tam giác rỗng ở lớp cha, đúng ký hiệu UML. */
+  for (const l of lop.filter((k) => k.keThua !== undefined)) {
+    const c = canh(l.ten, l.keThua)
+    const gocRad = (c.goc * Math.PI) / 180
+    s += duong(c.x1, c.y1, c.x2, c.y2, { mau: '#1f2937', rong: 1.4 })
+    const L = 15
+    const bx = c.x2
+    const by = c.y2
+    const p1 = [bx - L * Math.cos(gocRad) + L * 0.45 * Math.sin(gocRad), by - L * Math.sin(gocRad) - L * 0.45 * Math.cos(gocRad)]
+    const p2 = [bx - L * Math.cos(gocRad) - L * 0.45 * Math.sin(gocRad), by - L * Math.sin(gocRad) + L * 0.45 * Math.cos(gocRad)]
+    s += `<polygon points="${bx.toFixed(1)},${by.toFixed(1)} ${p1[0].toFixed(1)},${p1[1].toFixed(1)} ${p2[0].toFixed(1)},${p2[1].toFixed(1)}" fill="#ffffff" stroke="#1f2937" stroke-width="1.4"/>`
+  }
+
+  /* Khối lớp. */
+  for (const l of lop) {
+    const b = o.get(l.ten)
+    s += `<rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" rx="4" fill="#ffffff" stroke="${khung.vien}" stroke-width="1.4"/>`
+    s += `<rect x="${b.x}" y="${b.y}" width="${b.w}" height="30" rx="4" fill="${khung.trang}"/>`
+    s += `<rect x="${b.x}" y="${b.y + 20}" width="${b.w}" height="10" fill="${khung.trang}"/>`
+    s += `<line x1="${b.x}" y1="${b.y + 30}" x2="${b.x + b.w}" y2="${b.y + 30}" stroke="${khung.vien}" stroke-width="1"/>`
+    s += chu(b.x + b.w / 2, b.y + 20, l.ten, { size: 12.5, dam: 700 })
+    // Lớp trừu tượng có thêm một dòng `«abstract»`, nên danh sách thuộc tính phải
+    // lùi xuống — vẽ cùng toạ độ là chữ đè lên nhau.
+    const yThuocTinh = l.truuTượng ? b.y + 56 : b.y + 46
+    if (l.truuTượng) {
+      s += chu(b.x + b.w / 2, b.y + 44, '«abstract»', { size: 10, mau: MAU.chuNho })
+    }
+    l.thuocTinh.forEach((v, i) => s += chu(b.x + 9, yThuocTinh + i * 18, v, { size: 10.5, an: 'start', mau: MAU.chu }))
+    if (l.phuongThuc.length > 0) {
+      const y2 = yThuocTinh + l.thuocTinh.length * 18
+      s += `<line x1="${b.x}" y1="${y2}" x2="${b.x + b.w}" y2="${y2}" stroke="${khung.vien}" stroke-width="1"/>`
+      l.phuongThuc.forEach((v, i) => s += chu(b.x + 9, y2 + 16 + i * 18, v, { size: 10.5, an: 'start', mau: MAU.chu }))
+    }
+  }
+
+  s += chu(20, H - 12, '+ công khai · - riêng tư · «abstract» lớp trừu tượng · tam giác rỗng = kế thừa · số lượng nhiều ghi ở hai đầu quan hệ.', {
     size: 11,
     an: 'start',
     mau: MAU.chuNho,
   })
-  return svg(W, H, '', s)
+  return svg(W, H, '', s, 'Biểu đồ lớp thực thể — 13 lớp, 5 kiểu enum')
 }
 
 
@@ -605,12 +715,26 @@ function duoyDep(x1, y1, x2, y2, rong = 1.1) {
 
 /* ------------------------------------------------------------------ dữ liệu */
 
+/**
+ * Dữ liệu 8 sơ đồ use case (Hình 3.2 – 3.9).
+ *
+ * `include` là quan hệ «include» thật, không phải để cho có: mỗi phần tử là một cặp
+ * [use case gọi, use case bị kéo theo]. Xem `docs/CHUONG_4.md` để biết vì sao mỗi
+ * quan hệ nằm ở đúng chỗ đó — khi giảng viên hỏi "vì sao lại include", câu trả lời
+ * phải có trong tài liệu chứ không phải trong đầu.
+ */
 const useCases = {
   '3-02-use-case-tong-quat': {
     ten: 'Hệ thống HomeStay',
     tacNhan: [
-      { ten: 'Khách', viTri: 'trai', dung: ['Xem địa điểm', 'Tìm kiếm phòng', 'Xem chi tiết phòng', 'Đặt phòng', 'Huỷ đơn', 'Xem đơn của tôi', 'Đánh giá phòng', 'Xem thanh toán', 'Chọn phương thức thanh toán', 'Xem thông báo', 'Quản lý hồ sơ'] },
-      { ten: 'Admin', viTri: 'phai', dung: ['Thống kê doanh thu', 'Quản lý đơn đặt phòng', 'Quản lý phòng', 'Quản lý cơ sở', 'Quản lý thanh toán', 'Quản lý đánh giá', 'Quản lý khách hàng'] },
+      {
+        ten: 'Khách',
+        dung: ['Xem địa điểm', 'Tìm kiếm phòng', 'Xem chi tiết phòng', 'Đặt phòng', 'Huỷ đơn', 'Xem đơn của tôi', 'Đánh giá phòng', 'Xem thanh toán', 'Chọn phương thức thanh toán', 'Xem thông báo', 'Quản lý hồ sơ'],
+      },
+      {
+        ten: 'Admin',
+        dung: ['Thống kê doanh thu', 'Quản lý đơn đặt phòng', 'Quản lý phòng', 'Quản lý cơ sở', 'Quản lý thanh toán', 'Quản lý đánh giá', 'Quản lý khách hàng'],
+      },
     ],
     uc: [
       'Xem địa điểm', 'Tìm kiếm phòng', 'Xem chi tiết phòng', 'Đặt phòng',
@@ -619,78 +743,157 @@ const useCases = {
       'Thống kê doanh thu', 'Quản lý đơn đặt phòng', 'Quản lý phòng',
       'Quản lý cơ sở', 'Quản lý thanh toán', 'Quản lý đánh giá', 'Quản lý khách hàng',
     ],
-    ghiChu: ['Hai tác nhân duy nhất của hệ thống: Khách (CUSTOMER) và Admin (ADMIN).',
+    include: [
+      { tu: 'Tìm kiếm phòng', den: 'Lọc và sắp xếp kết quả' },
+      { tu: 'Đặt phòng', den: 'Kiểm tra phòng còn trống' },
+      { tu: 'Đặt phòng', den: 'Tính tổng tiền' },
+      { tu: 'Xem chi tiết phòng', den: 'Xem ảnh và tiện nghi' },
+      { tu: 'Xem đơn của tôi', den: 'Xem lịch sử trạng thái đơn' },
+      { tu: 'Đánh giá phòng', den: 'Kiểm tra đơn đã hoàn thành' },
+      { tu: 'Quản lý đơn đặt phòng', den: 'Ghi lịch sử chuyển trạng thái' },
+      { tu: 'Thống kê doanh thu', den: 'Tổng hợp phiếu thu đã thu' },
+      { tu: 'Quản lý thanh toán', den: 'Đối chiếu số tiền với đơn' },
+      { tu: 'Quản lý phòng', den: 'Cập nhật điểm đánh giá phòng' },
+    ],
+    ghiChu: [
+      'Hai tác nhân duy nhất của hệ thống: Khách (CUSTOMER) và Admin (ADMIN).',
       'Mọi chức năng vận hành — xác nhận đơn, check-in, check-out, đổi trạng thái phòng, xác nhận đã thu tiền — thuộc Admin.',
-      'Hệ thống chỉ ghi nhận phương thức thanh toán, KHÔNG nối API cổng thanh toán; thông báo chỉ hiển thị trong hệ thống, không gửi email/SMS.'],
+      'Ranh giới đã chốt: hệ thống chỉ ghi nhận phương thức thanh toán, KHÔNG nối API cổng thanh toán; thông báo chỉ hiển thị trong hệ thống, không gửi email/SMS.',
+    ],
   },
   '3-03-use-case-quan-ly-tai-khoan': {
     ten: 'Quản lý tài khoản',
     tacNhan: [
-      { ten: 'Khách', viTri: 'trai', dung: ['Đăng ký tài khoản', 'Đăng nhập', 'Xem hồ sơ', 'Đổi mật khẩu', 'Đăng xuất'] },
-      { ten: 'Admin', viTri: 'phai', dung: ['Khoá / mở khoá tài khoản'] },
+      { ten: 'Khách', dung: ['Đăng ký tài khoản', 'Đăng nhập', 'Xem hồ sơ', 'Cập nhật hồ sơ', 'Đổi mật khẩu', 'Đăng xuất'] },
+      { ten: 'Admin', dung: ['Khoá / mở khoá tài khoản'] },
     ],
     uc: ['Đăng ký tài khoản', 'Đăng nhập', 'Xem hồ sơ', 'Cập nhật hồ sơ', 'Đổi mật khẩu', 'Đăng xuất', 'Khoá / mở khoá tài khoản'],
-    ghiChu: ['Đăng ký không cho tự chọn quyền — mọi tài khoản tự đăng ký đều là CUSTOMER.',
-      'Mật khẩu lưu dạng BCrypt hash, không bao giờ lưu dạng thô.'],
+    include: [
+      { tu: 'Đăng ký tài khoản', den: 'Kiểm tra định dạng email' },
+      { tu: 'Đăng ký tài khoản', den: 'Kiểm tra email trùng' },
+      { tu: 'Đăng nhập', den: 'Cấp phiên an toàn' },
+      { tu: 'Đăng nhập', den: 'Kiểm tra tài khoản có bị khoá' },
+      { tu: 'Đổi mật khẩu', den: 'Xác nhận mật khẩu cũ' },
+      { tu: 'Cập nhật hồ sơ', den: 'Kiểm tra dữ liệu hợp lệ' },
+    ],
+    ghiChu: [
+      'Đăng ký không cho tự chọn quyền — mọi tài khoản tự đăng ký đều là CUSTOMER.',
+      'Mật khẩu lưu dạng BCrypt hash, không bao giờ lưu dạng thô.',
+    ],
   },
   '3-04-use-case-tim-kiem-va-dat-phong': {
     ten: 'Tìm kiếm & đặt phòng',
-    tacNhan: [{ ten: 'Khách', viTri: 'trai', dung: ['Chọn địa điểm', 'Đặt nhu cầu lọc', 'Xem kết quả tìm kiếm', 'Chọn phòng', 'Đặt phòng'] }],
-    uc: ['Chọn địa điểm', 'Đặt nhu cầu lọc', 'Xem kết quả tìm kiếm', 'Chọn phòng', 'Kiểm tra phòng trống', 'Đặt phòng theo giờ', 'Đặt phòng theo ngày', 'Nhận mã đơn'],
-    ghiChu: ['Quy tắc nghiệp vụ: đặt theo giờ tối thiểu 3 giờ; đặt theo ngày nhận phòng 14:00, trả phòng 12:00 hôm sau; phải đặt trước ít nhất 2 giờ.'],
+    tacNhan: [{ ten: 'Khách', dung: ['Chọn địa điểm', 'Đặt nhu cầu lọc', 'Xem kết quả tìm kiếm', 'Chọn phòng', 'Đặt phòng'] }],
+    uc: ['Chọn địa điểm', 'Đặt nhu cầu lọc', 'Xem kết quả tìm kiếm', 'Chọn phòng', 'Đặt phòng'],
+    include: [
+      { tu: 'Đặt nhu cầu lọc', den: 'Kiểm tra ngày nhận / trả hợp lệ' },
+      { tu: 'Xem kết quả tìm kiếm', den: 'Phân trang kết quả' },
+      { tu: 'Chọn phòng', den: 'Xem chi tiết và ảnh phòng' },
+      { tu: 'Đặt phòng', den: 'Kiểm tra phòng còn trống' },
+      { tu: 'Đặt phòng', den: 'Tính tổng tiền theo bảng giá' },
+      { tu: 'Đặt phòng', den: 'Ghi mã đơn và trả về khách' },
+    ],
+    ghiChu: [
+      'Quy tắc nghiệp vụ: đặt theo giờ tối thiểu 3 giờ; đặt theo ngày nhận phòng 14:00, trả phòng 12:00 hôm sau; phải đặt trước ít nhất 2 giờ.',
+      'Kiểm tra phòng trống chạy trong transaction mức SERIALIZABLE nên hai khách cùng đặt một khung giờ chỉ có một đơn được tạo.',
+    ],
   },
   '3-05-use-case-quan-ly-dat-phong': {
     ten: 'Quản lý đặt phòng',
     tacNhan: [
-      { ten: 'Khách', viTri: 'trai', dung: ['Xem đơn của tôi', 'Lọc đơn theo trạng thái', 'Xem chi tiết & lịch sử đơn', 'Huỷ đơn', 'Đánh giá sau khi hoàn thành'] },
-      { ten: 'Admin', viTri: 'phai', dung: ['Xem danh sách đơn', 'Lọc & tìm đơn', 'Xác nhận đơn', 'Từ chối đơn', 'Check-in', 'Check-out'] },
+      { ten: 'Khách', dung: ['Xem đơn của tôi', 'Lọc đơn theo trạng thái', 'Xem chi tiết & lịch sử đơn', 'Huỷ đơn', 'Đánh giá sau khi hoàn thành'] },
+      { ten: 'Admin', dung: ['Xem danh sách đơn', 'Lọc & tìm đơn', 'Xác nhận đơn', 'Từ chối đơn', 'Check-in', 'Check-out'] },
     ],
     uc: ['Xem danh sách đơn', 'Lọc & tìm đơn', 'Xem đơn của tôi', 'Lọc đơn theo trạng thái', 'Xem chi tiết & lịch sử đơn', 'Xác nhận đơn', 'Từ chối đơn', 'Huỷ đơn', 'Check-in', 'Check-out', 'Đánh giá sau khi hoàn thành'],
-    ghiChu: ['Vòng đời đơn: PENDING → CONFIRMED → CHECKED_IN → COMPLETED; nhánh phụ CANCELLED (khách huỷ) và REJECTED (Admin từ chối).',
+    include: [
+      { tu: 'Lọc & tìm đơn', den: 'Phân trang danh sách đơn' },
+      { tu: 'Xem chi tiết & lịch sử đơn', den: 'Tải dòng lịch sử chuyển trạng thái' },
+      { tu: 'Xác nhận đơn', den: 'Kiểm tra trạng thái đơn hợp lệ' },
+      { tu: 'Từ chối đơn', den: 'Bắt buộc nhập lý do từ chối' },
+      { tu: 'Check-in', den: 'Chuyển phòng sang đang ở' },
+      { tu: 'Check-out', den: 'Mở phiếu thu cho đơn' },
+      { tu: 'Đánh giá sau khi hoàn thành', den: 'Chỉ cho đánh giá đơn COMPLETED' },
+    ],
+    ghiChu: [
+      'Vòng đời đơn: PENDING → CONFIRMED → CHECKED_IN → COMPLETED; nhánh phụ CANCELLED (khách huỷ) và REJECTED (Admin từ chối).',
       'Mỗi lần đổi trạng thái đều ghi thêm một dòng vào bảng lịch sử, kèm người thực hiện và thời điểm.',
-      'Khi đơn chuyển sang COMPLETED, hệ thống mở phiếu thu và sinh thông báo cho khách — xem Hình 3.7 và 3.8.'],
+      'Khi đơn chuyển sang COMPLETED, hệ thống mở phiếu thu và sinh thông báo cho khách — xem Hình 3.7 và 3.8.',
+    ],
   },
   '3-06-use-case-quan-ly-phong': {
     ten: 'Quản lý phòng',
     tacNhan: [
-      { ten: 'Admin', viTri: 'phai', dung: ['Thêm phòng', 'Sửa phòng', 'Đổi trạng thái phòng', 'Xoá phòng', 'Gán tiện nghi', 'Quản lý cơ sở'] },
+      { ten: 'Admin', dung: ['Thêm phòng', 'Sửa phòng', 'Đổi trạng thái phòng', 'Xoá phòng', 'Gán tiện nghi', 'Quản lý cơ sở'] },
     ],
     uc: ['Thêm phòng', 'Sửa phòng', 'Đổi trạng thái phòng', 'Xoá phòng', 'Gán tiện nghi', 'Quản lý cơ sở'],
-    ghiChu: ['Năm trạng thái phòng: AVAILABLE, BOOKED, OCCUPIED, CLEANING, MAINTENANCE.',
-      'Sau check-out, phòng chuyển sang CLEANING; job nền tự đưa về AVAILABLE sau 2 giờ. Không xoá được phòng đang có đơn.'],
+    include: [
+      { tu: 'Thêm phòng', den: 'Kiểm tra số phòng trùng trong cơ sở' },
+      { tu: 'Thêm phòng', den: 'Chọn ảnh đại diện' },
+      { tu: 'Sửa phòng', den: 'Kiểm tra dữ liệu hợp lệ' },
+      { tu: 'Xoá phòng', den: 'Chặn xoá khi còn đơn' },
+      { tu: 'Đổi trạng thái phòng', den: 'Cập nhật điểm đánh giá phòng' },
+    ],
+    ghiChu: [
+      'Năm trạng thái phòng: AVAILABLE, BOOKED, OCCUPIED, CLEANING, MAINTENANCE.',
+      'Sau check-out, phòng chuyển sang CLEANING; chỉ coi là trống khi đủ số giờ vệ sinh. Không xoá được phòng đang có đơn.',
+    ],
   },
   '3-07-use-case-thanh-toan': {
     ten: 'Thanh toán',
     tacNhan: [
-      { ten: 'Khách', viTri: 'trai', dung: ['Xem lịch sử thanh toán', 'Chọn phương thức thanh toán'] },
-      { ten: 'Admin', viTri: 'phai', dung: ['Lọc theo trạng thái', 'Xác nhận đã thu tiền', 'Đánh dấu thất bại'] },
+      { ten: 'Khách', dung: ['Xem lịch sử thanh toán', 'Chọn phương thức thanh toán'] },
+      { ten: 'Admin', dung: ['Lọc phiếu thu theo trạng thái', 'Xác nhận đã thu tiền', 'Đánh dấu thanh toán thất bại'] },
     ],
     uc: ['Xem lịch sử thanh toán', 'Chọn phương thức thanh toán', 'Lọc phiếu thu theo trạng thái', 'Xác nhận đã thu tiền', 'Đánh dấu thanh toán thất bại'],
-    ghiChu: ['Ranh giới đã chốt: hệ thống chỉ GHI NHẬN phương thức khách chọn, không nối API cổng thanh toán nào. Không có màn hình quét mã hay trang cổng.',
+    include: [
+      { tu: 'Chọn phương thức thanh toán', den: 'Kiểm tra đơn đã hoàn thành' },
+      { tu: 'Chọn phương thức thanh toán', den: 'Chặn đổi khi phiếu đã thu tiền' },
+      { tu: 'Xác nhận đã thu tiền', den: 'Đối chiếu số tiền với đơn' },
+      { tu: 'Xác nhận đã thu tiền', den: 'Ghi thời điểm thu tiền' },
+      { tu: 'Lọc phiếu thu theo trạng thái', den: 'Phân trang danh sách phiếu thu' },
+    ],
+    ghiChu: [
+      'Ranh giới đã chốt: hệ thống chỉ GHI NHẬN phương thức khách chọn, không nối API cổng thanh toán nào. Không có màn hình quét mã hay trang cổng.',
       'Ba trạng thái phiếu thu: chờ thanh toán, đã thanh toán, thanh toán thất bại.',
       'Phiếu thu mở khi đơn chuyển COMPLETED, không phải lúc khách đặt — khách chưa trả tiền thì chưa có giao dịch.',
-      'Một đơn có đúng một phiếu thu (ràng buộc UNIQUE trên BookingId); thu hai lần sẽ bị từ chối với mã 409.'],
+      'Một đơn có đúng một phiếu thu (ràng buộc UNIQUE trên BookingId); thu hai lần sẽ bị từ chối với mã 409.',
+    ],
   },
   '3-08-use-case-thong-bao': {
     ten: 'Thông báo',
     tacNhan: [
-      { ten: 'Hệ thống', viTri: 'trai', loai: 'may', dung: ['Sinh thông báo khi đổi trạng thái đơn'] },
-      { ten: 'Khách', viTri: 'phai', dung: ['Xem thông báo', 'Đánh dấu đã đọc', 'Đánh dấu đã đọc tất cả'] },
+      { ten: 'Hệ thống', loai: 'may', dung: ['Sinh thông báo khi đổi trạng thái đơn'] },
+      { ten: 'Khách', dung: ['Xem thông báo', 'Đánh dấu đã đọc', 'Đánh dấu đã đọc tất cả'] },
     ],
     uc: ['Sinh thông báo khi đổi trạng thái đơn', 'Xem thông báo', 'Đánh dấu đã đọc', 'Đánh dấu đã đọc tất cả'],
-    ghiChu: ['Thông báo CHỈ hiển thị trong hệ thống (in-app), không gửi email/SMS — không có dịch vụ gửi tin nào trong dự án.',
+    include: [
+      { tu: 'Sinh thông báo khi đổi trạng thái đơn', den: 'Sinh câu chữ theo trạng thái đơn' },
+      { tu: 'Xem thông báo', den: 'Đếm số thông báo chưa đọc' },
+      { tu: 'Đánh dấu đã đọc tất cả', den: 'Đánh dấu từng thông báo đã đọc' },
+    ],
+    ghiChu: [
+      'Thông báo CHỈ hiển thị trong hệ thống (in-app), không gửi email/SMS — không có dịch vụ gửi tin nào trong dự án.',
       'Sinh thông báo cho 4 sự kiện: đơn được xác nhận, nhận phòng, trả phòng, bị từ chối (kèm lý do).',
       'Mỗi thông báo luôn chứa mã đơn để khách tra cứu được ngay.',
-      'Khách tự huỷ đơn thì không sinh thông báo — chính họ biết, gửi thêm chỉ làm nhiễu.'],
+      'Khách tự huỷ đơn thì không sinh thông báo — chính họ biết, gửi thêm chỉ làm nhiễu.',
+    ],
   },
   '3-09-use-case-quan-tri-he-thong': {
     ten: 'Quản trị hệ thống',
     tacNhan: [
-      { ten: 'Admin', viTri: 'phai', dung: ['Xem thống kê', 'Doanh thu theo tháng', 'Tỷ lệ lấp đầy', 'Doanh thu theo phòng', 'Ẩn / hiện đánh giá', 'Khoá khách hàng'] },
+      { ten: 'Admin', dung: ['Xem thống kê', 'Doanh thu theo tháng', 'Tỷ lệ lấp đầy', 'Doanh thu theo phòng', 'Ẩn / hiện đánh giá', 'Khoá khách hàng'] },
     ],
     uc: ['Xem thống kê', 'Doanh thu theo tháng', 'Số đơn theo tháng', 'Tỷ lệ lấp đầy', 'Trạng thái phòng', 'Doanh thu theo phòng', 'Ẩn / hiện đánh giá', 'Xoá đánh giá', 'Khoá khách hàng'],
-    ghiChu: ['Doanh thu tính từ phiếu thu đã đánh dấu ĐÃ THU, không lấy từ tổng tiền của đơn — đơn hoàn thành mà khách chưa trả thì chưa phải doanh thu.',
-      'Tháng không có dữ liệu vẫn giữ cột 0 để biểu đồ không bị lệch trục thời gian.'],
+    include: [
+      { tu: 'Doanh thu theo tháng', den: 'Tổng hợp phiếu thu đã thu' },
+      { tu: 'Số đơn theo tháng', den: 'Đếm đơn theo tháng đặt' },
+      { tu: 'Tỷ lệ lấp đầy', den: 'Đếm số đêm đã bán' },
+      { tu: 'Doanh thu theo phòng', den: 'Gom doanh thu theo từng phòng' },
+    ],
+    ghiChu: [
+      'Doanh thu tính từ phiếu thu đã đánh dấu ĐÃ THU, không lấy từ tổng tiền của đơn — đơn hoàn thành mà khách chưa trả thì chưa phải doanh thu.',
+      'Tháng không có dữ liệu vẫn giữ cột 0 để biểu đồ không bị lệch trục thời gian.',
+    ],
   },
 }
 
@@ -894,3 +1097,58 @@ for (const [ten, noiDungSvg] of tatCa) {
   console.log(`  ${ten}.svg  (${(noiDungSvg.length / 1024).toFixed(1)} KB)`)
 }
 console.log(`\nTổng: ${tatCa.length} sơ đồ → docs/anh/so-do/`)
+
+/* ------------------------------------------------------- trang xem nhanh */
+
+/**
+ * Trang HTML xem tất cả sơ đồ trong một trang, phục vụ xem nhanh khi cần.
+ *
+ * Tên hiển thị lấy từ chính nội dung sơ đồ chứ không viết thêm một bảng tên ở đây.
+ * Lý do: có bảng tên riêng nghĩa là thêm sơ đồ phải sửa hai chỗ, quên một chỗ là
+ * tiêu đề lệch với hình. Lấy tiêu đề nằm trong file SVG thì không thể lệch.
+ */
+function veTrangXem(tatCa) {
+  const the = tatCa
+    .map(([ten, svg]) => {
+      const tieuDe = svg.match(/<title>([^<]+)<\/title>/)?.[1] ?? ten
+      const soHinh = ten.match(/^3-(\d\d)-/)?.[1] ?? '00'
+      // KHÔNG gọi `esc` lần nữa: giá trị đọc ra từ `<title>` đã được escape sẽ trong
+      // SVG, chạy `esc` lần hai làm `Tìm kiếm & đặt phòng` thành `&amp;amp;` — tức là
+      // trên trang hiện đúng chữ `&amp;` cho người đọc.
+      return `  <figure>
+    <img src="../${ten}.png" alt="${tieuDe}" loading="lazy">
+    <figcaption><b>Hình 3.${Number(soHinh)}</b> — ${tieuDe}<br><code>${ten}.svg</code> → <code>${ten}.png</code></figcaption>
+  </figure>`
+    })
+    .join('\n')
+
+  return `<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Sơ đồ HomeStay — Hình 3.1 đến 3.${tatCa.length}</title>
+<style>
+  body { margin: 0; padding: 28px; background: #f8fafc; color: #1f2937;
+         font-family: 'Segoe UI', 'Noto Sans', Arial, sans-serif; }
+  h1 { margin: 0 0 4px; font-size: 24px; }
+  p.hu { margin: 0 0 24px; color: #6b7280; font-size: 14px; }
+  .luoi { display: grid; gap: 26px; grid-template-columns: repeat(auto-fit, minmax(520px, 1fr)); }
+  figure { margin: 0; background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 12px; }
+  img { width: 100%; height: auto; display: block; border-radius: 4px; }
+  figcaption { margin-top: 10px; font-size: 13px; color: #374151; }
+  code { font-size: 12px; color: #6b7280; }
+</style>
+</head>
+<body>
+<h1>Sơ đồ hệ thống HomeStay — ${tatCa.length} hình</h1>
+<p class="hu">Sinh tự động từ <code>docs/anh/ve-so-do.mjs</code>. Bấm vào ảnh để xem kích thước thật.</p>
+<div class="luoi">
+${the}
+</div>
+</body>
+</html>
+`
+}
+
+writeFileSync(join(noiDung, 'index.html'), veTrangXem(tatCa), 'utf8')
+console.log('Trang xem: docs/anh/so-do/index.html')

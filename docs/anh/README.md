@@ -76,8 +76,12 @@ lệnh thứ hai thì báo cáo vẫn hiện hình cũ.
 Muốn xem/chụp lại: chạy server tĩnh nhỏ rồi mở trình duyệt
 
 ```powershell
-node docs/anh/xem-so-do.mjs         # http://localhost:5199/anh/so-do/3-12-so-do-erd.svg
+node docs/anh/xem-so-do.mjs         # http://localhost:5199/anh/so-do/index.html
 ```
+
+> `index.html` là **trang xem tất cả 18 sơ đồ trong một trang**, do chính `ve-so-do.mjs`
+> sinh ra nên không bao giờ lệch với danh sách hình. Muốn xem toàn bộ sơ đồ thì mở
+> trang này thay vì bấm từng file.
 
 > File `.svg` nên mở trực tiếp bằng trình duyệt hoặc chèn vào Word (Word 2016 trở lới
 > hỗ trợ SVG) để hình luôn sắc nét, không phụ thuộc độ phân giải ảnh chụp.
