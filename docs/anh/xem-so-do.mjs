@@ -3,7 +3,7 @@
  * Chỉ phục vụ thư mục `docs/`, chỉ đọc, không ghi gì.
  *
  * Chạy:  node docs/anh/xem-so-do.mjs
- * Xem:   http://localhost:5199/anh/so-do/3-10-so-do-erd.svg
+ * Xem:   http://localhost:5199/anh/so-do/3-12-so-do-erd.svg
  *
  * Riêng file `.svg` được bọc trong một trang HTML nền trắng: trình duyệt hiển thị
  * .svg trên nền tối mặc định nên ảnh chụp sẽ có viền đen, không dùng được.

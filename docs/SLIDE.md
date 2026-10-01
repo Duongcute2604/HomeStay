@@ -158,7 +158,7 @@ cho đến đặt phòng và đánh giá. Quản trị viên dùng 6 nhóm chứ
 
 ## Slide 7 — Kiến trúc hệ thống *(5:00 – 5:45)*
 
-**Trên slide** (chèn hình `docs/anh/3-08-kien-truc-he-thong.jpg` — kiến trúc phân tầng)
+**Trên slide** (chèn hình `docs/anh/3-10-kien-truc-he-thong.png` — kiến trúc phân tầng)
 
 ```
 HTTP Request → CONTROLLER → SERVICE → Entity Framework → MySQL
@@ -181,18 +181,20 @@ giờ trả entity thô ra ngoài — luôn trả qua DTO để không lộ cấ
 
 ## Slide 8 — ERD *(5:45 – 6:30)*
 
-**Trên slide** (chèn hình `docs/anh/3-10-so-do-erd.jpg`)
+**Trên slide** (chèn hình `docs/anh/3-12-so-do-erd.png`)
 
 ```
-9 BẢNG · 8 KHÓA NGOẠI
+11 BẢNG · 13 KHÓA NGOẠI
 Users ──< Bookings >── Rooms >── RoomImages
               │         │
               │         └──< RoomAmenities >── Amenities
               ├──< BookingStatusHistory
-              └──< Reviews
+              ├──< Reviews
+              └──< Payments
+Users ──< Notifications
 ```
 
-**Nói:** "Cơ sở dữ liệu có 9 bảng. Điểm em muốn nhấn mạnh là bảng `BookingStatusHistory` —
+**Nói:** "Cơ sở dữ liệu có 11 bảng. Điểm em muốn nhấn mạnh là bảng `BookingStatusHistory` —
 hệ thống không sửa thẳng trạng thái đơn mà ghi lại từng lần chuyển, kèm người thực hiện
 và thời điểm. Nhờ đó khi có khiếu nại vẫn trả lời được ai đã làm gì. Ngoài ra đơn đặt phòng
 lưu snapshot giá tại thời điểm đặt, nên khi chủ homestay đổi giá thì lịch sử đơn cũ không bị
@@ -202,7 +204,7 @@ thay đổi theo."
 
 ## Slide 9 — Biểu đồ tuần tự: đặt phòng *(6:30 – 7:30)*
 
-**Trên slide** (chèn hình `docs/anh/3-13-sequence-dat-phong.jpg`)
+**Trên slide** (chèn hình `docs/anh/3-15-sequence-dat-phong.png`)
 
 ```
 1. Khách chọn khung giờ trên trang chi tiết phòng
@@ -372,8 +374,8 @@ một đơn bị chặn. Cả hai lệnh build đều không có lỗi và khôn
 **Trên slide**
 ```
 ĐÃ HOÀN THÀNH
-17 nhóm chức năng · 9 bảng CSDL · 41 API · 19 màn hình · 15 sơ đồ UML
-649 test tự động + 267 kịch bản tay — đạt 100%
+17 nhóm chức năng · 11 bảng CSDL · 47 API · 22 màn hình · 18 sơ đồ UML
+701 test tự động + 267 kịch bản tay — đạt 100%
 
 HẠN CHẾ (ghi rõ trong báo cáo)
 ✗ Chưa tích hợp thanh toán trực tuyến     ✗ Chưa có thông báo tự động

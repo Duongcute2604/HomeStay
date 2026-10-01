@@ -16,16 +16,16 @@
 
 ---
 
-## 0. Cơ sở dữ liệu — 9 bảng (Bước 3)
+## 0. Cơ sở dữ liệu — 11 bảng (Bước 3, thêm `Payments` + `Notifications` ở Bước 22–23)
 
 > Bước này không có giao diện nên kiểm thử tay chạy **trực tiếp SQL trên MySQL**.
 > Cách mở: `docker exec -it homestay-mysql mysql -uhomestay -phomestay123 -D homestay`
 
 | STT | Chức năng | Kịch bản | Kỳ vọng | Thực tế | Kết quả |
 |-----|----------|----------|---------|---------|---------|
-| 1 | 9 bảng | HP: `SHOW TABLES` | Đủ 9 bảng | Đủ 9 bảng + `__EFMigrationsHistory` | ✅ |
+| 1 | 11 bảng | HP: `SHOW TABLES` | Đủ 11 bảng | Đủ 11 bảng + `__EFMigrationsHistory` | ✅ |
 | 2 | Cấu trúc `Bookings` | HP: `DESCRIBE Bookings` | `Code` unique, enum lưu dạng chữ, có index `RoomId`/`Status` | `Code=varchar(20) UNI` · `Status=varchar(20) MUL` · `CheckIn=datetime(6) MUL` · tiền `decimal(18,2)` | ✅ |
-| 3 | Khoá ngoại | HP: đọc `information_schema` | 11 FK đúng quan hệ đã thiết kế | Đúng 11 FK, không thừa không thiếu | ✅ |
+| 3 | Khoá ngoại | HP: đọc `information_schema` | 13 FK đúng quan hệ đã thiết kế | Đúng 13 FK, không thừa không thiếu | ✅ |
 | 4 | Enum đọc được | HP: `SELECT Role, Status FROM Users` | Thấy `CUSTOMER` / `ADMIN`, không phải số | `CUSTOMER`, `ADMIN` hiển thị đúng chữ | ✅ |
 | 5 | Chống trùng tài khoản | EC: thêm 2 user cùng email `khach1@gmail.com` | MySQL từ chối | `ERROR 1062 Duplicate entry 'khach1@gmail.com' for key 'Users.IX_Users_Email'` | ✅ |
 | 6 | Chặn trả phòng trước | AB: đặt `CheckOut < CheckIn` | MySQL từ chối | `ERROR 3819 Check constraint 'CK_Bookings_TimeRange' is violated` | ✅ |

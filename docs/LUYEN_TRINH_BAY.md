@@ -86,7 +86,7 @@ mà không có slide nhắc.
 | 1 | **Chống đặt trùng**: công thức `c₁ < t₂ VÀ t₁ > c₂`, chặn ở 3 tầng, dùng `<` vì chạm biên không tính trùng |
 | 2 | **Snapshot giá**: giá là thông tin tại thời điểm thỏa thuận; đổi giá phòng không được làm thay đổi lịch sử |
 | 3 | **Lỗi múi giờ**: giao diện gửi giờ UTC, hệ thống hiểu giờ địa phương, lệch 7 giờ; màn hình hiển thị đúng nhưng dữ liệu sai; lọt qua 649 test |
-| 4 | **Số liệu**: 17 chức năng · 9 bảng · 41 API · 19 màn hình · 380 + 269 test · 41 request · 267 kịch bản tay |
+| 4 | **Số liệu**: 17 chức năng · 11 bảng · 47 API · 22 màn hình · 414 + 287 test · 41 request · 267 kịch bản tay |
 | 5 | **Phân quyền**: 2 tầng (API + route), `userId` lấy từ token không lấy từ client, đăng ký không tự chọn quyền |
 
 **Gợi ý mở đầu khi không có slide:**
@@ -160,7 +160,7 @@ em chỉ làm theo hướng dẫn.
 | 6 | Đăng nhập được `admin@homestay.vn` / `123456` | ⬜ |
 | 7 | Mở sẵn 2 tab trình duyệt (khách + Admin) | ⬜ |
 | 8 | Tắt thông báo trình duyệt và thông báo email | ⬜ |
-| 9 | Báo cáo có đủ **39 hình** (22 hình Chương 3 + 17 hình Chương 4), không ô nào trống | ⬜ |
+| 9 | Báo cáo có đủ **57 hình** (25 hình Chương 3 + 32 hình Chương 4), không ô nào trống | ⬜ |
 | 10 | Không có chỗ nào trong báo cáo ghi "nhân viên" | ⬜ |
 | 11 | Đã đọc mục **Vibe Coding** trong báo cáo để trả lời câu hỏi về AI | ⬜ |
 | 12 | Mang theo **USB hoặc in phụ** báo cáo và file slide | ⬜ |

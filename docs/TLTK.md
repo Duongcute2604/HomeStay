@@ -38,7 +38,7 @@
 | [1] | Nền tảng công nghệ Web: phân biệt front-end / back-end, cách tổ chức một dự án Web |
 | [2], [5], [6], [9], [10] | Vẽ 3 biểu đồ tác nhân, 5 biểu đồ use case, 4 biểu đồ lớp thực thể, 5 biểu đồ tuần tự |
 | [3] | Quy định hình thức báo cáo: bố cục 4 chương, cách trích dẫn tài liệu |
-| [4], [8] | Thiết kế 9 bảng CSDL, chuẩn hoá các phụ thuộc, ràng buộc khóa ngoại và index |
+| [4], [8] | Thiết kế 11 bảng CSDL, chuẩn hoá các phụ thuộc, ràng buộc khóa ngoại và index |
 | [7] | Chuẩn UML — mốc chuẩn để biết sơ đồ vẽ đúng hay chưa |
 
 ---
@@ -96,5 +96,6 @@
   không rõ nguồn gốc — trừ [9] và [10] vì hai tài liệu này nằm sẵn trong mẫu báo cáo.
 - Ngày truy cập ghi theo thứ tự em thực sự đọc tài liệu đó, từ 26/09/2026 (bắt đầu dự án)
   đến 01/10/2026 (khi viết Chương 4).
-- Hình và sơ đồ trong báo cáo: 15 sơ đồ UML do em dựng bằng công cụ vẽ, 24 ảnh giao diện chụp
-  từ hệ thống đang chạy, nguồn ảnh phòng ghi tại `docs/NGUON_ANH.md`.
+- Hình và sơ đồ trong báo cáo: 18 sơ đồ UML do em dựng bằng script
+  `docs/anh/ve-so-do.mjs` (sinh SVG rồi dựng PNG), 32 ảnh giao diện chụp từ hệ thống
+  đang chạy; nguồn ảnh phụ ghi tại `docs/anh/README.md`.

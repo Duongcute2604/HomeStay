@@ -845,11 +845,12 @@ Trang báo *"Unable to render this definition"* dù `swagger.json` hợp lệ. N
 | Kiểm thử tích hợp | **41/41** request · **115/115** kiểm chứng · **12/12** lần chạy liên tiếp |
 
 > **Bài học 75–77:** đọc `DbException.ErrorCode` cho lỗi MySQL là luôn sai (phải đọc `MySqlException.Number`) · package không dùng có thể phá chức năng của package khác · bộ test tích hợp tự làm bẩn dữ liệu thì không phải bộ test, chỉ chạy được đúng một lần.
-### [x] BƯỚC 19 — 22 hình cho Chương 3 của báo cáo · **XONG 01/10/2026**
-- **Mục tiêu đo được:** chụp đủ 22 hình (3.1–3.22), **không được để trống "Hình 3.x" nào trong báo cáo** — ảnh chụp phải là của hệ thống đang chạy
-- **Kết quả:** **22/22 hình** trong `docs/anh/` — **7 ảnh giao diện** (3.16–3.22, chụp từ hệ thống chạy thật, khung 1440×900) + **15 sơ đồ** (3.1–3.15)
-- **Bằng chứng:** `docs/anh/*.jpg` (22 file) · `docs/anh/so-do/*.svg` (15 file) · `docs/anh/README.md` bảng đối chiếu 22 hình với mẫu báo cáo
+### [x] BƯỚC 19 — 25 hình cho Chương 3 của báo cáo · **XONG 01/10/2026**
+- **Mục tiêu đo được:** chụp đủ 25 hình (3.1–3.25), **không được để trống "Hình 3.x" nào trong báo cáo** — ảnh chụp phải là của hệ thống đang chạy
+- **Kết quả:** **25/25 hình** trong `docs/anh/` — **7 ảnh giao diện** (3.19–3.25, chụp từ hệ thống chạy thật, khung 1440×900) + **18 sơ đồ** (3.1–3.18)
+- **Bằng chứng:** `docs/anh/3-*.png` (18 sơ đồ) · `docs/anh/3-*.jpg` (7 ảnh giao diện) · `docs/anh/so-do/*.svg` (18 file) · `docs/anh/README.md` bảng đối chiếu 25 hình với mẫu báo cáo
 - **Chi tiết:** `docs/anh/README.md`
+- **Bổ sung sau Bước 22–23 (01/10/2026):** thêm 3 sơ đồ (3.7 thanh toán, 3.8 thông báo, 3.18 tuần tự thanh toán), đánh số lại toàn bộ Chương 3, ERD lên 11 bảng, biểu đồ lớp thực thi thêm 5 lớp. Dùng `docs/anh/svg-2-png.mjs` (Chrome headless, hệ số phóng 2×) dựng PNG thay vì chụp tay.
 
 #### Quyết định đã chốt (trước khi code)
 
@@ -879,14 +880,16 @@ Trang báo *"Unable to render this definition"* dù `swagger.json` hợp lệ. N
 
 #### ⚠️ Việc còn lại của bước này
 
-Mẫu báo cáo `.docx` vẫn ghi **"Hình 3.8. Kiến trúc hệ thống StayEasy"** — tên cũ. Sửa thành **HomeStay** khi ghép báo cáo (đã ghi trong `docs/anh/README.md`).
+Xem danh sách chỗ phải sửa tay trong mẫu báo cáo ở `docs/CHINH_SUA_MAU_BAO_CAO.md`.
+Lưu ý mẫu vẫn ghi **"Kiến trúc hệ thống StayEasy"** — tên cũ, phải sửa thành
+**HomeStay**; kiến trúc nay ở **Hình 3.10** (không còn là 3.8).
 
 | Hạng mục | Kết quả |
 |----------|---------|
 | Ảnh giao diện | **7/7** — trang chủ, tìm kiếm, chi tiết phòng, đặt phòng, quản lý đơn, thống kê, quản lý phòng |
-| Sơ đồ | **15/15** — tác nhân, 6 use case, kiến trúc, lớp, ERD, 5 tuần tự |
-| Tổng | **22/22** — không còn ô "Hình 3.x" nào bị trống |
-| Frontend | **264/264** test · `npm run build` 0 error |
+| Sơ đồ | **18/18** — tác nhân, 8 use case, kiến trúc, lớp thực thi, ERD 11 bảng, 6 tuần tự |
+| Tổng | **25/25** — không còn ô "Hình 3.x" nào bị trống |
+| Frontend | **287/287** test · `npm run build` 0 error |
 
 > **Bài học 78–80:** nền trang bán trong suốt làm lộ canvas của trình duyệt, cả trang bị tối theo · chuỗi `*/` trong chú thích CSS làm hỏng cả bản build · 22 hình trong báo cáo thì sinh bằng script, và phải xem ảnh sau khi sinh vì script chạy sạch không bảo đảm hình đẹp.
 ### [x] BƯỚC 20 — Viết Chương 4

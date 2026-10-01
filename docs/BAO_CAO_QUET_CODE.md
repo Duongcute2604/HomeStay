@@ -79,4 +79,4 @@ thứ framework gọi: `Validator.TryValidateObject`. Chi tiết: `lessons.md` m
 |---------|------------------------|
 | **Đăng xuất không thu hồi được access token** (tối đa 1 giờ) | Token tự chứa không có chỗ lưu để đối chiếu. Muốn thu hồi thì lưu token vào CSDL và kiểm mỗi request — tốn 1 truy vấn cho mọi API. Đánh đổi tiêu chuẩn, đã ghi ở mục giới hạn trong báo cáo |
 | **Access token không đổi nếu phát hành 2 lần trong cùng 1 giây** | Cố ý **không** có `jti`; nội dung chỉ `(userId, email, role, exp)` mà `exp` tính theo giây. Refresh token thì **có** `jti` (`lessons.md` 21) |
-| **1 tài khoản chỉ giữ 1 phiên** | Giữ đúng **9 bảng** đã duyệt ở Bước 3 thay vì thêm bảng phiên |
+| **1 tài khoản chỉ giữ 1 phiên** | Giữ đúng **11 bảng** đã duyệt ở Bước 3 và Bước 22–23 thay vì thêm bảng phiên |

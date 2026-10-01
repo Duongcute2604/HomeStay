@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1350" height="388" viewBox="0 0 1350 388" font-family="'Segoe UI', 'Noto Sans', Arial, sans-serif">
+<rect width="1350" height="388" fill="#ffffff"/>
+
+<rect x="250" y="60" width="870" height="216" rx="10" fill="#eff6ff" stroke="#2563eb" stroke-width="1.5"/><text x="685" y="88" font-size="15" text-anchor="middle" fill="#2563eb" font-weight="700">Thanh toán</text><circle cx="150" cy="142" r="7" fill="none" stroke="#7c3aed" stroke-width="1.8"/>
+<path d="M 150 149 L 150 172 M 138 158 L 150 162 L 162 158
+         M 150 172 L 140 190 M 150 172 L 160 190"
+      fill="none" stroke="#7c3aed" stroke-width="1.8" stroke-linecap="round"/>
+<text x="150" y="208" font-size="12" text-anchor="middle" fill="#1f2937" font-weight="600">Khách</text><line x1="168" y1="148" x2="286" y2="151" stroke="#374151" stroke-width="1.1"/><line x1="168" y1="148" x2="566" y2="151" stroke="#374151" stroke-width="1.1"/><circle cx="1220" cy="142" r="7" fill="none" stroke="#7c3aed" stroke-width="1.8"/>
+<path d="M 1220 149 L 1220 172 M 1208 158 L 1220 162 L 1232 158
+         M 1220 172 L 1210 190 M 1220 172 L 1230 190"
+      fill="none" stroke="#7c3aed" stroke-width="1.8" stroke-linecap="round"/>
+<text x="1220" y="208" font-size="12" text-anchor="middle" fill="#1f2937" font-weight="600">Admin</text><line x1="1202" y1="148" x2="524" y2="235" stroke="#374151" stroke-width="1.1"/><ellipse cx="405" cy="151" rx="125" ry="31" fill="#ffffff" stroke="#2563eb" stroke-width="1.5"/>
+<text x="405" y="155" font-size="12" text-anchor="middle" fill="#1f2937" font-weight="400">Xem lịch sử thanh toán</text><ellipse cx="685" cy="151" rx="125" ry="31" fill="#ffffff" stroke="#2563eb" stroke-width="1.5"/>
+<text x="685" y="155" font-size="12" text-anchor="middle" fill="#1f2937" font-weight="400">Chọn phương thức thanh toán</text><ellipse cx="965" cy="151" rx="125" ry="31" fill="#ffffff" stroke="#2563eb" stroke-width="1.5"/>
+<text x="965" y="155" font-size="12" text-anchor="middle" fill="#1f2937" font-weight="400">Lọc phiếu thu theo trạng thái</text><ellipse cx="405" cy="235" rx="125" ry="31" fill="#ffffff" stroke="#2563eb" stroke-width="1.5"/>
+<text x="405" y="239" font-size="12" text-anchor="middle" fill="#1f2937" font-weight="400">Xác nhận đã thu tiền</text><ellipse cx="685" cy="235" rx="125" ry="31" fill="#ffffff" stroke="#2563eb" stroke-width="1.5"/>
+<text x="685" y="239" font-size="12" text-anchor="middle" fill="#1f2937" font-weight="400">Đánh dấu thanh toán thất bại</text><text x="30" y="314" font-size="11" text-anchor="start" fill="#6b7280" font-weight="400">Ranh giới đã chốt: hệ thống chỉ GHI NHẬN phương thức khách chọn, không nối API cổng thanh toán nào. Không có màn hình quét mã hay trang cổng.</text><text x="30" y="332" font-size="11" text-anchor="start" fill="#6b7280" font-weight="400">Ba trạng thái phiếu thu: chờ thanh toán, đã thanh toán, thanh toán thất bại.</text><text x="30" y="350" font-size="11" text-anchor="start" fill="#6b7280" font-weight="400">Phiếu thu mở khi đơn chuyển COMPLETED, không phải lúc khách đặt — khách chưa trả tiền thì chưa có giao dịch.</text><text x="30" y="368" font-size="11" text-anchor="start" fill="#6b7280" font-weight="400">Một đơn có đúng một phiếu thu (ràng buộc UNIQUE trên BookingId); thu hai lần sẽ bị từ chối với mã 409.</text>
+</svg>
