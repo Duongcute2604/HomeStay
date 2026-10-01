@@ -6,6 +6,7 @@ import Toast from './components/common/Toast'
 import ProtectedRoute from './components/ProtectedRoute'
 import AdminBookings from './pages/admin/AdminBookings'
 import AdminCustomers from './pages/admin/AdminCustomers'
+import AdminPayments from './pages/admin/AdminPayments'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import AdminFacilities from './pages/admin/AdminFacilities'
 import AdminReviews from './pages/admin/AdminReviews'
@@ -18,6 +19,7 @@ import NotFound from './pages/NotFound'
 import Booking from './pages/Booking'
 import MyBookingDetail from './pages/MyBookingDetail'
 import MyBookings from './pages/MyBookings'
+import MyPayments from './pages/MyPayments'
 import Profile from './pages/Profile'
 import Register from './pages/Register'
 import RoomDetail from './pages/RoomDetail'
@@ -50,6 +52,7 @@ export default function App(): JSX.Element {
           <Route path="admin/reviews" element={<AdminReviews />} />
           <Route path="admin/rooms" element={<AdminRooms />} />
           <Route path="admin/customers" element={<AdminCustomers />} />
+      <Route path="admin/payments" element={<AdminPayments />} />
         </Route>
 
         <Route element={<KhungKhach />}>
@@ -83,6 +86,14 @@ export default function App(): JSX.Element {
             element={
               <ProtectedRoute>
                 <MyBookingDetail />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/payments"
+            element={
+              <ProtectedRoute>
+                <MyPayments />
               </ProtectedRoute>
             }
           />

@@ -18,6 +18,7 @@ const MENU_KHACH: MucMenu[] = [
 
 const MENU_DANG_NHAP: MucMenu[] = [
   { to: '/bookings', nhan: 'Đơn của tôi' },
+  { to: '/payments', nhan: 'Thanh toán' },
   { to: '/profile', nhan: 'Hồ sơ' },
 ]
 

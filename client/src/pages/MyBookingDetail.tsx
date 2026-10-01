@@ -7,7 +7,10 @@ import Button from '../components/common/Button'
 import FormMessage from '../components/common/FormMessage'
 import ReviewForm from '../components/ReviewForm'
 import { bookingService } from '../services/bookingService'
+import { paymentService } from '../services/paymentService'
 import { BookingStatus, NHAN_LOAI_THUE, NHAN_TRANG_THAI_DON } from '../types/booking'
+import { useToastStore } from '../store/toastStore'
+import { MO_TA_PHUONG_THUC, NHAN_PHUONG_THUC, NHAN_TRANG_THAI_THANH_TOAN, PaymentMethod, PaymentStatus } from '../types/payment'
 import { formatNgay, formatVnd } from '../utils/format'
 
 /**
@@ -25,11 +28,27 @@ export default function MyBookingDetail(): JSX.Element {
   const [loiHuy, setLoiHuy] = useState<string | null>(null)
   const [dangGuiDanhGia, setDangGuiDanhGia] = useState(false)
   const [loiDanhGia, setLoiDanhGia] = useState<string | null>(null)
+  const [dangChonPhuongThuc, setDangChonPhuongThuc] = useState(false)
+  const [loiThanhToan, setLoiThanhToan] = useState<string | null>(null)
+  const themToast = useToastStore((s) => s.themToast)
 
   const { data: don, isPending, isError, error } = useQuery({
     queryKey: ['bookings', 'detail', code],
     queryFn: () => bookingService.layChiTiet(code),
     retry: false,
+  })
+
+  // Phiếu thu chỉ tồn tại khi đơn đã hoàn thành.
+  //
+  // Hook này đặt **trước** hai `return` sớm bên dưới, cùng với `useQuery` ở trên.
+  // React bắt buộc gọi hook theo đúng thứ tự mọi lần render; đặt sau `return` thì lần
+  // render đầu (đang tải) gọi ít hook hơn lần sau → lỗi "Rendered more hooks than during
+  // the previous render". Đã xảy ra thật và bị test bắt.
+  const donDaHoanThanh = don?.status === BookingStatus.COMPLETED
+  const { data: phieuThu } = useQuery({
+    queryKey: ['payments', 'booking', code],
+    queryFn: () => paymentService.layTheoDon(code),
+    enabled: donDaHoanThanh,
   })
 
   if (isPending) {
@@ -55,6 +74,31 @@ export default function MyBookingDetail(): JSX.Element {
   // Chỉ đơn đã trả phòng mới có mục đánh giá. Backend chặn lại 3 điều kiện này;
   // ở đây kiểm để không hiện nút mà bấm xong mới nhận 409.
   const duocDanhGia = don.status === BookingStatus.COMPLETED
+
+  // `duocChonPhuongThuc` bật khi phiếu đang CHỜ thu **hoặc** đã thất bại — trường hợp
+  // thất bại thì khách cần chọn lại được. Đã thu tiền rồi thì không đổi được, và backend
+  // cũng chặn lại bằng `409`.
+  const duocChonPhuongThuc =
+    duocDanhGia &&
+    phieuThu !== undefined &&
+    phieuThu !== null &&
+    (phieuThu.status === PaymentStatus.PENDING || phieuThu.status === PaymentStatus.FAILED)
+
+  const xuLyChonPhuongThuc = async (method: PaymentMethod): Promise<void> => {
+    setDangChonPhuongThuc(true)
+    setLoiThanhToan(null)
+
+    try {
+      await paymentService.chonPhuongThuc(code, { method })
+      await queryClient.invalidateQueries({ queryKey: ['payments', 'booking', code] })
+      await queryClient.invalidateQueries({ queryKey: ['payments', 'my'] })
+      themToast('Đã ghi nhận phương thức thanh toán', 'success')
+    } catch (error) {
+      setLoiThanhToan(layThongBaoLoi(error))
+    } finally {
+      setDangChonPhuongThuc(false)
+    }
+  }
 
   const xuLyDanhGia = async (sao: number, nhanXet: string): Promise<void> => {
     setDangGuiDanhGia(true)
@@ -142,6 +186,65 @@ export default function MyBookingDetail(): JSX.Element {
       {don.note && <p className="mt-2 text-left text-sm text-gray-500">Ghi chú: {don.note}</p>}
       {don.cancelReason && (
         <p className="mt-1 text-left text-sm text-red-600">Lý do hủy: {don.cancelReason}</p>
+      )}
+
+      {duocDanhGia && phieuThu !== undefined && phieuThu !== null && (
+        <section className="card mt-4 p-4">
+          <div className="flex items-start justify-between gap-2">
+            <h2 className="font-semibold text-gray-900">Thanh toán</h2>
+            <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
+              {NHAN_TRANG_THAI_THANH_TOAN[phieuThu.status]}
+            </span>
+          </div>
+
+          <p className="number-vn mt-2 text-left text-lg font-bold text-gray-900">
+            {formatVnd(phieuThu.amount)}
+          </p>
+
+          {duocChonPhuongThuc && (
+            <>
+              <p className="mt-2 text-left text-sm text-gray-600">
+                Chọn cách bạn muốn thanh toán. Quản trị viên sẽ xác nhận sau khi nhận đủ
+                tiền.
+              </p>
+              <div className="mt-3 space-y-2">
+                {Object.values(PaymentMethod).map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    className="w-full rounded-lg border border-stone-300 px-3 py-2 text-left text-sm transition-colors hover:border-amber-500 hover:bg-amber-50 disabled:opacity-50"
+                    disabled={dangChonPhuongThuc}
+                    onClick={() => void xuLyChonPhuongThuc(m)}
+                  >
+                    <span className="font-medium text-gray-900">{NHAN_PHUONG_THUC[m]}</span>
+                    <span className="mt-0.5 block text-xs text-gray-500">
+                      {MO_TA_PHUONG_THUC[m]}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+
+          {phieuThu.paidAt !== null && (
+            <p className="mt-2 text-left text-sm text-green-700">
+              Đã thanh toán ngày {formatNgay(phieuThu.paidAt)} bằng{' '}
+              {NHAN_PHUONG_THUC[phieuThu.method]}
+            </p>
+          )}
+
+          {phieuThu.status === PaymentStatus.FAILED && (
+            <p className="mt-2 text-left text-sm text-red-600">
+              Giao dịch trước không thành công
+              {phieuThu.note !== null ? ': ' + phieuThu.note : '.'} Vui lòng chọn lại phương
+              thức bên dưới.
+            </p>
+          )}
+
+          {loiThanhToan !== null && (
+            <p className="mt-2 text-left text-sm text-red-600">{loiThanhToan}</p>
+          )}
+        </section>
       )}
 
       {duocDanhGia && (

@@ -26,6 +26,14 @@ public class CreatePaymentRequest
 /// <summary>Thông tin thanh toán của một đơn, trả về cho cả khách và quản trị viên.</summary>
 public class PaymentDto
 {
+    /// <summary>Khoá phiếu thu, dùng cho thao tác của quản trị viên.</summary>
+    /// <remarks>
+    /// <b>Không hiển thị</b> khoá này ra giao diện — giao diện hiện <c>BookingCode</c> để
+    /// khách tra cứu. Nhưng Admin cần khoá để gọi endpoint "đánh dấu đã thu", nên DTO vẫn
+    /// phải có nó. Cùng cách làm với <c>AdminReviewDto.Id</c> (AGENTS.md 6.3).
+    /// </remarks>
+    public int Id { get; set; }
+
     /// <summary>Mã đơn đặt phòng liên quan, ví dụ `HS-261029-0015`.</summary>
     public string BookingCode { get; set; } = string.Empty;
 

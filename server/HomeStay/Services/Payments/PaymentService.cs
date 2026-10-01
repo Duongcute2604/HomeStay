@@ -153,6 +153,7 @@ public sealed class PaymentService : IPaymentService
 
         return new PaymentDto
         {
+            Id = phieu.Id,
             BookingCode = phieu.Booking.Code,
             RoomName = phong.Name,
             RoomNumber = phong.RoomNumber,

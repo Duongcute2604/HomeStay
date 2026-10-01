@@ -24,6 +24,7 @@ const MENU = [
   { to: '/admin/reviews', nhan: 'Đánh giá', hetTrang: false },
   { to: '/admin/rooms', nhan: 'Phòng', hetTrang: false },
   { to: '/admin/customers', nhan: 'Khách hàng', hetTrang: false },
+    { to: '/admin/payments', nhan: 'Thanh toán', hetTrang: false },
 ] as const
 
 export default function AdminLayout(): JSX.Element {
