@@ -20,6 +20,7 @@ import Booking from './pages/Booking'
 import MyBookingDetail from './pages/MyBookingDetail'
 import MyBookings from './pages/MyBookings'
 import MyPayments from './pages/MyPayments'
+import Notifications from './pages/Notifications'
 import Profile from './pages/Profile'
 import Register from './pages/Register'
 import RoomDetail from './pages/RoomDetail'
@@ -86,6 +87,14 @@ export default function App(): JSX.Element {
             element={
               <ProtectedRoute>
                 <MyBookingDetail />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/notifications"
+            element={
+              <ProtectedRoute>
+                <Notifications />
               </ProtectedRoute>
             }
           />

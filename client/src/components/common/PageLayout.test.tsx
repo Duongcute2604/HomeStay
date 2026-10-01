@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -17,18 +18,36 @@ vi.mock('../../hooks/useAuth', () => ({
   useAuth: vi.fn(),
 }))
 
+// Icon chuông trên header gọi API thông báo, nên chặn ra khỏi test thanh điều hướng —
+// test này kiểm menu, không kiểm thông báo.
+vi.mock('../../services/notificationService', () => ({
+  notificationService: {
+    layCuaToi: vi.fn().mockResolvedValue({ items: [], soChuaDoc: 0 }),
+    danhDauDaDoc: vi.fn(),
+    danhDauDaDocTatCa: vi.fn(),
+  },
+}))
+
 const useAuthMock = vi.mocked(useAuth)
 
 function dungLayout() {
+  // `PageLayout` chứa icon chuông dùng TanStack Query nên cần `QueryClientProvider`
+  // y như ứng dụng thật (xem `App.tsx`). Thiếu nó thì render ném lỗi ngay.
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  })
+
   return render(
-    <MemoryRouter
-      future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
-      initialEntries={['/']}
-    >
-      <PageLayout>
-        <p>Nội dung trang</p>
-      </PageLayout>
-    </MemoryRouter>,
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter
+        future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+        initialEntries={['/']}
+      >
+        <PageLayout>
+          <p>Nội dung trang</p>
+        </PageLayout>
+      </MemoryRouter>
+    </QueryClientProvider>,
   )
 }
 

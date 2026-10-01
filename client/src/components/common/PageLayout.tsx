@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 
 import { useAuth } from '../../hooks/useAuth'
 import Button from './Button'
+import ChuongThongBao from './ChuongThongBao'
 
 /** Menu dùng chung cho cả bản rộng và bản thu gọn — khai 1 lần để không lệch. */
 interface MucMenu {
@@ -19,6 +20,7 @@ const MENU_KHACH: MucMenu[] = [
 const MENU_DANG_NHAP: MucMenu[] = [
   { to: '/bookings', nhan: 'Đơn của tôi' },
   { to: '/payments', nhan: 'Thanh toán' },
+  { to: '/notifications', nhan: 'Thông báo' },
   { to: '/profile', nhan: 'Hồ sơ' },
 ]
 
@@ -69,6 +71,7 @@ export default function PageLayout({ children }: { children: React.ReactNode }):
             ))}
             {giaoDien === 'ro' && (
               <>
+                <ChuongThongBao />
                 <span className="hidden text-gray-500 lg:inline">{user?.fullName}</span>
                 <Button bienDang="outline" onClick={() => void xuLyDangXuat()}>
                   Đăng xuất
@@ -77,6 +80,7 @@ export default function PageLayout({ children }: { children: React.ReactNode }):
             )}
             {giaoDien === 'dong' && (
               <div className="mt-1 flex items-center justify-between border-t border-amber-100 pt-2">
+                <ChuongThongBao />
                 <span className="text-gray-500">{user?.fullName}</span>
                 <Button bienDang="outline" onClick={() => void xuLyDangXuat()}>
                   Đăng xuất
