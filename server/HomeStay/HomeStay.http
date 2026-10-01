@@ -1,6 +1,40 @@
-@StayEasy_HostAddress = http://localhost:5111
+@HomeStay_HostAddress = http://localhost:5080
 
-GET {{StayEasy_HostAddress}}/weatherforecast/
+### Danh sách địa điểm (public)
+GET {{HomeStay_HostAddress}}/api/locations
 Accept: application/json
 
-###
+### Tìm phòng có phân trang
+GET {{HomeStay_HostAddress}}/api/rooms/search?sort=newest&page=1&pageSize=6
+Accept: application/json
+
+### Chi tiết phòng — địa điểm 0, phòng 0
+GET {{HomeStay_HostAddress}}/api/locations/0/rooms/0
+Accept: application/json
+
+### Đăng nhập lấy token (dùng cho các request cần xác thực)
+# @name dangNhap
+POST {{HomeStay_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@homestay.vn",
+  "password": "123456"
+}
+
+### Token lấy từ request "Đăng nhập" ở trên
+@token = {{dangNhap.response.body.data.accessToken}}
+
+### Dashboard thống kê (chỉ Admin)
+GET {{HomeStay_HostAddress}}/api/admin/dashboard
+Authorization: Bearer {{token}}
+Accept: application/json
+
+### Đơn của tôi (chỉ khách)
+GET {{HomeStay_HostAddress}}/api/bookings/my
+Authorization: Bearer {{token}}
+Accept: application/json
+
+### Tài liệu OpenAPI
+GET {{HomeStay_HostAddress}}/swagger/v1/swagger.json
+Accept: application/json
