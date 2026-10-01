@@ -228,6 +228,15 @@ public class AdminBookingService : IAdminBookingService
                 ChangedAt = DateTime.Now,
             });
 
+            // Đơn chuyển sang HOÀN THÀNH thì mở phiếu thu ngay trong cùng transaction.
+            // Mở ở đây chứ không đợi khách tự bấm là vì: khách có thể không bao giờ vào
+            // xem lại đơn, còn Admin thì chỉ cần đánh dấu đã thu. Nếu mở phiếu ở bước sau
+            // mà bước này rollback thì sẽ có đơn hoàn thành mà không có gì để thu.
+            if (denTrangThai == BookingStatus.COMPLETED)
+            {
+                MoPhieuThu(don, ct);
+            }
+
             await _db.SaveChangesAsync(ct);
             await giaoDich.CommitAsync(ct);
 
@@ -238,6 +247,31 @@ public class AdminBookingService : IAdminBookingService
             await giaoDich.RollbackAsync(ct);
             throw;
         }
+    }
+
+    /// <summary>
+    /// Mở phiếu thu cho đơn vừa chuyển sang hoàn thành.
+    /// </summary>
+    /// <remarks>
+    /// Gọi trong transaction của <see cref="ChuyenTrangThaiAsync"/> nên không cần
+    /// <c>SaveChanges</c> — lệnh ghi ở đó ghi luôn cả phiếu thu.
+    ///
+    /// Phương thức để mặc định là tiền mặt và trạng thái là chờ thu: lúc này khách chưa
+    /// chọn cách trả, việc đó là của khách. Admin chỉ việc xác nhận đã thu.
+    /// </remarks>
+    private void MoPhieuThu(Entities.Booking don, CancellationToken ct)
+    {
+        DateTime now = DateTime.Now;
+
+        _db.Payments.Add(new Payment
+        {
+            BookingId = don.Id,
+            Amount = don.TotalAmount,
+            Method = PaymentMethod.CASH,
+            Status = PaymentStatus.PENDING,
+            CreatedAt = now,
+            UpdatedAt = now,
+        });
     }
 
     /// <summary>

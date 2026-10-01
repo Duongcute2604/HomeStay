@@ -523,4 +523,44 @@ public static class DuLieuMau
                 : Math.Round(cuaPhong.Sum(x => x.Rating) / (decimal)cuaPhong.Count, 2);
         }
     }
+
+    /// <summary>
+    /// Tạo phiếu thu cho mỗi đơn đã hoàn thành.
+    /// </summary>
+    /// <remarks>
+    /// Không tạo phiếu cho đơn chờ xác nhận / đang ở / đã hủy / bị từ chối — vì khách chưa
+    /// trả tiền thì chưa có giao dịch, đúng như lúc chạy thật (phiếu mở khi đơn chuyển
+    /// sang hoàn thành, xem `AdminBookingService.MoPhieuThu`).
+    ///
+    /// Cố ý để **một vài phiếu ở trạng thái chờ thu**: nếu tất cả đều đã thu thì trang quản
+    /// lý phiếu thu không có gì để thao tác, biểu đồ doanh thu cũng chỉ có một kiểu dữ liệu.
+    /// Phần lớn đánh dấu đã thu với ngày thu lệch ngày hoàn thành một chút cho khớp thực tế.
+    /// </remarks>
+    public static List<Payment> TaoPhieuThu(List<Booking> donList, DateTime now)
+    {
+        List<Payment> ketQua = [];
+        int thuTu = 0;
+
+        foreach (Booking don in donList.Where(x => x.Status == BookingStatus.COMPLETED)
+                     .OrderBy(x => x.CheckOut))
+        {
+            thuTu++;
+            // Cứ 4 phiếu thì chừa 1 phiếu chờ thu để trang quản lý có việc làm.
+            bool conNo = thuTu % 4 == 0;
+            DateTime ngayThu = don.CheckOut.Date;
+
+            ketQua.Add(new Payment
+            {
+                Booking = don,
+                Amount = don.TotalAmount,
+                Method = PaymentMethod.CASH,
+                Status = conNo ? PaymentStatus.PENDING : PaymentStatus.PAID,
+                PaidAt = conNo ? null : ngayThu,
+                CreatedAt = ngayThu,
+                UpdatedAt = ngayThu,
+            });
+        }
+
+        return ketQua;
+    }
 }

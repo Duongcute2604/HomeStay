@@ -142,6 +142,35 @@ public class AdminDashboardServiceTests : IDisposable
         Assert.Equal(2, result.TheoThang[^1].SoDon);
     }
 
+    [Fact]
+    public async Task DoanhThu_DonHoanThanhChuaThuTien_KhongTinhVao()
+    {
+        await TaoCoSoVaPhongAsync(soPhong: 1);
+        await TaoDonAsync(BookingStatus.COMPLETED, nhan: NgayTrongThangNay(5), tra: NgayTrongThangNay(7), tien: 1_500_000m, daThuTien: false);
+        await TaoDonAsync(BookingStatus.COMPLETED, nhan: NgayTrongThangNay(5), tra: NgayTrongThangNay(7), tien: 400_000m);
+
+        DashboardDto result = await _service.LaySoLieuAsync(6, 30, default);
+
+        // Chỉ 400.000 của đơn đã thu mới tính.
+        Assert.Equal(400_000m, result.TongQuan.DoanhThuThangNay);
+    }
+
+    [Fact]
+    public async Task DoanhThu_PhieuDaThuKhongPhaiThangNay_KhongTinhVaoThangNay()
+    {
+        await TaoCoSoVaPhongAsync(soPhong: 1);
+        // Đơn tháng trước nhưng phiếu thu được đánh dấu thu trong tháng này.
+        await TaoDonAsync(BookingStatus.COMPLETED, nhan: NgayThangTruoc(5), tra: NgayThangTruoc(7), tien: 900_000m);
+
+        DashboardDto result = await _service.LaySoLieuAsync(3, 30, default);
+
+        // Đơn tháng trước nên `PaidAt` cũng thuộc tháng trước — tháng này không có doanh thu.
+        // `LaySoLieuAsync(3)` trả 3 tháng gần nhất: [0] = 2 tháng trước, [1] = tháng trước,
+        // [2] = tháng này. Do đó 900.000 nằm ở [1], không phải [2].
+        Assert.Equal(0m, result.TongQuan.DoanhThuThangNay);
+        Assert.Equal(900_000m, result.TheoThang[1].DoanhThu);
+    }
+
     // ---------------- Tỷ lệ lấp đầy ----------------
 
     [Fact]
@@ -373,7 +402,8 @@ public class AdminDashboardServiceTests : IDisposable
         DateTime nhan,
         DateTime tra,
         decimal tien,
-        int soPhong = 0)
+        int soPhong = 0,
+        bool daThuTien = true)
     {
         User khach = new()
         {
@@ -405,6 +435,24 @@ public class AdminDashboardServiceTests : IDisposable
         };
 
         _db.Bookings.Add(don);
+        await _db.SaveChangesAsync();
+
+        // Doanh thu lấy từ `Payments` chứ không từ `Bookings.TotalAmount` (Bước 22), nên đơn
+        // `COMPLETED` mà không có phiếu đã thu thì KHÔNG tính vào doanh thu.
+        if (trangThai == BookingStatus.COMPLETED && daThuTien)
+        {
+            _db.Payments.Add(new Payment
+            {
+                Booking = don,
+                BookingId = don.Id,
+                Amount = tien,
+                Method = PaymentMethod.CASH,
+                Status = PaymentStatus.PAID,
+                PaidAt = tra,
+                CreatedAt = tra,
+            });
+        }
+
         await _db.SaveChangesAsync();
         return don;
     }

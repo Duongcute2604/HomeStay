@@ -117,4 +117,13 @@ public static class ErrorMessages
     public const string DaDanhGiaDonRoi = "Bạn đã đánh giá đơn này rồi. Mỗi đơn chỉ được đánh giá một lần";
 
     public const string KhongTimThayDanhGia = "Không tìm thấy đánh giá";
+    // ----- Thanh toán -----
+
+    public const string ChiDonHoanThanh = "Chỉ đơn đã hoàn thành mới thanh toán được.";
+    public const string DaThuTienRoi = "Phiếu thu này đã đánh dấu thu tiền rồi.";
+    public const string DaThatBai = "Phiếu thu đã đánh dấu thất bại, không thu được.";
+    public const string SoTienKhongKhop = "Số tiền ghi nhận không khớp tổng tiền của đơn.";
+    public const string ChiChuDon = "Chỉ khách chủ đơn mới xem được thanh toán của đơn này.";
+    public const string ChuaCoPhieuThu = "Đơn này chưa có phiếu thu.";
+    public const string DonChuaHoanThanhChuaDuocThanhToan = "Đơn chưa hoàn thành nên chưa có phiếu thu.";
 }

@@ -23,6 +23,7 @@ public class HomeStayDbContext : DbContext
     public DbSet<Booking> Bookings => Set<Booking>();
     public DbSet<BookingStatusHistory> BookingStatusHistory => Set<BookingStatusHistory>();
     public DbSet<Review> Reviews => Set<Review>();
+    public DbSet<Payment> Payments => Set<Payment>();
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {
@@ -34,6 +35,8 @@ public class HomeStayDbContext : DbContext
         configurationBuilder.Properties<RoomType>().HaveConversion<string>().HaveMaxLength(20);
         configurationBuilder.Properties<UserRole>().HaveConversion<string>().HaveMaxLength(20);
         configurationBuilder.Properties<UserStatus>().HaveConversion<string>().HaveMaxLength(20);
+        configurationBuilder.Properties<PaymentMethod>().HaveConversion<string>().HaveMaxLength(20);
+        configurationBuilder.Properties<PaymentStatus>().HaveConversion<string>().HaveMaxLength(20);
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -47,6 +50,7 @@ public class HomeStayDbContext : DbContext
         ConfigureBookings(modelBuilder);
         ConfigureBookingStatusHistory(modelBuilder);
         ConfigureReviews(modelBuilder);
+        ConfigurePayments(modelBuilder);
     }
 
     private static void ConfigureUsers(ModelBuilder modelBuilder)
@@ -247,6 +251,37 @@ public class HomeStayDbContext : DbContext
             .WithMany(x => x.Reviews)
             .HasForeignKey(x => x.RoomId)
             .OnDelete(DeleteBehavior.Restrict);
+    }
+
+
+    /// <summary>
+    /// Cấu hình bảng thanh toán.
+    ///
+    /// <para>
+    /// Unique index trên <c>BookingId</c> là thứ bảo đảm "1 đơn = 1 phiếu thu" ở tầng CSDL,
+    /// không phải bằng kiểm tra trong code — hai lần gọi API đồng thời sẽ không tạo được
+    /// dòng thứ hai. Cùng cách làm với unique index trên <c>Reviews.BookingId</c>.
+    /// </para>
+    /// </summary>
+    private static void ConfigurePayments(ModelBuilder modelBuilder)
+    {
+        var payment = modelBuilder.Entity<Payment>();
+        payment.ToTable("Payments", table =>
+        {
+            table.HasCheckConstraint("CK_Payments_Amount", "`Amount` >= 0");
+        });
+        payment.HasKey(x => x.Id);
+        // Tiền dùng `decimal(18,2)` như `Bookings.TotalAmount` — mặc định
+        // `decimal(65,30)` của EF tốn gấp nhiều lần bộ nhớ và làm so sánh khó hiểu.
+        payment.Property(x => x.Amount).HasColumnType("decimal(18,2)");
+        payment.Property(x => x.Note).HasMaxLength(500);
+        // Tìm theo trạng thái để lấy "đơn còn nợ tiền" mà không phải quét cả bảng.
+        payment.HasIndex(x => x.Status);
+        payment.HasIndex(x => x.BookingId).IsUnique();
+        payment.HasOne(x => x.Booking)
+            .WithMany(x => x.Payments)
+            .HasForeignKey(x => x.BookingId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 
     public override int SaveChanges()

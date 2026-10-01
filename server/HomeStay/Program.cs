@@ -17,6 +17,7 @@ using HomeStay.Services.Bookings;
 using HomeStay.Services.Locations;
 using HomeStay.Services.Reviews;
 using HomeStay.Services.Rooms;
+using HomeStay.Services.Payments;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -158,6 +159,8 @@ builder.Services.AddScoped<IAdminBookingService, AdminBookingService>();
 builder.Services.AddScoped<IAdminDashboardService, AdminDashboardService>();
 builder.Services.AddScoped<IAdminReviewService, AdminReviewService>();
 builder.Services.AddScoped<IReviewService, ReviewService>();
+builder.Services.AddScoped<IAdminPaymentService, AdminPaymentService>();
+builder.Services.AddScoped<IPaymentService, PaymentService>();
 
 // Tính lại điểm phòng dùng chung cho cả khách ghi đánh giá lẫn Admin ẩn/xoá,
 // nên đăng ký 1 instance cho 3 chỗ gọi trong cùng 1 request.

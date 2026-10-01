@@ -9,34 +9,34 @@ using HomeStay.Tests.Helpers;
 namespace HomeStay.Tests.Data;
 
 /// <summary>
-/// Kiểm chứng CẤU HÌNH 9 bảng của Bước 3: tên bảng, index, khoá chính, check constraint
+/// Ki?m ch?ng C?U H?NH 10 b?ng: t�n b?ng, index, khóa chính, check constraint
 /// và kiểu lưu của enum.
-/// Mọi chức năng nghiệp vụ sau này đều đứng trên nền cấu hình này — hỏng ở đây thì mọi thứ phía trên đều hỏng theo.
+/// M?i ch?c nghi?p v? sau �?u �ng tr�n n?n c?u h�nh n�y � h?ng �? �?y th? m?i th� ph�a tr�n n?u h?ng theo.
 /// </summary>
 public class HomeStayDbContextModelTests
 {
     private static readonly string[] ExpectedEntityNames =
     [
         "User", "Location", "Room", "RoomImage", "Amenity",
-        "RoomAmenity", "Booking", "BookingStatusHistory", "Review"
+        "RoomAmenity", "Booking", "BookingStatusHistory", "Review", "Payment"
     ];
 
     private static readonly string[] ExpectedTableNames =
     [
         "Amenities", "BookingStatusHistory", "Bookings", "Locations",
-        "Reviews", "RoomAmenities", "RoomImages", "Rooms", "Users"
+        "Payments", "Reviews", "RoomAmenities", "RoomImages", "Rooms", "Users"
     ];
 
     // ---------- Cấu trúc ----------
 
     [Fact]
-    public void Model_ChuaDung9Bang_DuDoiLuongBang()
+    public void Model_ChuaDung10Bang_DuDoiLuongBang()
     {
         using HomeStayDbContext context = TestDbContextFactory.CreateForSchemaInspection();
 
         string[] actualNames = GetDesignTimeModel(context).GetEntityTypes().Select(x => x.ClrType.Name).ToArray();
 
-        Assert.Equal(9, actualNames.Length);
+        Assert.Equal(10, actualNames.Length);
         Assert.All(ExpectedEntityNames, expectedName => Assert.Contains(expectedName, actualNames));
     }
 
@@ -63,6 +63,8 @@ public class HomeStayDbContextModelTests
     [InlineData(typeof(RoomType))]
     [InlineData(typeof(UserRole))]
     [InlineData(typeof(UserStatus))]
+    [InlineData(typeof(PaymentStatus))]
+    [InlineData(typeof(PaymentMethod))]
     public void Enum_LuuDangChu_KhiDocMySQLThayViDocSo(Type enumType)
     {
         using HomeStayDbContext context = TestDbContextFactory.CreateForSchemaInspection();

@@ -86,11 +86,15 @@ public class AdminDashboardService : IAdminDashboardService
         DateTime dauThangSau = dauThang.AddMonths(1);
 
         // Doanh thu tháng này tính theo tháng TRẢ PHÒNG, đồng bộ với biểu đồ.
-        decimal doanhThuThangNay = await _db.Bookings
-            .Where(don => don.Status == BookingStatus.COMPLETED
-                && don.CheckOut >= dauThang
-                && don.CheckOut < dauThangSau)
-            .SumAsync(don => don.TotalAmount, ct);
+        // Doanh thu lấy từ bảng `Payments` chứ không từ `Bookings.TotalAmount`.
+        // Khác biệt này quan trọng: một đơn đã hoàn thành nhưng khách chưa trả tiền thì
+        // CHƯA phải doanh thu. Tính từ `Bookings` sẽ thổi phóng con số — cũng chính là lỗi
+        // đã xảy ra ở Bước 15 khi cắt phần giờ của `(den - tu).Days`.
+        decimal doanhThuThangNay = await _db.Payments
+            .Where(phieu => phieu.Status == PaymentStatus.PAID
+                && phieu.PaidAt >= dauThang
+                && phieu.PaidAt < dauThangSau)
+            .SumAsync(phieu => phieu.Amount, ct);
 
         return new DashboardOverviewDto
         {
@@ -118,10 +122,12 @@ public class AdminDashboardService : IAdminDashboardService
             .AddMonths(-(soThang - 1));
         DateTime thangSau = thangDau.AddMonths(soThang);
 
-        List<Entities.Booking> donDaTra = await _db.Bookings
+        // Biểu đồ cũng lấy tiền đã thu — phải khớp với ô "Doanh thu tháng này" ở trên,
+        // nếu không thì cùng một tháng mà hai nơi ra hai con số khác nhau.
+        List<Entities.Payment> phieuDaThu = await _db.Payments
             .AsNoTracking()
-            .Where(don => don.Status == BookingStatus.COMPLETED
-                && don.CheckOut >= thangDau && don.CheckOut < thangSau)
+            .Where(phieu => phieu.Status == PaymentStatus.PAID
+                && phieu.PaidAt >= thangDau && phieu.PaidAt < thangSau)
             .ToListAsync(ct);
 
         List<Entities.Booking> donTrongKy = await _db.Bookings
@@ -139,9 +145,9 @@ public class AdminDashboardService : IAdminDashboardService
             {
                 Thang = thang.ToString("yyyy-MM"),
                 Nhan = $"T{thang.Month}",
-                DoanhThu = donDaTra
-                    .Where(don => don.CheckOut.Year == thang.Year && don.CheckOut.Month == thang.Month)
-                    .Sum(don => don.TotalAmount),
+                DoanhThu = phieuDaThu
+                    .Where(phieu => phieu.PaidAt.Value.Year == thang.Year && phieu.PaidAt.Value.Month == thang.Month)
+                    .Sum(phieu => phieu.Amount),
                 SoDon = donTrongKy.Count(
                     don => don.CreatedAt.Year == thang.Year && don.CreatedAt.Month == thang.Month),
             });

@@ -110,4 +110,25 @@ public static class TestDataBuilder
             IsHidden = false
         };
     }
+
+    /// <summary>
+    /// Tạo phiếu thu cho một đơn. Mặc định đã thu tiền — phần lớn test về hành vi "đã thu
+    /// rồi thì chặn thao tác sau" cần trạng thái này.
+    /// </summary>
+    public static Payment CreatePayment(
+        Booking booking,
+        PaymentMethod method = PaymentMethod.CASH,
+        PaymentStatus status = PaymentStatus.PAID)
+    {
+        return new Payment
+        {
+            Booking = booking,
+            BookingId = booking.Id,
+            Amount = booking.TotalAmount,
+            Method = method,
+            Status = status,
+            PaidAt = status == PaymentStatus.PAID ? CheckOutTime : null,
+            CreatedAt = CheckOutTime,
+        };
+    }
 }

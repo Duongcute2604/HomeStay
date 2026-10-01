@@ -63,6 +63,7 @@ public class Booking
 
     /// <summary>Lịch sử mọi lần đổi trạng thái đơn này.</summary>
     public ICollection<BookingStatusHistory> StatusHistory { get; set; } = new List<BookingStatusHistory>();
+    public ICollection<Payment> Payments { get; set; } = new List<Payment>();
 
     /// <summary>Đánh giá của đơn này — tối đa 1 vì có unique index trên BookingId.</summary>
     public Review? Review { get; set; }
