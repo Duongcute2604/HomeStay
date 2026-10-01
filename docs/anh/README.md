@@ -132,11 +132,11 @@ Mọi ảnh quy ước nền trắng, không có viền đen của trình duyệ
 | 4.16 | Quản lý khách hàng | `4-16-quan-ly-khach-hang.jpg` |
 | 4.17 | Quản lý đánh giá | `4-17-quan-ly-danh-gia.jpg` |
 | 4.18 | Thanh toán của tôi | `4-18-thanh-toan-cua-toi.jpg` |
-| 4.19 | Quản lý thanh toán (Admin) | `4-19-admin-thanh-toan.jpg` |
-| 4.20 | Mở khối thao tác thu tiền | `4-20-mo-khoi-thu-tien.jpg` |
-| 4.21 | Danh sách thông báo | `4-21-danh-sach-thong-bao.jpg` |
-| 4.22 | Đánh dấu đã đọc tất cả | `4-22-da-doc-tat-ca.jpg` |
-| 4.23 | Thông báo sinh tự động khi Admin xác nhận | `4-23-thong-bao-sinh-tu-dong.jpg` |
+| 4.19 | Quản lý thanh toán (Admin) | `4-22-admin-thanh-toan.jpg` |
+| 4.20 | Mở khối thao tác thu tiền | `4-23-mo-khoi-thu-tien.jpg` |
+| 4.21 | Danh sách thông báo | `4-19-danh-sach-thong-bao.jpg` |
+| 4.22 | Đánh dấu đã đọc tất cả | `4-20-da-doc-tat-ca.jpg` |
+| 4.23 | Thông báo sinh tự động khi Admin xác nhận | `4-21-thong-bao-sinh-tu-dong.jpg` |
 
 ### Chụp lại ảnh này thì cần biết
 

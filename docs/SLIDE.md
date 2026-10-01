@@ -97,7 +97,7 @@ TanStack Query · Zustand     MySQL 8.0 (Docker)
 React Hook Form + Zod        JWT access token + refresh token
 
 XÁC THỰC KIỂM THỬ
-xUnit (380 test) · Vitest (269 test) · Postman (41 request)
+xUnit (414 test) · Vitest (287 test) · Postman (41 request)
 ```
 
 **Nói:** "Phía giao diện em dùng React 18 với TypeScript, dựng bằng Vite, định dạng bằng
@@ -348,8 +348,8 @@ thao tác, không chỉ cách mình tiện viết."
 **Trên slide**
 ```
 MỨC KIỂM THỬ                      KẾT QUẢ
-Kiểm thử đơn vị backend (xUnit)     380 test — 380 đạt
-Kiểm thử đơn vị frontend (Vitest)   269 test — 269 đạt
+Kiểm thử đơn vị backend (xUnit)     414 test — 414 đạt
+Kiểm thử đơn vị frontend (Vitest)   287 test — 287 đạt
 Tích hợp REST API (Postman)         41 request / 115 kiểm chứng — 41 đạt
 Kiểm thử tay trên trình duyệt       267 kịch bản — 267 đạt
 
@@ -361,7 +361,7 @@ T3 hai request gửi SONG SONG cùng phòng      → [201, 409]
 dotnet build · npm run build  →  0 lỗi, 0 cảnh báo
 ```
 
-**Nói:** "Kết quả kiểm thử: 380 test đơn vị backend, 269 test frontend, 41 request tích hợp
+**Nói:** "Kết quả kiểm thử: 414 test đơn vị backend, 287 test frontend, 41 request tích hợp
 với 115 kiểm chứng, và 267 kịch bản kiểm thử tay — tất cả đều đạt, không có kịch bản nào
 bị bỏ qua. Riêng ba test chống đặt trùng thì em chạy được tới 12 lần liên tiếp mà vẫn đạt,
 trong đó test T3 gửi hai request thật song song và kết quả luôn đúng là một đơn tạo được

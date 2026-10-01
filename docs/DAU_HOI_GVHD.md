@@ -266,7 +266,7 @@ chọn cổng VNPay vì có sandbox để kiểm thử mà không cần tài kho
 
 "Em quy định cho mình: **một chức năng chỉ được coi là xong khi có đủ ba loại bằng chứng**.
 
-Một, **test chạy xanh**: em cố định ở 380 test backend, 269 test frontend, và `dotnet build`
+Một, **test chạy xanh**: em cố định ở 414 test backend, 287 test frontend, và `dotnet build`
 cùng `npm run build` không có lỗi lẫn cảnh báo.
 
 Hai, **kiểm thử tay bằng ba loại kịch bản bắt buộc** cho mỗi chức năng: trường hợp bình

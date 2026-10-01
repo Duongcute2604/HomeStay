@@ -202,12 +202,72 @@ bước "Tạo đơn" ghi tên **khách tạo đơn**, ba bước sau ghi tên *
 - Điểm trung bình của phòng được tính lại mỗi khi có đánh giá mới.
 - Đánh giá của phòng chỉ hiện trên trang công khai sau khi quản trị viên duyệt.
 
+### 4.1.8. Thanh toán
+
+*Hình 4.18. Danh sách phiếu thu của khách kèm khối chọn phương thức thanh toán*
+
+![Hình 4.18](anh/4-18-thanh-toan-cua-toi.jpg)
+
+Phiếu thu được **mở tự động khi đơn chuyển sang trạng thái `COMPLETED`** (khách đã trả
+phòng), chứ không mở lúc khách đặt. Khách vào trang "Thanh toán" xem được toàn bộ phiếu
+thu của mình và chọn phương thức thanh toán mong muốn.
+
+**Các quy tắc nghiệp vụ đã áp dụng:**
+
+- Chỉ chọn được phương thức thanh toán cho phiếu thu thuộc đơn đã `COMPLETED` và thuộc đúng
+  khách đang đăng nhập; chọn của người khác trả `404`.
+- Mỗi đơn có **đúng 1 phiếu thu** — ràng buộc `UNIQUE` trên `Payments.BookingId`, không thể
+  sinh ra 2 phiếu cho cùng một đơn.
+- Đơn chưa trả phòng thì không có phiếu thu để chọn, giao diện hiển thị thông báo rõ ràng.
+- Số tiền lấy nguyên từ tổng tiền của đơn (`Bookings.TotalAmount`), khách không tự nhập.
+
+**Ranh giới của tính năng:** hệ thống **ghi nhận phương thức thanh toán và đối chiếu số
+tiền**, chưa nối với cổng thanh toán trực tuyến (VNPay, MoMo) vì việc đó nằm ngoài phạm vi
+đồ án. Quản trị viên là người xác nhận "đã thu tiền" — đây là bước mô phỏng bước webhook
+cổng thanh toán trả về.
+
+### 4.1.9. Thông báo trong hệ thống
+
+*Hình 4.19. Trang thông báo của khách, phần thông báo chưa đọc được tô đậm*
+
+![Hình 4.19](anh/4-19-danh-sach-thong-bao.jpg)
+
+Mỗi khi quản trị viên chuyển trạng thái đơn, hệ thống **tự sinh thông báo** gửi cho khách.
+Thông báo hiển thị ngay trong hệ thống qua biểu tượng chuông ở góc phải thanh điều hướng,
+có con số đếm số thông báo chưa đọc.
+
+*Hình 4.20. Trạng thái sau khi bấm chuông: đã đánh dấu đọc và mở danh sách thông báo*
+
+![Hình 4.20](anh/4-20-da-doc-tat-ca.jpg)
+
+*Hình 4.21. Thông báo do hệ thống sinh ra khi quản trị viên xác nhận đơn*
+
+![Hình 4.21](anh/4-21-thong-bao-sinh-tu-dong.jpg)
+
+**Các quy tắc nghiệp vụ đã áp dụng:**
+
+- Thông báo được sinh **trong cùng một transaction** với thao tác đổi trạng thái đơn. Nếu
+  ghi thông báo thất bại thì cả thao tác đổi trạng thái cũng hoàn tác — không có chuyện đơn
+  đã đổi trạng thái nhưng khách không nhận được thông báo.
+- Chỉ gửi thông báo cho những chuyển trạng thái **khách quan trọng**: `CONFIRMED`,
+  `REJECTED`, `CHECKED_IN`, `COMPLETED`, `CANCELLED`.
+- Bấm chuông sang thẳng trang `/notifications` và đánh dấu các thông báo mới nhất là đã đọc
+  ngay trên API, không cần bấm từng thông báo.
+- Thông báo đã đọc thì **không hiện** nút "Đánh dấu đã đọc" — tránh thao tác vô nghĩa.
+- Khách xem thông báo của người khác trả `404`, không trả `403`: trả `403` sẽ lộ ra sự tồn
+  tại của dữ liệu không thuộc về mình.
+
+**Ranh giới của tính năng:** thông báo chỉ hiển thị **trong hệ thống**, chưa gửi qua email
+hoặc tin nhắn SMS. Nguyên nhân là hai kênh đó cần tài khoản dịch vụ bên thứ ba, cấu hình
+mật khẩu ứng dụng và cơ chế chống gửi trùng — nằm ngoài phạm vi đồ án.
+
 ---
 
 ## 4.2. TRIỂN KHAI CÁC CHỨC NĂNG CHO QUẢN TRỊ VIÊN
 
-Quản trị viên đăng nhập bằng tài khoản riêng và truy cập khu vực `/admin` với 6 trang:
-Thống kê, Đơn đặt phòng, Cơ sở, Đánh giá, Phòng, Khách hàng. Mọi trang đều được bảo vệ
+Quản trị viên đăng nhập bằng tài khoản riêng và truy cập khu vực `/admin` với 7 trang:
+Thống kê, Đơn đặt phòng, Cơ sở, Tiện nghi, Đánh giá, Phòng, Khách hàng, Thanh toán.
+Mọi trang đều được bảo vệ
 ở **cả hai tầng**: attribute `[Authorize(Roles = "ADMIN")]` ở API và `ProtectedRoute`
 ở giao diện — gọi thẳng URL cũng bị chặn.
 
@@ -339,6 +399,31 @@ và quyết định **ẩn** đánh giá không phù hợp. Đánh giá đã ẩ
 - Thao tác ẩn/hiện lại ghi lại thời điểm để truy vết.
 - Xoá đánh giá cần xác nhận lần hai, tránh xoá nhầm.
 
+### 4.2.7. Quản lý thanh toán
+
+*Hình 4.22. Bảng phiếu thu phía quản trị viên, lọc theo trạng thái và phân trang*
+
+![Hình 4.22](anh/4-22-admin-thanh-toan.jpg)
+
+*Hình 4.23. Khối thống kê phiếu thu mở để quản trị viên đối chiếu số tiền với tổng tiền của đơn*
+
+![Hình 4.23](anh/4-23-mo-khoi-thu-tien.jpg)
+
+Phiếu thu được mở tự động khi quản trị viên bấm "Trả phòng" (đơn chuyển `COMPLETED`),
+với phương thức mặc định là tiền mặt và trạng thái `CHỜ THU`. Quản trị viên đối chiếu số
+tiền với tổng tiền của đơn rồi xác nhận **"Đã thu tiền"**.
+
+**Các quy tắc nghiệp vụ đã áp dụng:**
+
+- Hệ thống **đối chiếu số tiền phiếu thu với `Bookings.TotalAmount`** của đơn. Lệch thì
+  trả `400` và **không** ghi nhận đã thu — chặn trường hợp bấm nhầm làm sai sổ.
+- Doanh thu trên Dashboard lấy từ các phiếu thu có trạng thái `ĐÃ THU`, **không** lấy từ
+  tổng tiền của đơn. Lý do: đơn đã trả phòng nhưng chưa thu tiền thì chưa phải doanh thu.
+  Trường hợp khách báo đã chuyển khoản nhưng tiền chưa về được ghi nhận trạng thái `THẤT BẠI`
+  để không tính nhầm vào doanh thu.
+- Không thể đánh dấu đã thu một phiếu đã `ĐÃ THU` — trả `409`.
+- Bộ lọc danh sách hỗ trợ cả trạng thái lẫn phương thức thanh toán, có phân trang.
+
 ---
 
 ## 4.3. KIỂM THỬ VÀ TRIỂN KHAI ỨNG DỤNG
@@ -353,8 +438,8 @@ Hệ thống được kiểm thử ở **4 mức độ**, mỗi mức bắt đư
 
 | Mức | Công cụ | Số lượng | Kết quả |
 |-----|---------|----------|---------|
-| Kiểm thử đơn vị — backend | xUnit + EF Core InMemory | **380 test** | 380 pass |
-| Kiểm thử đơn vị — frontend | Vitest + Testing Library | **269 test** | 269 pass |
+| Kiểm thử đơn vị — backend | xUnit + EF Core InMemory | **414 test** | 414 pass |
+| Kiểm thử đơn vị — frontend | Vitest + Testing Library | **287 test** | 287 pass |
 | Kiểm thử tích hợp REST API | Postman collection (41 request, 115 kiểm chứng) | 41 request | 41/41 pass |
 | Kiểm thử tay trên trình duyệt | Bảng kịch bản tự lập | **267 kịch bản** | 267/267 đạt |
 
@@ -588,11 +673,11 @@ liên quan đến thông tin cá nhân thật.
 ```powershell
 # Kiểm thử đơn vị backend
 cd server && dotnet test
-# Kết quả: 380 test, 380 pass, 0 fail
+# Kết quả: 414 test, 414 pass, 0 fail
 
 # Kiểm thử đơn vị frontend
 cd client && npm test
-# Kết quả: 269 test, 269 pass, 0 fail
+# Kết quả: 287 test, 287 pass, 0 fail
 
 # Kiểm tra lỗi / cảnh báo khi biên dịch
 cd server && dotnet build
@@ -613,8 +698,8 @@ Toàn bộ hệ thống do một học viên thực hiện. Nội dung công vi�
 | **Phân tích thiết kế** | Yêu cầu chức năng, vai trò người dùng, 8 sơ đồ use case, biểu đồ lớp thực thi, 6 sơ đồ tuần tự, sơ đồ ERD | 16 sơ đồ UML |
 | **Xây dựng cơ sở dữ liệu** | 11 bảng, quan hệ khoá ngoại, index, ràng buộc chống trùng lịch và chống thu hai lần, dữ liệu mẫu | Script tạo CSDL + dữ liệu mẫu |
 | **Xây dựng backend** | Kiến trúc phân tầng, xác thực JWT 2 loại token, 47 API, nghiệp vụ đặt phòng, tác vụ nền | ASP.NET Core 8 Web API |
-| **Xây dựng frontend** | 13 trang khách + 6 trang quản trị, biểu mẫu kiểm chứng, xử lý 3 trạng thái, thông báo | React 18 + TypeScript |
-| **Kiểm thử** | 380 unit test backend, 269 unit test frontend, 41 request tích hợp, 267 kịch bản tay | Tất cả đạt |
+| **Xây dựng frontend** | 14 trang khách + 7 trang quản trị, biểu mẫu kiểm chứng, xử lý 3 trạng thái, chuông thông báo | React 18 + TypeScript |
+| **Kiểm thử** | 414 unit test backend, 287 unit test frontend, 41 request tích hợp, 267 kịch bản tay | Tất cả đạt |
 
 ### 4.4.2. Những khó khăn đã vượt qua và cách giải quyết
 
@@ -630,8 +715,8 @@ Toàn bộ hệ thống do một học viên thực hiện. Nội dung công vi�
 
 | Hạn chế | Lý do | Hướng phát triển |
 |---------|-------|------------------|
-| Chưa tích hợp thanh toán trực tuyến | Yêu cầu tích hợp cổng VNPay/MoMo nằm ngoài phạm vi đồ án đã chốt | Thêm bảng `payments`, cổng thanh toán, đối soát hoàn tiền khi hủy |
-| Chưa có thông báo tự động | Khách phải tự vào hệ thống xem trạng thái đơn | Thêm bảng `notifications`, gửi thông báo khi đơn được xác nhận hoặc từ chối |
+| Thanh toán mới dừng ở mức ghi nhận, chưa nối cổng thật | Cần tài khoản VNPay/MoMo, khóa bí mật và cơ chế webhook — nằm ngoài phạm vi đồ án | Nối cổng thanh toán, đối soát hoàn tiền khi huỷ đơn |
+| Thông báo mới chỉ hiển thị trong hệ thống, chưa gửi email/SMS | Cần tài khoản dịch vụ bên thứ ba và cơ chế chống gửi trùng | Thêm hàng đợi thông báo, gửi email/SMS kèm liên kết tới đơn |
 | Chưa triển khai trên máy chủ thật | Môi trường thực tập không có máy chủ | Đóng gói frontend thành tệp tĩnh, chạy API trên máy chủ Linux phía sau nginx |
 | Chưa có ứng dụng di động | Đồ án chỉ yêu cầu ứng dụng Web | Phát triển ứng dụng React Native dùng chung API |
 | Ảnh phòng lưu đường dẫn, không lưu tệp | Đơn giản, phù hợp phạm vi thực tập | Chuyển sang lưu tệp trên máy chủ kèm dịch vụ quản lý ảnh |
@@ -640,12 +725,15 @@ Toàn bộ hệ thống do một học viên thực hiện. Nội dung công vi�
 
 ## 4.5. KẾT LUẬN CHƯƠNG
 
-Chương 4 đã trình bày kết quả triển khai **17 mục** của hệ thống HomeStay: 7 nhóm chức năng
-phía khách hàng, 6 nhóm chức năng phía quản trị viên và 4 mục về kiểm thử, đóng gói, triển
-khai cùng đóng góp. Toàn bộ **17 hình** trong chương đều được chụp từ hệ thống đang chạy
+Chương 4 đã trình bày kết quả triển khai **19 mục** của hệ thống HomeStay: 9 nhóm chức năng
+phía khách hàng, 7 nhóm chức năng phía quản trị viên và 3 mục về kiểm thử, đóng gói, triển
+khai cùng đóng góp. Toàn bộ **23 hình** trong chương đều được chụp từ hệ thống đang chạy
 thật, mỗi hình kèm phần giải thích luồng nghiệp vụ và liệt kê các quy tắc đã áp dụng.
+Riêng hai tính năng mở rộng là thanh toán và thông báo, phần báo cáo đã nêu rõ **ranh giới**
+của từng tính năng — cái gì đã làm, cái gì chưa làm và vì sao — thay vì ghi chung chung
+"đã hoàn thành".
 
-Về kiểm thử, hệ thống đạt **380 unit test backend**, **269 unit test frontend**,
+Về kiểm thử, hệ thống đạt **414 unit test backend**, **287 unit test frontend**,
 **41 request tích hợp với 115 kiểm chứng** (chạy liên tiếp 12 lần đều đạt) và **267 kịch bản
 kiểm thử tay** — tổng cộng 100% kịch bản đã đặt ra đều đạt, không có kịch bản nào bị bỏ qua.
 Quá trình kiểm thử phát hiện và đã sửa **3 lỗi thật**, trong đó lỗi lệch mốc giờ do giao diện

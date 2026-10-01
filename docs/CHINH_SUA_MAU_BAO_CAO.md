@@ -113,11 +113,11 @@ Chép nội dung từ các file sau, **giữ nguyên số mục và số hình**
 
 | File | Dán vào mục nào của mẫu |
 |------|--------------------------|
-| `docs/CHUONG_4.md` | Toàn bộ Chương 4 — 17 mục, 17 hình |
+| `docs/CHUONG_4.md` | Toàn bộ Chương 4 — 19 mục, 23 hình |
 | `docs/KET_LUAN.md` | Mục KẾT LUẬN |
 | `docs/TLTK.md` | Mục TÀI LIỆU THAM KHẢO |
 
-**Đối chiếu cấu trúc Chương 4** — mẫu có 4 mục, đồ án có 17 mục con:
+**Đối chiếu cấu trúc Chương 4** — mẫu có 4 mục, đồ án có 19 mục con:
 
 | Mẫu | Đồ án HomeStay |
 |-----|---------------|
@@ -162,7 +162,7 @@ node docs/anh/svg-2-png.mjs
 | 7 | Cổng API là **5080** | ⬜ |
 | 8 | Tài khoản demo ghi `admin@homestay.vn` / `123456` | ⬜ |
 | 9 | Đủ **46 hình**, không ô trống | ⬜ |
-| 10 | Chương 4 có đủ **17 mục** | ⬜ |
+| 10 | Chương 4 có đủ **19 mục** | ⬜ |
 | 11 | Có bảng **18 test case** | ⬜ |
 | 12 | Mục KẾT LUẬN có đủ 4 phần | ⬜ |
 | 13 | TLTK đủ, trích dẫn đúng định dạng | ⬜ |

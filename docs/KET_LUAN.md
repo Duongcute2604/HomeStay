@@ -67,8 +67,8 @@ không bị thay đổi theo — đúng nguyên tắc lịch sử không đượ
 **Ưu điểm 4 — Phân tích nghiệp vụ trước khi thiết kế, và kiểm chứng nghiệp vụ bằng test.**
 Trước khi viết code, toàn bộ nghiệp vụ được đặt thành câu hỏi có thể trả lời Đúng/Sai
 (ví dụ: "khách trả phòng lúc 12:00 thì khách mới có được nhận phòng lúc 12:00 không?") và
-mỗi câu trả lời đều có ít nhất một test. Nhờ vậy 380 test backend không phải test để đủ số
-lượng, mà là 380 lần xác nhận lại một quyết định nghiệp vụ.
+mỗi câu trả lời đều có ít nhất một test. Nhờ vậy 414 test backend không phải test để đủ số
+lượng, mà là 414 lần xác nhận lại một quyết định nghiệp vụ.
 
 **Ưu điểm 5 — Bảo mật theo nguyên tắc không tin đầu vào.**
 Mật khẩu lưu dạng BCrypt hash; `userId` lấy từ token chứ không lấy từ giá trị gửi lên từ
