@@ -899,9 +899,14 @@ Mẫu báo cáo `.docx` vẫn ghi **"Hình 3.8. Kiến trúc hệ thống StayEa
 - **Bằng chứng kiểm thử:** Backend **380/380** · Frontend **269/269** (thêm 5) · build **0 error 0 warning** (sau khi tách `manualChunks`) · Postman 41/41 từ Bước 18
 - **Lỗi thật phát hiện & sửa:** frontend gửi giờ UTC (`toISOString()`) lệch 7 giờ so với giờ địa phương → đặt trùng lọt qua. Thêm `toLocalIsoString()` + 4 test khoá lại. Chi tiết `lessons.md` mục 81–84
 
-### [ ] BƯỚC 21 — Kết luận, TLTK, slide, luyện trình bày
+### [x] BƯỚC 21 — Kết luận, TLTK, slide, luyện trình bày
 - **Mục tiêu đo được:** Kết luận có 4 phần (tóm tắt · ưu điểm · hạn chế · hướng phát triển) · slide 15–20 trang · luyện nói **≥ 3 lần**, mỗi lần **≤ 15 phút** (có ghi giờ)
+- **Tiến độ:** **4 / 4 hạng mục** ✅ (phần luyện nói 3 lần do sinh viên tự đo bằng đồng hồ theo `docs/LUYEN_TRINH_BAY.md`)
 - **Bằng chứng:** ghi lại thời gian từng lần luyện
+- **Kết quả — 4 hạng mục đều có tài liệu:** `docs/KET_LUAN.md` (156 dòng, đủ 4 phần: tóm tắt · 6 ưu điểm · 6 hạn chế · 6 hướng phát triển + 3 bài học) · `docs/TLTK.md` (100 dòng: giữ 10 tài liệu mẫu + bổ sung 15 tài liệu công nghệ, có bảng đối chiếu tài liệu nào dùng cho phần nào) · `docs/SLIDE.md` (16 slide, tổng **13 phút 30 giây**, mỗi slide có tiêu đề trên slide + lời nói + ngân sách thời gian, kèm phụ lục demo 90 giây) · `docs/DAU_HOI_GVHD.md` (321 dòng, **10 câu hỏi** GVHD kèm câu trả lời dạng miệng 30–60 giây + "nếu hỏi sâu thêm" + dự phòng) · `docs/LUYEN_TRINH_BAY.md` (169 dòng: 3 lần luyện khác nhau, bảng ghi thời gian, thứ tự cắt nếu quá 15 phút, checklist trước bảo vệ)
+- **Trước khi làm Bước 21, dọn 2 việc còn treo từ Bước 18/19** (Bước 21 ghi rõ *không đụng code*): ① trang chủ lưới "Phòng nổi bật" viết cứng 3 thẻ phòng ~80 dòng JSX → chuyển sang gọi API, xoá 80 dòng lặp; ② xoá tài khoản rác `khachdienthoai@gmail.com` (0 đơn, 0 đánh giá)
+- **Phát hiện lỗi thật khi làm (1):** trang chủ hiện *"★ 5,0 · 30 đánh giá"* cho Phòng Hạnh Phúc trong khi CSDL chỉ có 8 đánh giá và phòng đó có đúng 1. Cột `Rooms.RatingCount`/`RatingAvg` lệch. **Không phải lỗi code** — cả `ReviewScorer` lúc chạy lẫn `DuLieuMau.TinhLaiDiemPhong` lúc seed đều đúng, và test `SeedAsync_DiemPhongChiTinhTuDanhGiaChuaAn` đang xanh; chỉ là DB này đã seed từ Bước 4 (trước khi có `TinhLaiDiemPhong` ở Bước 16) mà `SeedAsync` bỏ qua khi bảng đã có dữ liệu. Đã tính lại cho toàn bộ phòng → khớp 10/10
+
 
 ---
 
@@ -957,7 +962,7 @@ Mẫu báo cáo `.docx` vẫn ghi **"Hình 3.8. Kiến trúc hệ thống StayEa
 | Xong Bước 16 (hết tính năng) | 11/10 | ✅ Xong |
 | Xong Bước 18 (kiểm thử) | 12/10 | ✅ Xong |
 | **Xong Chương 4** | ~~15/10~~ → **01/10** | ✅ Xong sớm 4 ngày |
-| Xong slide + Kết luận | 17/10 | ⬜ |
+| Xong slide + Kết luận | ~~17/10~~ → **01/10** | ✅ Xong sớm |
 | Luyện trình bày xong | 19/10 | ⬜ |
 | Bảo vệ | ~20/10 | ⬜ |
 

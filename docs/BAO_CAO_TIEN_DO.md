@@ -31,7 +31,7 @@
 | 01/10 | 18 | Bộ test tích hợp Postman (41 request, 7 nhóm) | ✅ **41/41 request · 115/115 kiểm chứng · 12/12 lần chạy** | **380/380** (thêm 11) | ✅ Xong (01/10) |
 | 01/10 | 19 | 22 hình cho Chương 3 (15 sơ đồ SVG + 7 ảnh giao diện) | ✅ 22/22 hình · 15/15 SVG | giữ nguyên | ✅ Xong (01/10) |
 | 01/10 | 20 | **Viết Chương 4 — 17 mục + 17 hình (4.1 – 4.17) + bảng 18 test case + đóng góp & triển khai** | ✅ đủ 17/17 mục · **phát hiện & sửa 1 lỗi thật** (gửi giờ UTC làm hỏng chống đặt trùng) | **380/380** · **269/269** (thêm 5) · build **0 error 0 warning** | ✅ Xong (01/10) |
-| | 21 | Kết luận, slide, luyện trình bày | — | — | ⬜ Chưa làm |
+| 01/10 | 21 | **Ket luan + TLTK + slide + luyen trinh bay**: `docs/KET_LUAN.md` (4 phan) · `docs/TLTK.md` (10 mau + 15 cong nghe) · `docs/SLIDE.md` (16 slide, 13 phut 30 giay) · `docs/DAU_HOI_GVHD.md` (10 cau hoi) · `docs/LUYEN_TRINH_BAY.md` (3 lan luyen) | ✅ 4/4 hang muc | Backend **380/380** · Frontend **269/269** · build **0 error 0 warning** | Xong (01/10) · con: sinh vien tu luyen noi 3 lan |
 | | 22 | **Thanh toán** (mở rộng, tuỳ chọn) | ⬜ | ⬜ | ⬜ Chỉ làm nếu còn thời gian |
 | | 23 | **Thông báo** (mở rộng, tuỳ chọn) | ⬜ | ⬜ | ⬜ Chỉ làm nếu còn thời gian |
 
