@@ -22,6 +22,13 @@ using HomeStay.Services.Notifications;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Chốt cổng 5080 — phải khớp proxy trong client/vite.config.ts.
+// launchSettings.json CHỈ được `dotnet run` đọc; chạy thẳng `HomeStay.dll` thì
+// ASP.NET lấy cổng mặc định 5000, giao diện gọi không tới API dù API vẫn sống
+// (dữ liệu server về 200 nhưng trang vẫn trắng). Chốt ở đây để cách nào khởi động
+// cũng ra cùng một cổng.
+builder.WebHost.UseUrls("http://localhost:5080");
+
 const string ConnectionStringName = "DefaultConnection";
 const string CorsPolicyName = "ClientWeb";
 
@@ -199,6 +206,12 @@ var app = builder.Build();
 await using (AsyncServiceScope seedScope = app.Services.CreateAsyncScope())
 {
     HomeStayDbContext db = seedScope.ServiceProvider.GetRequiredService<HomeStayDbContext>();
+
+    // Tự áp migration TRƯỚC khi seed. Nếu bảng bị mất (ví dụ Docker volume bị tạo
+    // lại), app tự dựng bảng rồi mới seed — thay vì seed đọc `Users` và văng
+    // "Table 'homestay.Users' doesn't exist" làm app chết ngay lúc khởi động.
+    // Với bảng đã đủ thì hàm này là no-op, không tốn thời gian.
+    await db.Database.MigrateAsync(CancellationToken.None);
 
     await SeedData.SeedAsync(db, CancellationToken.None);
 }
