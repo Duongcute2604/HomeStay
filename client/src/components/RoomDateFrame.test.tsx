@@ -163,7 +163,7 @@ describe('RoomDateFrame - kiem phong trong', () => {
     expect(cuoi.trong).toBe(true)
   })
 
-  it('ApiLoi_HienThongBaoLoi_KhongVoTrang', async () => {
+  it('ApiLoi_NemLoiGoc_HienThongBaoGoc_KhongVoTrang', async () => {
     kiemTraTrongMock.mockRejectedValue(new Error('Không kết nối được máy chủ'))
     dungKhung()
     chonNgayNhanTra('2026-10-05T14:00', '2026-10-07T12:00')
@@ -172,8 +172,27 @@ describe('RoomDateFrame - kiem phong trong', () => {
     // Phải `findByText` vì promise bị từ chối cần một nhịp mới hiện lên —
     // dùng `getByText` ngay là đọc khi còn đang "Đang kiểm...".
     expect(await screen.findByText(/Tạm tính: 2 ngày/)).toBeInTheDocument()
+    // Thông báo gốc của lỗi phải tới được người dùng, không bị thay bằng
+    // câu chung chung (xem test `Api400` ngay dưới).
+    expect(await screen.findByText('Không kết nối được máy chủ')).toBeInTheDocument()
+  })
+
+  it('Api400ToiThieu3Gio_HienThongBaoBackendKhongBiNutChungChung', async () => {
+    // Đặt 2 giờ bị backend từ chối 400 với thông báo nghiệp vụ. Giao diện
+    // phải hiện NGUYÊN VĂN câu đó — nếu nuốt thành "không kiểm được phòng
+    // trống", khách tưởng lỗi mạng và không biết vì sao bị từ chối.
+    kiemTraTrongMock.mockRejectedValue({
+      isAxiosError: true,
+      response: { status: 400, data: { message: 'Đặt theo giờ tối thiểu 3 giờ' } },
+    })
+    dungKhung()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Theo giờ' }))
+    chonNgayNhanTra('2026-10-05T14:00', '2026-10-05T16:00')
+
+    expect(await screen.findByText('Đặt theo giờ tối thiểu 3 giờ')).toBeInTheDocument()
     expect(
-      await screen.findByText('Không kiểm được phòng trống. Hãy thử lại sau.'),
-    ).toBeInTheDocument()
+      screen.queryByText('Không kiểm được phòng trống. Hãy thử lại sau.'),
+    ).not.toBeInTheDocument()
   })
 })

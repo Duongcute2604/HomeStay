@@ -1186,7 +1186,7 @@ z.preprocess(
 > 1. **Ô nhập số trong form LỌC khác ô nhập số trong form ĐĂNG KÝ.** Form đăng ký:
 >    trống là lỗi. Form lọc: trống là "không giới hạn". Cùng một component `Input`
 >    nhưng hai ngữ nghĩa — schema phải nói rõ bằng `nullable()`.
-> 2. **Không tin直觉 về ép kiểu JavaScript.** `Number('')` ra `0`, không ra `NaN`.
+> 2. **Không tin vào trức giạc khi ép kiểu JavaScript.** `Number('')` ra `0`, không ra `NaN`.
 >    Chỗ nào ép kiểu thì viết test cho đầu vào rỗng trước tiên.
 > 3. Test này bắt được lỗi mà kiểm thử tay khó thấy: gửi `minPrice=0` thừa vẫn cho
 >    kết quả đúng, nên bấm tay không bao giờ phát hiện — chỉ đọc URL hoặc test
@@ -2548,3 +2548,108 @@ nen moi doi la doi hang loat.
 > **Quy tac tranh lap:** khi doi du lieu mau, hay grep so luong cu truoc khi sua — `grep -rn
 > "10 phong"`. Va them test bao ve **bat bien** (moi phong mot thu muc anh rieng), khong chi
 > kiem tra so luong, de loi quay lai khong con duong lot.
+
+## 101. `[Range]` bị hiểu nhầm là `System.Range` khi thiếu `using DataAnnotations`
+
+**Sai ở đâu:** thêm `[Range(1, 500, ErrorMessage = ...)]` vào `AdminDtos.cs` mà file đó
+chỉ có `using HomeStay.Enums;`. Build báo:
+
+```
+error CS0616: 'Range' is not an attribute class
+error CS0246: The type or namespace name 'ErrorMessage' could not be found
+```
+
+**Vì sao:** .NET có `System.Range` (struct dùng cho slice `arr[1..]`). C# ưu tiên resolve
+cùng namespace trước → `[Range]` trỏ vào struct đó, không phải `RangeAttribute`.
+
+**Cách sửa:** thêm `using System.ComponentModel.DataAnnotations;` ở đầu file.
+
+> **Quy tắc tránh lặp:** lỗi CS0616 "is not an attribute class" = gần như chắc chắn tên
+> attribute đang trùng với một type có sẵn của BCL. Đừng sửa attribute, hãy kiểm tra `using`.
+
+## 102. Thêm cột `DEFAULT 0` rồi CHECK `> 0` ngay = migration chết trên DB có dữ liệu cũ
+
+**Sai ở đâu:** migration `ThemDienTichPhong` sinh ra 2 lệnh theo đúng model:
+`AddColumn Area defaultValue 0` → `AddCheckConstraint CK_Rooms_Area: Area > 0`.
+
+**Vì sao sai:** phòng cũ trong DB nhận `Area = 0`, mà MySQL 8.0.16+ **kiểm tra dữ liệu cũ
+ngay lúc thêm CHECK** → `ALTER TABLE` fail, `MigrateAsync()` dừng giữa chừng.
+
+**Cách sửa:** chèn `migrationBuilder.Sql("UPDATE Rooms SET Area = 35 WHERE Area <= 0;")`
+giữa 2 lệnh — dữ liệu cũ được gán tạm một giá trị hợp lệ (35 m² = phòng nhỏ), migration
+qua được, Admin sửa lại diện tích thật sau.
+
+> **Quy tắc tránh lặp:** mọi CHECK/NOT NULL mới đều phải tưởng tượng dữ liệu **đã có sẵn**
+> trong DB production. Sinh migration xong phải đọc lại file, đừng tin "tool sinh là đúng".
+
+## 103. Project net8.0 chạy trên máy chỉ có runtime .NET 10 — test abort khó hiểu
+
+**Sai ở đâu:** `dotnet build` xanh nhưng `dotnet test` abort:
+`You must install or update .NET to run this application ... version '8.0.0'`.
+
+**Vì sao:** build chỉ cần targeting pack (SDK 10 có sẵn), còn **chạy** cần runtime 8.0
+trong khi máy chỉ cài `Microsoft.NETCore.App 10.0.13`.
+
+**Cách sửa (2 lựa chọn):**
+- Nhanh, không cài gì: `$env:DOTNET_ROLL_FORWARD='LatestMajor'; dotnet test`
+  (cũng áp dụng cho tool `dotnet-ef` sau khi `dotnet tool install --global dotnet-ef --version 8.0.2`).
+- Đúng ghim của `AGENTS.md` (8.0.425): cài thêm .NET 8 SDK/Runtime.
+
+Một lỗi kèm theo: `dotnet-ef` tự gọi tiến trình `dotnet` qua PATH — PATH phiên shell không
+có `C:\Program Files\dotnet` → phải prepend PATH vào lệnh.
+
+> **Quy tắc tránh lặp:** "build được" ≠ "chạy được". Trước khi cam kết "test pass", phải
+> chạy thật 1 lần; env khác máy dev thì ghi rõ cách chạy vào báo cáo.
+
+## 104. Map nhãn hiển thị theo đoán enum — đơn "Theo ngày" hiện "Theo giờ"
+
+**Sai ở đâu:** `NHAN_LOAI_THUE = { 1: 'Theo giờ', 2: 'Theo ngày' }` trong khi backend
+`BookingType` là `HOUR = 0, DAY = 1`, và chính service của frontend lại gửi `0`/`1`.
+Hậu quả: đơn theo ngày hiển "Theo giờ", đơn theo giờ hiển **trống** — lỗi âm thầm vì
+TS `Record<number, string>` không bắt giá trị ngoài map.
+
+**Vì sao:** viết map theo suy đoán ("enum chắc bắt đầu từ 1") thay vì đối chiếu file enum.
+
+**Cách sửa:** map đúng `{0: 'Theo giờ', 1: 'Theo ngày'}` + test đỏ/trắng cho **cả 2 giá trị**.
+Sửa luôn fixture test đang dùng `bookingType: 2` (giá trị backend không bao giờ phát ra).
+
+> **Quy tắc tránh lặp:** mọi map nhãn phía frontend (`Record<number, string>`) phải được
+> đối chiếu 1-1 với file enum backend, và có test cho **mỗi** giá trị enum — TS không giúp ta
+> phát hiện sai map.
+
+
+
+## 105. Lỗi nghiệp vụ 400 bị giao diện nuốt thành "Không kiểm được phòng trống"
+
+**Sai ở đâu:** chạy tay kịch bản edge case (đặt 2 giờ < 3 giờ) — backend trả 400 với
+đúng câu `TheoGioToiThieu3Gio` ("Đặt theo giờ tối thiểu 3 giờ"), nhưng
+`RoomDateFrame` chỉ hiện câu chung chung "Không kiểm được phòng trống. Hãy thử lại
+sau." → khách tưởng lỗi mạng, không biết vì sao bị từ chối. Unit test lúc đó vẫn xanh
+vì nó mock đúng câu chung chung đó.
+
+**Vì sao:** phần hiện lỗi viết trước khi có quy tắc 3 giờ, và test "chống" luôn câu
+sai — test viết theo code hiện có chứ theo hành vi người dùng cần.
+
+**Cách sửa:** nhánh `isError` gọi `layThongBaoLoi(error)` (helper đã có sẵn, trả
+nguyên văn `message` từ backend, có câu riêng cho lỗi mạng) + 1 test mới mock
+`{isAxiosError: true, response: {data: {message: 'Đặt theo giờ tối thiểu 3 giờ'}}}`
+kèm assert câu chung chung **không** xuất hiện.
+
+> **Quy tắc tránh lặp:** khi bắt lỗi ở UI, luôn hỏi "người dùng có biết ĐÚNG lý do bị
+> từ chối không?" — hiện thông báo chung chung cho lỗi 4xx = che lỗi nghiệp vụ. Và chạy
+> tay ít nhất 1 kịch bản bị TỪ CHỐI trước khi cam kết, không chỉ happy path.
+
+## 106. Ký tự tiếng Trung lọt vào comment + câu tiếng Việt
+
+**Sai ở đâu:** trong lúc viết comment RoomDateFrame, mô hình AI chèn phải ký tự
+`会让`; một bài học cũ trong `lessons.md` còn sót `直觉` giữa câu Việt
+("Không tin直觉 vào ép kiểu JavaScript").
+
+**Vì sao:** sinh văn bản tiếng Việt nhưng rớt ký tự CJK — không tool nào bắt vì CJK
+không phải lỗi chính tả, TS/ESLint cũng bỏ qua trong comment.
+
+**Cách sửa:** quét regex `[\u4E00-\u9FFF]` trên toàn bộ file vừa sửa, sửa lại bằng
+chuỗi xây từ `[char]0xXXXX` khi shell làm hỏng encoding.
+
+> **Quy tắc tránh lặp:** sau mỗi lần AI sửa file text, quét ký tự CJK/Hàn/Nhật lọt
+> vào nội dung tiếng Việt (comment, câu thông báo, docs) trước khi commit.

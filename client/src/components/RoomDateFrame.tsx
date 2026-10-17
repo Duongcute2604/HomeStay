@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 
+import { layThongBaoLoi } from '../api/client'
 import { roomService } from '../services/roomService'
 import { formatVnd } from '../utils/format'
 import {
@@ -74,6 +75,7 @@ export default function RoomDateFrame({
     data: tinhTrang,
     isPending: dangKiem,
     isError: loiKiem,
+    error: chiTietLoi,
   } = useQuery({
     queryKey: ['rooms', 'availability', locationIndex, roomIndex, loai, gioNhan, gioTra],
     queryFn: () => roomService.kiemTraTrong(locationIndex, roomIndex, loai, checkIn as Date, checkOut as Date),
@@ -184,8 +186,12 @@ export default function RoomDateFrame({
           {dangKiem ? (
             <p className="mt-2 text-right text-sm text-gray-500">Đang kiểm phòng trống...</p>
           ) : loiKiem ? (
+            // Hiển thị NGUYÊN VĂN thông báo backend: 400 ở đây thường là lỗi
+            // nghiệp vụ ("tối thiểu 3 giờ", "đặt trước 2 giờ") — hiện câu chung
+            // chung "không kiểm được" khiến khách tưởng lỗi mạng mà không biết
+            // vì sao bị từ chối. Lỗi mạng thật cũng đã có câu riêng trong helper.
             <p className="mt-2 text-right text-sm text-red-600">
-              Không kiểm được phòng trống. Hãy thử lại sau.
+              {layThongBaoLoi(chiTietLoi)}
             </p>
           ) : (
             tinhTrang && (

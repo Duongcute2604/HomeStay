@@ -985,3 +985,43 @@ Nguồn ảnh và lý do chọn nguồn đó ghi ở `docs/NGUON_ANH.md`.
 - Backend: `dotnet build` 0 error 0 warning · `dotnet test` **415/415 pass**
 - Frontend: `npm test` **287/287 pass** · `npm run build` không lỗi
 - CSDL: 12 phòng · 48 dòng `RoomImages` · 15 đơn · 4 tài khoản
+
+## 16. Tính tiền theo giờ 3 giờ đầu trọn gói + diện tích phòng (17/10)
+
+Chạy thật trên trình duyệt với MySQL (Docker, `homestay-mysql`) + backend
+`localhost:5080` + Vite `localhost:5173`. Migration `ThemDienTichPhong` chạy thật
+lúc khởi động backend (`Database.MigrateAsync()`), seed lại CSDL mới tinh.
+
+Công thức mới: giờ 1–3 = giá trọn gói (≤ 40 m² → 200.000 ₫, > 40 m² →
+300.000 ₫), mỗi giờ vượt 3 cộng 50.000 ₫. Sức chứa mọi phòng = 2.
+
+**Kịch bản 1 — Happy path**
+
+| # | Kịch bản | Kỳ vọng | Thực tế | Kết quả |
+|---|----------|---------|---------|---------|
+| 16.1 | Trang chủ + chi tiết phòng A101 | Hiện giá mới, diện tích, sức chứa 2 | "200.000 ₫/3 giờ", "Tối đa 2 khách · 35 m²" | ✅ |
+| 16.2 | Đặt 5 giờ (14:00→19:00) phòng A101 | Tạm tính = 200.000 + 2 × 50.000 = **300.000 ₫** | "Tạm tính: 5 giờ · 300.000 ₫" kèm dòng "Đã gồm 3 giờ đầu trọn gói, giờ thứ 4 trở đi 50.000 ₫/giờ" | ✅ |
+| 16.3 | CSDL 12 phòng sau seed | Diện tích ≤ 40 → 200.000, > 40 → 300.000; sức chứa 2 | A201 đúng 40 m² → 200.000 (ranh giới), C102 41 m² → 300.000; toàn bộ Capacity = 2 | ✅ |
+| 16.4 | Form Admin "Thêm phòng" | Mặc định 35 m² / 2 khách / giá 200.000 | Đúng cả 3 ô, nhãn "Diện tích (m²)" + "Giá 3 giờ đầu (VNĐ)" | ✅ |
+
+**Kịch bản 2 — Edge case**
+
+| # | Kịch bản | Kỳ vọng | Thực tế | Kết quả |
+|---|----------|---------|---------|---------|
+| 16.5 | Đặt 2 giờ (14:00→16:00) — dưới tối thiểu 3 giờ | Bị từ chối + hiện đúng thông báo | Nút "Tiếp tục đặt phòng" biến mất, hiện đỏ **"Đặt theo giờ tối thiểu 3 giờ"** (nguyên văn backend) | ✅ |
+| 16.6 | Trước khi sửa (lần chạy tay đầu) | — | Thông báo 400 bị giao diện nuốt thành "Không kiểm được phòng trống. Hãy thử lại sau." → **đã sửa** `RoomDateFrame` hiển thị `layThongBaoLoi`, kèm 1 test mới | ✅ |
+
+**Kịch bản 3 — Bất thường / người dùng khác**
+
+| # | Kịch bản | Kỳ vọng | Thực tế | Kết quả |
+|---|----------|---------|---------|---------|
+| 16.7 | Chi tiết đơn HOUR `HS-261116-0015` | Hiện "Theo giờ" (bug cũ hiện sai) | "**Theo giờ** · Phòng A201 · Tối đa 2 khách", tổng 250.000 ₫ = 200k + 1 × 50k | ✅ |
+| 16.8 | Chi tiết đơn DAY `HS-261020-0011` | Hiện "Theo ngày" | "**Theo ngày** · Phòng B101 · Tối đa 2 khách", tổng 1.900.000 ₫ = 950k × 2 ngày | ✅ |
+| 16.9 | Đổi diện tích ô form 35 → 45 (mới thêm) | Giá 3 giờ đầu tự nhảy 200.000 → 300.000 | Ô giá đổi ngay thành 300000; chế độ Sửa không tự đổi giá của admin | ✅ |
+| 16.10 | Bảng Admin `/admin/rooms` | Có cột Diện tích + Giá 3h đầu, số căn phải | Cột "Khách / Diện tích / Giá 3h đầu" căn phải, 12 phòng khớp CSDL | ✅ |
+
+### Bằng chứng
+
+- Backend: `dotnet build --no-incremental` 0 error 0 warning · `dotnet test` **425/425 pass**
+- Frontend: `tsc -b` 0 lỗi · `vitest run` **294/294 pass** · `vite build` sạch
+- Chạy thật: MySQL Docker (migration + seed), backend 5080, Vite 5173 — 10/10 kiểm chứng bằng trình duyệt
