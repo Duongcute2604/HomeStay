@@ -109,8 +109,15 @@ export interface BookingDetail extends MyBooking {
   capacity: number
 }
 
-/** Nhãn tiếng Việt cho loại thuê (backend trả về số: 1=theo giờ, 2=theo ngày). */
+/**
+ * Nhãn tiếng Việt cho loại thuê theo `bookingType` backend trả về.
+ *
+ * Enum `BookingType` của backend là `HOUR = 0, DAY = 1` (đối chiếu
+ * `server/HomeStay/Enums/BookingType.cs` và `bookingService.ts` gửi `0`/`1`).
+ * Map trước đây ghi `{1:'Theo giờ', 2:'Theo ngày'}` nên đơn theo ngày lại
+ * hiển "Theo giờ", còn đơn theo giờ (0) hiển trống.
+ */
 export const NHAN_LOAI_THUE: Record<number, string> = {
-  1: 'Theo giờ',
-  2: 'Theo ngày',
+  0: 'Theo giờ',
+  1: 'Theo ngày',
 }

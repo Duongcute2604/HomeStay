@@ -95,6 +95,21 @@ describe('MyBookingDetail - hien thi', () => {
     // "bởi Trần Thị Mai" xuất hiện 1 lần
     expect(screen.getAllByText(/bởi Trần Thị Mai/)).toHaveLength(1)
     expect(screen.getByText(/Ghi chú: Đến muộn sau 22:00/)).toBeInTheDocument()
+    // Đơn fixture bookingType=1 (enum backend DAY) phải hiện đúng nhãn "Theo ngày".
+    // Trước đây map nhãn là {1:'Theo giờ', 2:'Theo ngày'} nên đơn theo ngày lại
+    // hiển "Theo giờ", còn đơn theo giờ (0) hiển trống.
+    expect(screen.getByText(/Theo ngày/)).toBeInTheDocument()
+  })
+
+  it('DonTheoGioBookingType0_HienNhanTheoGio_KhongBiTrong', async () => {
+    // bookingType=0 là enum HOUR của backend — trước khi sửa, ô này hiển rỗng.
+    layChiTietMock.mockResolvedValue({ ...chiTietMau, bookingType: 0 })
+
+    dungTrangTai('/bookings/HS-261005-4821')
+
+    expect(await screen.findByText('HS-261005-4821')).toBeInTheDocument()
+    expect(screen.getByText(/Theo giờ/)).toBeInTheDocument()
+    expect(screen.queryByText(/Theo ngày/)).not.toBeInTheDocument()
   })
 
   it('MaSai_HienKhongTimThay_CoLoiVe', async () => {

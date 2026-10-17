@@ -44,7 +44,9 @@ function donMau(code: string, status: BookingStatus): AdminBooking {
     customerPhone: '0912345678',
     roomName: 'Phòng Hạnh Phúc',
     locationName: 'Hưng Yên Ven Biển',
-    bookingType: 2,
+    // Enum backend chỉ có 0 (HOUR) và 1 (DAY) — trước đây ghi 2, một giá trị
+    // backend không bao giờ phát ra nên test không còn phản ánh dữ liệu thật.
+    bookingType: 1,
     checkIn: '2026-10-05T14:00:00',
     checkOut: '2026-10-07T12:00:00',
     guestCount: 2,
