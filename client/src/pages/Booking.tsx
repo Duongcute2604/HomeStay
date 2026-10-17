@@ -15,7 +15,14 @@ import { roomService } from '../services/roomService'
 import type { BookingResult } from '../types/booking'
 import { NHAN_LOAI_PHONG } from '../types/location'
 import { formatNgay, formatVnd, toLocalIsoString } from '../utils/format'
-import { BookingType, NHAN_CACH_THUE, tinhSoDonVi, uocTinhTien } from '../utils/pricing'
+import {
+  BookingType,
+  GIA_GIO_VUOT_QUA,
+  NHAN_CACH_THUE,
+  SO_GIO_DAU_TRON_GOI,
+  tinhSoDonVi,
+  uocTinhTien,
+} from '../utils/pricing'
 
 /**
  * Trang đặt phòng — phải đăng nhập (bọc `ProtectedRoute` ở `App.tsx`).
@@ -199,9 +206,15 @@ export default function Booking(): JSX.Element {
           {formatNgay(checkOut.toISOString())}
         </p>
         <p className="number-vn mt-1 text-right text-sm text-gray-700">
-          Tạm tính: {donVi} {loai === BookingType.HOUR ? 'giờ' : 'ngày'} ×{' '}
+          Tạm tính: {donVi} {loai === BookingType.HOUR ? 'giờ' : 'ngày'} ·{' '}
           <span className="font-semibold text-amber-700">{formatVnd(tamTinh)}</span>
         </p>
+        {loai === BookingType.HOUR && donVi > SO_GIO_DAU_TRON_GOI && (
+          <p className="number-vn mt-1 text-right text-xs text-gray-500">
+            Đã gồm 3 giờ đầu trọn gói, giờ thứ {SO_GIO_DAU_TRON_GOI + 1} trở đi{' '}
+            {formatVnd(GIA_GIO_VUOT_QUA)}/giờ
+          </p>
+        )}
         {tinhTrang && (
           <p
             className={

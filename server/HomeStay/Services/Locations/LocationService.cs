@@ -41,6 +41,7 @@ public class LocationService : ILocationService
                         RoomNumber = phong.RoomNumber,
                         RoomType = phong.RoomType,
                         Capacity = phong.Capacity,
+                        Area = phong.Area,
                         PricePerHour = phong.PricePerHour,
                         PricePerDay = phong.PricePerDay,
                         RatingAvg = phong.RatingAvg,

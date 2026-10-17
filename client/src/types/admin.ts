@@ -44,6 +44,8 @@ export interface AdminRoom {
   roomNumber: string
   roomType: RoomType
   capacity: number
+  /** Diện tích (m²) — quyết định phòng nhỏ hay lớn. */
+  area: number
   pricePerHour: number
   pricePerDay: number
   description: string | null
@@ -60,6 +62,8 @@ export interface RoomPayload {
   roomNumber: string
   roomType: RoomType
   capacity: number
+  /** Diện tích (m²), bắt buộc — ≤ 40 là phòng nhỏ. */
+  area: number
   pricePerHour: number
   pricePerDay: number
   description?: string

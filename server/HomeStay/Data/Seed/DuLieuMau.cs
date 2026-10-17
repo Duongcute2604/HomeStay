@@ -129,32 +129,32 @@ public static class DuLieuMau
             new Room
             {
                 Location = diaDiem, Name = "Phòng Hạnh Phúc", RoomNumber = "A101", RoomType = RoomType.COZY,
-                Capacity = 2, PricePerHour = 90_000m, PricePerDay = 550_000m, Status = RoomStatus.AVAILABLE,
+                Capacity = 2, Area = 35, PricePerHour = 200_000m, PricePerDay = 550_000m, Status = RoomStatus.AVAILABLE,
                 Description = "Ban công riêng hướng công viên, hợp khách đi dã ngoại."
             },
             new Room
             {
                 Location = diaDiem, Name = "Phòng Bình Minh", RoomNumber = "A102", RoomType = RoomType.COZY,
-                Capacity = 2, PricePerHour = 85_000m, PricePerDay = 520_000m, Status = RoomStatus.CLEANING,
+                Capacity = 2, Area = 34, PricePerHour = 200_000m, PricePerDay = 520_000m, Status = RoomStatus.CLEANING,
                 Description = "Sau khi trả phòng cần 2 giờ vệ sinh trước khi nhận khách mới."
             },
             new Room
             {
                 Location = diaDiem, Name = "Phòng Hải Yến", RoomNumber = "A201", RoomType = RoomType.JAPANDI,
-                Capacity = 3, PricePerHour = 130_000m, PricePerDay = 850_000m, Status = RoomStatus.AVAILABLE,
-                Description = "Ban công hướng biển, thích hợp nhóm 3 người."
+                Capacity = 2, Area = 40, PricePerHour = 200_000m, PricePerDay = 850_000m, Status = RoomStatus.AVAILABLE,
+                Description = "Ban công hướng biển, hợp cặp đôi muốn có thêm không gian."
             },
             new Room
             {
                 Location = diaDiem, Name = "Phòng Xuân Hương", RoomNumber = "A301", RoomType = RoomType.SIGNATURE,
-                Capacity = 5, PricePerHour = 180_000m, PricePerDay = 1_250_000m, Status = RoomStatus.AVAILABLE,
-                Description = "Phòng lớn 2 giường, có khu sinh hoạt chung cho cả gia đình."
+                Capacity = 2, Area = 55, PricePerHour = 300_000m, PricePerDay = 1_250_000m, Status = RoomStatus.AVAILABLE,
+                Description = "Phòng lớn 2 giường, có khu sinh hoạt chung hướng hồ."
             },
             new Room
             {
                 Location = diaDiem, Name = "Phòng Gió Mùa", RoomNumber = "A401", RoomType = RoomType.COZY,
-                Capacity = 2, PricePerHour = 80_000m, PricePerDay = 490_000m, Status = RoomStatus.AVAILABLE,
-                Description = "Góc trên lầu, có giường tầng cho bạn bè đi chơi cùng."
+                Capacity = 2, Area = 32, PricePerHour = 200_000m, PricePerDay = 490_000m, Status = RoomStatus.AVAILABLE,
+                Description = "Góc trên lầu, yên tĩnh, hợp khách đi chơi cùng bạn bè."
             }
         ];
     }
@@ -166,25 +166,25 @@ public static class DuLieuMau
             new Room
             {
                 Location = diaDiem, Name = "Phòng Sương Mù", RoomNumber = "B101", RoomType = RoomType.JAPANDI,
-                Capacity = 2, PricePerHour = 150_000m, PricePerDay = 950_000m, Status = RoomStatus.BOOKED,
+                Capacity = 2, Area = 38, PricePerHour = 200_000m, PricePerDay = 950_000m, Status = RoomStatus.BOOKED,
                 Description = "Cửa sổ toàn cảnh thung lũng, yên tĩnh, hợp làm việc."
             },
             new Room
             {
                 Location = diaDiem, Name = "Phòng Hoa Tử Đài", RoomNumber = "B102", RoomType = RoomType.COZY,
-                Capacity = 2, PricePerHour = 100_000m, PricePerDay = 600_000m, Status = RoomStatus.MAINTENANCE,
+                Capacity = 2, Area = 36, PricePerHour = 200_000m, PricePerDay = 600_000m, Status = RoomStatus.MAINTENANCE,
                 Description = "Đang sửa điều hòa, tạm thời không nhận đặt phòng."
             },
             new Room
             {
                 Location = diaDiem, Name = "Phòng Đồi Thông", RoomNumber = "B201", RoomType = RoomType.SIGNATURE,
-                Capacity = 4, PricePerHour = 200_000m, PricePerDay = 1_350_000m, Status = RoomStatus.AVAILABLE,
-                Description = "Nhà 2 tầng, thích hợp tiệc cưới gia đình nhỏ."
+                Capacity = 2, Area = 50, PricePerHour = 300_000m, PricePerDay = 1_350_000m, Status = RoomStatus.AVAILABLE,
+                Description = "Nhà 2 tầng, có phòng khách riêng nhìn ra đồi thông."
             },
             new Room
             {
                 Location = diaDiem, Name = "Phòng Mộng Mơ", RoomNumber = "B301", RoomType = RoomType.JAPANDI,
-                Capacity = 2, PricePerHour = 140_000m, PricePerDay = 880_000m, Status = RoomStatus.AVAILABLE,
+                Capacity = 2, Area = 42, PricePerHour = 300_000m, PricePerDay = 880_000m, Status = RoomStatus.AVAILABLE,
                 Description = "Sàn gỗ ấm, hợp khách muốn ngồi đọc sách cả buổi chiều."
             }
         ];
@@ -197,19 +197,19 @@ public static class DuLieuMau
             new Room
             {
                 Location = diaDiem, Name = "Phòng Đèn Lồng", RoomNumber = "C101", RoomType = RoomType.COZY,
-                Capacity = 2, PricePerHour = 95_000m, PricePerDay = 580_000m, Status = RoomStatus.OCCUPIED,
+                Capacity = 2, Area = 33, PricePerHour = 200_000m, PricePerDay = 580_000m, Status = RoomStatus.OCCUPIED,
                 Description = "Khách đang ở lại, không nhận đặt thêm trong lúc thuê."
             },
             new Room
             {
                 Location = diaDiem, Name = "Phòng Gốm Sứ", RoomNumber = "C102", RoomType = RoomType.JAPANDI,
-                Capacity = 3, PricePerHour = 145_000m, PricePerDay = 900_000m, Status = RoomStatus.AVAILABLE,
+                Capacity = 2, Area = 41, PricePerHour = 300_000m, PricePerDay = 900_000m, Status = RoomStatus.AVAILABLE,
                 Description = "Trang trí theo phong cách gốm Hội An, tầng 2 có ban công."
             },
             new Room
             {
                 Location = diaDiem, Name = "Phòng Chèo Xe", RoomNumber = "C201", RoomType = RoomType.SIGNATURE,
-                Capacity = 4, PricePerHour = 250_000m, PricePerDay = 1_800_000m, Status = RoomStatus.BOOKED,
+                Capacity = 2, Area = 52, PricePerHour = 300_000m, PricePerDay = 1_800_000m, Status = RoomStatus.BOOKED,
                 Description = "Phòng hạng nhà, có phòng khách riêng và bồn tắm nước nóng."
             }
         ];
@@ -386,17 +386,17 @@ public static class DuLieuMau
                 BookingStatus.COMPLETED, "Đi cùng gia đình nghỉ cuối tuần"),
             new(3, "B101", BookingType.HOUR, Luc(-112, 15), Luc(-112, 20), Luc(-114, 10), 2,
                 BookingStatus.COMPLETED, "Họp nhóm, cần phòng yên tĩnh để làm việc"),
-            new(4, "B201", BookingType.DAY, Luc(-98, nhanPhong), Luc(-94, traPhong), Luc(-101, 9), 4,
+            new(4, "B201", BookingType.DAY, Luc(-98, nhanPhong), Luc(-94, traPhong), Luc(-101, 9), 2,
                 BookingStatus.COMPLETED, "Đi cắm trại rừng cả nhà"),
             new(2, "A201", BookingType.DAY, Luc(-84, nhanPhong), Luc(-81, traPhong), Luc(-88, 9), 2,
                 BookingStatus.COMPLETED, "Đi biển cùng bạn bè"),
-            new(3, "C102", BookingType.HOUR, Luc(-70, 14), Luc(-70, 19), Luc(-72, 10), 3,
+            new(3, "C102", BookingType.HOUR, Luc(-70, 14), Luc(-70, 19), Luc(-72, 10), 2,
                 BookingStatus.COMPLETED, "Tham quan phố cổ lúc chiều tà"),
             new(4, "A102", BookingType.HOUR, now.AddHours(-5), now.AddHours(-1), Luc(-2, 8), 2,
                 BookingStatus.COMPLETED, "Nghỉ ngắm biển vài tiếng giữa chuyến đi"),
             new(2, "B102", BookingType.DAY, Luc(-20, nhanPhong), Luc(-18, traPhong), Luc(-23, 9), 2,
                 BookingStatus.COMPLETED, "Ngắm hoa Tử Đài"),
-            new(2, "A301", BookingType.DAY, Luc(-35, nhanPhong), Luc(-33, traPhong), Luc(-37, 14), 5,
+            new(2, "A301", BookingType.DAY, Luc(-35, nhanPhong), Luc(-33, traPhong), Luc(-37, 14), 2,
                 BookingStatus.CANCELLED, "Gia đình đổi kế hoạch", "Khách báo đổi lịch, hẹn đặt lại lần sau"),
             new(4, "C201", BookingType.DAY, Luc(-28, nhanPhong), Luc(-26, traPhong), Luc(-30, 16), 2,
                 BookingStatus.REJECTED, "Mong muốn mang theo chó cảnh", "Homestay không nhận thú cưng")
@@ -419,9 +419,9 @@ public static class DuLieuMau
                 BookingStatus.CHECKED_IN, "Ngắm phố cổ ban đêm"),
             new(2, "B101", BookingType.DAY, Luc(3, nhanPhong), Luc(5, traPhong), Luc(-2, 10), 2,
                 BookingStatus.CONFIRMED, "Khách quen, thuê dài ngày"),
-            new(4, "C201", BookingType.DAY, Luc(9, nhanPhong), Luc(11, traPhong), Luc(-1, 16), 4,
+            new(4, "C201", BookingType.DAY, Luc(9, nhanPhong), Luc(11, traPhong), Luc(-1, 16), 2,
                 BookingStatus.CONFIRMED, "Cả nhóm đi Hội An 4 ngày"),
-            new(3, "A301", BookingType.HOUR, now.AddHours(6), now.AddHours(11), now.AddHours(-1), 4,
+            new(3, "A301", BookingType.HOUR, now.AddHours(6), now.AddHours(11), now.AddHours(-1), 2,
                 BookingStatus.PENDING, "Đặt phòng theo giờ chờ tàu"),
             new(4, "A101", BookingType.DAY, Luc(4, nhanPhong), Luc(6, traPhong), now.AddHours(-3), 2,
                 BookingStatus.PENDING, "Đặt trước cho chuyến đi sắp tới"),

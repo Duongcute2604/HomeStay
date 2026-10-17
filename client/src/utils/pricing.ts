@@ -1,10 +1,10 @@
 /**
  * Ước tính tiền thuê phòng ở phía giao diện.
  *
- * Sao đúng công thức `BookingCalculator` bên backend (làm tròn LÊN số đơn vị
- * rồi nhân đơn giá): theo giờ = ceil(giờ) × giá giờ, theo ngày = ceil(ngày) ×
- * giá ngày. Ghi rõ "tạm tính" khi hiển thị — số cuối cùng do backend tính ở
- * Bước 10 khi tạo đơn thật.
+ * Sao đúng công thức `BookingCalculator` bên backend (chốt với người dùng
+ * 16/10): theo giờ = 3 giờ đầu TRỌN GÓI `giaTheoGio` + mỗi giờ vượt quá
+ * `GIA_GIO_VUOT_QUA`; theo ngày = ceil(ngày) × giá ngày. Ghi rõ "tạm tính"
+ * khi hiển thị — số cuối cùng do backend tính ở Bước 10 khi tạo đơn thật.
  */
 
 export const BookingType = {
@@ -12,6 +12,29 @@ export const BookingType = {
   DAY: 'day',
 } as const
 export type BookingType = (typeof BookingType)[keyof typeof BookingType]
+
+/** Số giờ đầu tính trọn gói một giá cơ sở (khớp `BookingRules.BaseHoursForHourlyBooking`). */
+export const SO_GIO_DAU_TRON_GOI = 3
+
+/** Giá mỗi giờ vượt quá khung 3 giờ đầu (khớp `BookingRules.ExtraHourPrice`). */
+export const GIA_GIO_VUOT_QUA = 50_000
+
+/** Diện tích (m²) tối đa của phòng nhỏ — ≤ mức này là nhỏ, hơn là phòng lớn. */
+export const DIEN_TICH_PHONG_NHO = 40
+
+/** Giá 3 giờ đầu mặc định của phòng nhỏ (khớp seed backend). */
+export const GIA_3_GIO_DAU_NHO = 200_000
+
+/** Giá 3 giờ đầu mặc định của phòng lớn. */
+export const GIA_3_GIO_DAU_LON = 300_000
+
+/**
+ * Giá 3 giờ đầu mặc định theo diện tích phòng (quy tắc chốt 16/10):
+ * ≤ 40 m² là phòng nhỏ → 200.000 ₫, lớn hơn là phòng lớn → 300.000 ₫.
+ */
+export function gia3GioDau(dienTich: number): number {
+  return dienTich <= DIEN_TICH_PHONG_NHO ? GIA_3_GIO_DAU_NHO : GIA_3_GIO_DAU_LON
+}
 
 /** Nhãn tiếng Việt cho cách thuê. */
 export const NHAN_CACH_THUE: Record<BookingType, string> = {
@@ -35,7 +58,13 @@ export function tinhSoDonVi(loai: BookingType, checkIn: Date, checkOut: Date): n
   return Math.ceil(miliGiay / (1000 * 60 * 60 * 24))
 }
 
-/** Tiền tạm tính = đơn giá × số đơn vị. */
+/**
+ * Tiền tạm tính.
+ *
+ * Theo giờ: `giaTheoGio` là giá TRỌN GÓI cho 3 giờ đầu, không phải giá 1 giờ;
+ * từ giờ thứ 4 trở đi mỗi giờ cộng thêm `GIA_GIO_VUOT_QUA` (công thức cũ
+ * "số giờ × đơn giá" đã bị thay ngày 16/10 — test bên dưới khoá lại).
+ */
 export function uocTinhTien(
   loai: BookingType,
   giaTheoGio: number,
@@ -43,8 +72,13 @@ export function uocTinhTien(
   checkIn: Date,
   checkOut: Date,
 ): number {
-  const donGia = loai === BookingType.HOUR ? giaTheoGio : giaTheoNgay
-  return donGia * tinhSoDonVi(loai, checkIn, checkOut)
+  if (loai === BookingType.HOUR) {
+    const soGio = tinhSoDonVi(loai, checkIn, checkOut)
+    const gioVuotQua = Math.max(0, soGio - SO_GIO_DAU_TRON_GOI)
+    return giaTheoGio + gioVuotQua * GIA_GIO_VUOT_QUA
+  }
+
+  return giaTheoNgay * tinhSoDonVi(loai, checkIn, checkOut)
 }
 
 /**

@@ -96,6 +96,7 @@ public class HomeStayDbContext : DbContext
         room.ToTable("Rooms", table =>
         {
             table.HasCheckConstraint("CK_Rooms_Capacity", "`Capacity` > 0");
+            table.HasCheckConstraint("CK_Rooms_Area", "`Area` > 0");
             table.HasCheckConstraint("CK_Rooms_Price", "`PricePerHour` >= 0 AND `PricePerDay` >= 0");
             table.HasCheckConstraint("CK_Rooms_Rating", "`RatingAvg` >= 0 AND `RatingAvg` <= 5");
         });
@@ -104,6 +105,7 @@ public class HomeStayDbContext : DbContext
         room.Property(x => x.Name).HasMaxLength(150).IsRequired();
         room.Property(x => x.RoomNumber).HasMaxLength(20).IsRequired();
         room.Property(x => x.Description).HasMaxLength(1000);
+        room.Property(x => x.Area).HasColumnType("decimal(6,2)");
         room.Property(x => x.PricePerHour).HasColumnType("decimal(18,2)");
         room.Property(x => x.PricePerDay).HasColumnType("decimal(18,2)");
         room.Property(x => x.RatingAvg).HasColumnType("decimal(3,2)");

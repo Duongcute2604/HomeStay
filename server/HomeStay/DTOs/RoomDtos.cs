@@ -95,10 +95,13 @@ public class RoomSearchItemDto
     /// <summary>Số khách tối đa.</summary>
     public int Capacity { get; set; }
 
-    /// <summary>Giá 1 giờ (VNĐ).</summary>
+    /// <summary>Diện tích phòng (m²) — ≤ 40 là phòng nhỏ.</summary>
+    public decimal Area { get; set; }
+
+    /// <summary>Giá TRỌN GÓI cho 3 giờ đầu (VNĐ).</summary>
     public decimal PricePerHour { get; set; }
 
-    /// <summary>Giá 1 ngày (VNĐ) — dùng để lọc và sắp xếp.</summary>
+    /// <summary>Giá 1 ngày (VNĐ).</summary>
     public decimal PricePerDay { get; set; }
 
     /// <summary>Điểm đánh giá trung bình.</summary>

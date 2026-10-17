@@ -36,6 +36,7 @@ const motDiaDiem: Location[] = [
         roomNumber: 'P01',
         roomType: RoomType.COZY,
         capacity: 2,
+        area: 35,
         pricePerHour: 120000,
         pricePerDay: 900000,
         ratingAvg: 4.5,
@@ -52,6 +53,7 @@ const motDiaDiem: Location[] = [
         roomNumber: 'P02',
         roomType: RoomType.JAPANDI,
         capacity: 4,
+        area: 50,
         pricePerHour: 200000,
         pricePerDay: 1500000,
         ratingAvg: 0,
@@ -106,7 +108,7 @@ describe('LocationDetail - chi so hop le', () => {
     dungTrangTai('/locations/0')
 
     await screen.findByText('Phòng Tiêu Chuẩn')
-    expect(screen.getByText('120.000 ₫/giờ')).toBeInTheDocument()
+    expect(screen.getByText('120.000 ₫/3 giờ')).toBeInTheDocument()
     expect(screen.getByText('900.000 ₫/ngày')).toBeInTheDocument()
   })
 

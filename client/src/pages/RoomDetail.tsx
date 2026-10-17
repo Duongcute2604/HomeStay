@@ -155,7 +155,8 @@ export default function RoomDetail(): JSX.Element {
 
           <p className="mt-1 text-left text-sm text-gray-500">
             {NHAN_LOAI_PHONG[phong.roomType]} · Phòng {phong.roomNumber} · Tối đa{' '}
-            {phong.capacity} khách · {diaDiem.name}
+            <span className="number-vn">{phong.capacity}</span> khách ·{' '}
+            <span className="number-vn">{phong.area}</span> m² · {diaDiem.name}
             {phong.ratingCount > 0 && (
               <> · ★ {formatDiem(phong.ratingAvg)} ({phong.ratingCount} đánh giá)</>
             )}
@@ -167,7 +168,7 @@ export default function RoomDetail(): JSX.Element {
 
           <div className="mt-4 flex items-baseline justify-end gap-4">
             <span className="number-vn text-right text-gray-600">
-              {formatVnd(phong.pricePerHour)}/giờ
+              {formatVnd(phong.pricePerHour)}/3 giờ
             </span>
             <span className="number-vn text-right text-lg font-semibold text-amber-700">
               {formatVnd(phong.pricePerDay)}/ngày

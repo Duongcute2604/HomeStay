@@ -177,6 +177,37 @@ public class SeedDataTests
     }
 
     [Fact]
+    public async Task SeedAsync_Gia3GioDauKhopDienTichCuaMoiPhong()
+    {
+        await using HomeStayDbContext db = TestDbContextFactory.Create();
+        await SeedData.SeedAsync(db, CancellationToken.None);
+
+        List<Room> phongList = await db.Rooms.AsNoTracking().ToListAsync();
+
+        // Quy tắc 16/10: ≤ 40 m² = phòng nhỏ (200.000), lớn hơn = phòng lớn
+        // (300.000). Seed sai quy tắc này thì khách xem giá một đường, lúc đặt
+        // backend tính một đường.
+        Assert.All(phongList, x =>
+        {
+            Assert.True(x.Area > 0, $"Phòng {x.RoomNumber} chưa khai diện tích.");
+            Assert.Equal(BookingRules.TinhGiaBaGioDau(x.Area), x.PricePerHour);
+        });
+    }
+
+    [Fact]
+    public async Task SeedAsync_SucChuaMoiPhongLaHaiKhach()
+    {
+        await using HomeStayDbContext db = TestDbContextFactory.Create();
+        await SeedData.SeedAsync(db, CancellationToken.None);
+
+        List<Room> phongList = await db.Rooms.AsNoTracking().ToListAsync();
+
+        // Quy tắc 16/10: sức chứa mọi phòng là 2, khách thứ 3 tính phí riêng
+        // (chưa làm) — nên không phòng nào được khai trên 2.
+        Assert.All(phongList, x => Assert.Equal(2, x.Capacity));
+    }
+
+    [Fact]
     public async Task SeedAsync_TienDonKhopVoiCongThucTinhTien()
     {
         await using HomeStayDbContext db = TestDbContextFactory.Create();

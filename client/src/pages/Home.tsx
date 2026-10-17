@@ -204,7 +204,7 @@ export default function Home(): JSX.Element {
                   )}
                   <div className="mt-3 flex items-center justify-between">
                     <p className="text-lg font-bold text-amber-600 number-vn text-right">
-                      {formatVnd(phong.pricePerHour)}/giờ
+                      {formatVnd(phong.pricePerHour)}/3 giờ
                     </p>
                     <Link
                       to={`/locations/${phong.locationIndex}/rooms/${phong.roomIndex}`}

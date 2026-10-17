@@ -65,9 +65,23 @@ describe('RoomDateFrame - chon ngay va tam tinh', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Theo giờ' }))
     chonNgayNhanTra('2026-10-05T14:00', '2026-10-05T17:00')
 
-    // 3 giờ × 90.000.
+    // Đúng 3 giờ → chỉ trả giá cơ sở trọn gói (90.000), không còn 3 × 90.000.
     expect(await screen.findByText(/Tạm tính: 3 giờ/)).toBeInTheDocument()
-    expect(screen.getByText('270.000 ₫')).toBeInTheDocument()
+    expect(screen.getByText('90.000 ₫')).toBeInTheDocument()
+  })
+
+  it('Vuot3Gio_HienGiaThemTungGio', async () => {
+    dungKhung()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Theo giờ' }))
+    chonNgayNhanTra('2026-10-05T14:00', '2026-10-05T19:00')
+
+    // 5 giờ = 90.000 (3 giờ đầu) + 2 giờ × 50.000 = 190.000.
+    expect(await screen.findByText(/Tạm tính: 5 giờ/)).toBeInTheDocument()
+    expect(screen.getByText('190.000 ₫')).toBeInTheDocument()
+    expect(
+      screen.getByText(/Đã gồm 3 giờ đầu trọn gói, giờ thứ 4 trở đi/),
+    ).toBeInTheDocument()
   })
 
   it('TraTruocNhan_BaoLoi_KhongHienGia_KhongGoiApi', () => {

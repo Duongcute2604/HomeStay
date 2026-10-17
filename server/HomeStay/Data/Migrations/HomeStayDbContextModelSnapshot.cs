@@ -362,6 +362,9 @@ namespace HomeStay.Data.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<decimal>("Area")
+                        .HasColumnType("decimal(6,2)");
+
                     b.Property<int>("Capacity")
                         .HasColumnType("int");
 
@@ -420,6 +423,8 @@ namespace HomeStay.Data.Migrations
 
                     b.ToTable("Rooms", null, t =>
                         {
+                            t.HasCheckConstraint("CK_Rooms_Area", "`Area` > 0");
+
                             t.HasCheckConstraint("CK_Rooms_Capacity", "`Capacity` > 0");
 
                             t.HasCheckConstraint("CK_Rooms_Price", "`PricePerHour` >= 0 AND `PricePerDay` >= 0");

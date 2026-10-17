@@ -3,7 +3,15 @@ import { useEffect, useRef, useState } from 'react'
 
 import { roomService } from '../services/roomService'
 import { formatVnd } from '../utils/format'
-import { BookingType, kiemKhoangThoiGian, NHAN_CACH_THUE, tinhSoDonVi, uocTinhTien } from '../utils/pricing'
+import {
+  BookingType,
+  GIA_GIO_VUOT_QUA,
+  kiemKhoangThoiGian,
+  NHAN_CACH_THUE,
+  SO_GIO_DAU_TRON_GOI,
+  tinhSoDonVi,
+  uocTinhTien,
+} from '../utils/pricing'
 
 /** Lựa chọn hiện tại của khung — phát ra ngoài để trang cha dùng (nút tiếp tục). */
 export interface LuaChonThue {
@@ -17,7 +25,7 @@ export interface LuaChonThue {
 }
 
 interface Props {
-  /** Giá 1 giờ (VNĐ) của phòng đang xem. */
+  /** Giá TRỌN GÓI cho 3 giờ đầu (VNĐ) của phòng đang xem. */
   giaTheoGio: number
   /** Giá 1 ngày (VNĐ) của phòng đang xem. */
   giaTheoNgay: number
@@ -163,9 +171,15 @@ export default function RoomDateFrame({
       ) : (
         <>
           <p className="number-vn mt-3 text-right text-sm text-gray-700">
-            Tạm tính: {donVi} {loai === BookingType.HOUR ? 'giờ' : 'ngày'} ×{' '}
+            Tạm tính: {donVi} {loai === BookingType.HOUR ? 'giờ' : 'ngày'} ·{' '}
             <span className="font-semibold text-brand-700">{formatVnd(tamTinh)}</span>
           </p>
+          {loai === BookingType.HOUR && donVi > SO_GIO_DAU_TRON_GOI && (
+            <p className="number-vn mt-1 text-right text-xs text-gray-500">
+              Đã gồm 3 giờ đầu trọn gói, giờ thứ {SO_GIO_DAU_TRON_GOI + 1} trở đi{' '}
+              {formatVnd(GIA_GIO_VUOT_QUA)}/giờ
+            </p>
+          )}
 
           {dangKiem ? (
             <p className="mt-2 text-right text-sm text-gray-500">Đang kiểm phòng trống...</p>

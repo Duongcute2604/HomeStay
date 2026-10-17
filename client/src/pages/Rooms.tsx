@@ -292,7 +292,7 @@ export default function Rooms(): JSX.Element {
 
                       <div className="mt-3 flex items-baseline justify-end gap-4 text-sm">
                         <span className="number-vn text-right text-gray-600">
-                          {formatVnd(phong.pricePerHour)}/giờ
+                          {formatVnd(phong.pricePerHour)}/3 giờ
                         </span>
                         <span className="number-vn text-right font-semibold text-brand-700">
                           {formatVnd(phong.pricePerDay)}/ngày

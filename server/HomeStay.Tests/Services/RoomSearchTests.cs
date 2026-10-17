@@ -134,12 +134,28 @@ public class RoomSearchTests
         RoomService service = TaoService(db);
 
         RoomSearchRequest request = TaoYeuCau();
-        request.Capacity = 4;
+        request.Capacity = 2;
 
         PagedResultDto<RoomSearchItemDto> result = await service.SearchAsync(request, CancellationToken.None);
 
         Assert.NotEmpty(result.Items);
-        Assert.All(result.Items, phong => Assert.True(phong.Capacity >= 4));
+        // Sức chứa mọi phòng là 2 (chốt ngày 16/10) — lọc 2 vẫn ra cả 12 phòng.
+        Assert.All(result.Items, phong => Assert.True(phong.Capacity >= 2));
+    }
+
+    [Fact]
+    public async Task SearchAsync_LocVuotSucChuaMoiPhong_TraVeRong()
+    {
+        await using HomeStayDbContext db = await TaoDbDaSeedAsync();
+        RoomService service = TaoService(db);
+
+        // Mọi phòng chứa tối đa 2 khách → xin 3 khách không có phòng nào chứa đủ.
+        RoomSearchRequest request = TaoYeuCau();
+        request.Capacity = 3;
+
+        PagedResultDto<RoomSearchItemDto> result = await service.SearchAsync(request, CancellationToken.None);
+
+        Assert.Empty(result.Items);
     }
 
     [Fact]

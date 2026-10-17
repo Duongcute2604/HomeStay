@@ -58,6 +58,8 @@ export interface RoomSummary {
   roomNumber: string
   roomType: RoomType
   capacity: number
+  /** Diện tích (m²) — ≤ 40 là phòng nhỏ, lớn hơn là phòng lớn (quyết định giá 3 giờ đầu). */
+  area: number
   pricePerHour: number
   pricePerDay: number
   ratingAvg: number

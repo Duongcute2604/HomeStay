@@ -66,6 +66,7 @@ public class AdminRoomService : IAdminRoomService
             RoomNumber = request.RoomNumber.Trim(),
             RoomType = request.RoomType,
             Capacity = request.Capacity,
+            Area = request.Area,
             PricePerHour = request.PricePerHour,
             PricePerDay = request.PricePerDay,
             Description = request.Description,
@@ -98,6 +99,7 @@ public class AdminRoomService : IAdminRoomService
         phong.RoomNumber = request.RoomNumber.Trim();
         phong.RoomType = request.RoomType;
         phong.Capacity = request.Capacity;
+        phong.Area = request.Area;
         phong.PricePerHour = request.PricePerHour;
         phong.PricePerDay = request.PricePerDay;
         phong.Description = request.Description;
@@ -275,6 +277,7 @@ public class AdminRoomService : IAdminRoomService
             RoomNumber = phong.RoomNumber,
             RoomType = phong.RoomType,
             Capacity = phong.Capacity,
+            Area = phong.Area,
             PricePerHour = phong.PricePerHour,
             PricePerDay = phong.PricePerDay,
             Description = phong.Description,

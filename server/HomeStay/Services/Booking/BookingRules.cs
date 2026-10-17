@@ -15,6 +15,36 @@ public static class BookingRules
     /// <summary>Đặt theo giờ phải đủ số giờ này trở lên, tính từ lúc khách nhận phòng.</summary>
     public const int MinHoursForHourlyBooking = 3;
 
+    /// <summary>
+    /// 3 giờ đầu tính TRỌN GÓI một giá cơ sở (phòng nhỏ 200.000, phòng lớn
+    /// 300.000 theo diện tích), không nhân theo số giờ. Quy tắc này do người
+    /// dùng chốt ngày 16/10, thay cho cách tính cũ "số giờ × giá giờ".
+    /// </summary>
+    public const int BaseHoursForHourlyBooking = 3;
+
+    /// <summary>
+    /// Giá mỗi giờ VƯỢT QUÁ khung 3 giờ đầu — cộng thêm vào giá cơ sở.
+    /// </summary>
+    public const decimal ExtraHourPrice = 50_000m;
+
+    /// <summary>Diện tích (m²) tối đa của phòng nhỏ — hơn mức này là phòng lớn.</summary>
+    public const decimal SmallRoomMaxArea = 40m;
+
+    /// <summary>Giá 3 giờ đầu mặc định của phòng nhỏ.</summary>
+    public const decimal SmallRoomBasePrice = 200_000m;
+
+    /// <summary>Giá 3 giờ đầu mặc định của phòng lớn.</summary>
+    public const decimal LargeRoomBasePrice = 300_000m;
+
+    /// <summary>
+    /// Giá 3 giờ đầu mặc định theo diện tích phòng (chốt với người dùng 16/10):
+    /// ≤ 40 m² là phòng nhỏ, hơn là phòng lớn. Dùng cho dữ liệu seed và làm
+    /// gợi ý mặc định khi Admin tạo phòng mới — Admin vẫn tự sửa được giá sau đó.
+    /// </summary>
+    /// <param name="dienTich">Diện tích phòng tính bằng m².</param>
+    public static decimal TinhGiaBaGioDau(decimal dienTich) =>
+        dienTich <= SmallRoomMaxArea ? SmallRoomBasePrice : LargeRoomBasePrice;
+
     /// <summary>Khách phải đặt trước tối thiểu số giờ này kể từ thời điểm đặt.</summary>
     public const int MinHoursAdvanceNotice = 2;
 

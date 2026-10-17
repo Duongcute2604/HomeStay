@@ -9,6 +9,7 @@ import { useToastStore } from '../../store/toastStore'
 import type { AdminRoom, Amenity, RoomPayload } from '../../types/admin'
 import { NHAN_LOAI_PHONG, NHAN_TRANG_THAI_PHONG, RoomStatus, RoomType } from '../../types/location'
 import { formatVnd } from '../../utils/format'
+import { gia3GioDau } from '../../utils/pricing'
 
 /** Form rỗng cho phòng mới. `locationId` sẽ được chọn ở ô đầu tiên. */
 const FORM_RONG: RoomPayload = {
@@ -17,7 +18,9 @@ const FORM_RONG: RoomPayload = {
   roomNumber: '',
   roomType: RoomType.COZY,
   capacity: 2,
-  pricePerHour: 120000,
+  // Mặc định phòng nhỏ (35 m² ≤ 40) → giá 3 giờ đầu 200.000; > 40 m² là 300.000.
+  area: 35,
+  pricePerHour: gia3GioDau(35),
   pricePerDay: 850000,
   description: '',
   imageUrls: [],
@@ -113,6 +116,7 @@ export default function AdminRooms(): JSX.Element {
             roomNumber: phong.roomNumber,
             roomType: phong.roomType,
             capacity: phong.capacity,
+            area: phong.area,
             pricePerHour: phong.pricePerHour,
             pricePerDay: phong.pricePerDay,
             description: phong.description ?? '',
@@ -134,6 +138,9 @@ export default function AdminRooms(): JSX.Element {
     }
     if (form.capacity < 1) {
       return 'Số khách tối đa phải ít nhất là 1'
+    }
+    if (form.area < 1 || form.area > 500) {
+      return 'Diện tích phòng phải từ 1 đến 500 m²'
     }
     if (form.pricePerHour <= 0 || form.pricePerDay <= 0) {
       return 'Giá theo giờ và theo ngày phải lớn hơn 0'
@@ -262,7 +269,28 @@ export default function AdminRooms(): JSX.Element {
           </label>
 
           <label className="text-sm font-medium text-stone-700">
-            Giá 1 giờ (VNĐ)
+            Diện tích (m²)
+            <input
+              type="number"
+              min={1}
+              max={500}
+              className="number-vn mt-1 w-full rounded-lg border border-stone-300 px-3 py-2"
+              value={form.area}
+              onChange={(e) => {
+                const area = Number(e.target.value)
+                setForm({
+                  ...form,
+                  area,
+                  // Phòng mới: giá 3 giờ đầu đi theo mặc định 200k/300k theo
+                  // diện tích. Đang sửa phòng có sẵn thì giữ giá Admin đã đặt.
+                  ...(dangSua === null && { pricePerHour: gia3GioDau(area) }),
+                })
+              }}
+            />
+          </label>
+
+          <label className="text-sm font-medium text-stone-700">
+            Giá 3 giờ đầu (VNĐ)
             <input
               type="number"
               min={0}
@@ -376,7 +404,8 @@ export default function AdminRooms(): JSX.Element {
                 <th className="px-4 py-3">Phòng</th>
                 <th className="px-4 py-3">Cơ sở</th>
                 <th className="px-4 py-3 text-right">Khách</th>
-                <th className="px-4 py-3 text-right">Giá giờ</th>
+                <th className="px-4 py-3 text-right">Diện tích</th>
+                <th className="px-4 py-3 text-right">Giá 3h đầu</th>
                 <th className="px-4 py-3 text-right">Giá ngày</th>
                 <th className="px-4 py-3">Trạng thái</th>
                 <th className="px-4 py-3 text-right">Thao tác</th>
@@ -405,6 +434,7 @@ export default function AdminRooms(): JSX.Element {
                   </td>
                   <td className="px-4 py-3 text-stone-600">{phong.locationName}</td>
                   <td className="number-vn px-4 py-3 text-right">{phong.capacity}</td>
+                  <td className="number-vn px-4 py-3 text-right">{phong.area} m²</td>
                   <td className="number-vn px-4 py-3 text-right">{formatVnd(phong.pricePerHour)}</td>
                   <td className="number-vn px-4 py-3 text-right">{formatVnd(phong.pricePerDay)}</td>
                   <td className="px-4 py-3">

@@ -38,6 +38,7 @@ const phongMau = {
   roomNumber: 'A101',
   roomType: RoomType.COZY,
   capacity: 2,
+  area: 35,
   pricePerHour: 90000,
   pricePerDay: 550000,
   ratingAvg: 4.5,

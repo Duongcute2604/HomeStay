@@ -25,7 +25,13 @@ public class Room
     /// <summary>Số khách tối đa phòng chịu được.</summary>
     public int Capacity { get; set; }
 
-    /// <summary>Giá 1 giờ, tính bằng VNĐ.</summary>
+    /// <summary>
+    /// Diện tích phòng (m²) — dùng để phân phòng nhỏ/lớn khi tính tiền theo giờ:
+    /// ≤ 40 m² là phòng nhỏ (giá 3 giờ đầu 200.000), lớn hơn là phòng lớn (300.000).
+    /// </summary>
+    public decimal Area { get; set; }
+
+    /// <summary>Giá TRỌN GÓI cho 3 giờ đầu, tính bằng VNĐ (không còn là giá 1 giờ).</summary>
     public decimal PricePerHour { get; set; }
 
     /// <summary>Giá 1 ngày, tính bằng VNĐ.</summary>

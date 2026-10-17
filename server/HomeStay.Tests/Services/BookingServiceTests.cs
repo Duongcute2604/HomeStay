@@ -82,12 +82,12 @@ public class BookingServiceTests
         await using (db)
         {
             BookingService service = TaoService(db);
-            // 3 giờ × 120.000.
+            // Đúng 3 giờ → chỉ trả giá cơ sở 3 giờ đầu (120.000), không nhân 3 nữa.
             DateTime nhan = DateTime.Now.Date.AddDays(5).AddHours(14);
             BookingResponseDto result = await service.TaoDonAsync(
                 khach.Id, TaoYeuCau(nhan, nhan.AddHours(3), 0), CancellationToken.None);
 
-            Assert.Equal(360000, result.TotalAmount);
+            Assert.Equal(120000, result.TotalAmount);
             Assert.Equal(BookingType.HOUR, result.BookingType);
         }
     }

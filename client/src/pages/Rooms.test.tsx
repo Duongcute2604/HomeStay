@@ -33,6 +33,7 @@ function phongMau(ten: string): RoomSearchItem {
     roomNumber: 'P01',
     roomType: RoomType.COZY,
     capacity: 2,
+    area: 35,
     pricePerHour: 120000,
     pricePerDay: 900000,
     ratingAvg: 4.5,

@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using HomeStay.Enums;
 
 namespace HomeStay.DTOs;
@@ -93,7 +94,14 @@ public class RoomRequest
     /// <summary>Số khách tối đa.</summary>
     public int Capacity { get; set; }
 
-    /// <summary>Giá 1 giờ (VNĐ).</summary>
+    /// <summary>
+    /// Diện tích phòng (m²), tối đa 500. Bắt buộc vì diện tích quyết định
+    /// phòng nhỏ hay lớn → giá 3 giờ đầu là 200.000 hay 300.000.
+    /// </summary>
+    [Range(1, 500, ErrorMessage = "Diện tích phòng phải từ 1 đến 500 m²")]
+    public decimal Area { get; set; }
+
+    /// <summary>Giá TRỌN GÓI cho 3 giờ đầu (VNĐ).</summary>
     public decimal PricePerHour { get; set; }
 
     /// <summary>Giá 1 ngày (VNĐ).</summary>
@@ -131,7 +139,10 @@ public class AdminRoomDto
     /// <summary>Số khách tối đa.</summary>
     public int Capacity { get; set; }
 
-    /// <summary>Giá 1 giờ (VNĐ).</summary>
+    /// <summary>Diện tích phòng (m²).</summary>
+    public decimal Area { get; set; }
+
+    /// <summary>Giá TRỌN GÓI cho 3 giờ đầu (VNĐ).</summary>
     public decimal PricePerHour { get; set; }
 
     /// <summary>Giá 1 ngày (VNĐ).</summary>

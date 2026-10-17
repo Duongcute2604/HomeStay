@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
-import { BookingType, kiemKhoangThoiGian, tinhSoDonVi, uocTinhTien } from './pricing'
+import {
+  BookingType,
+  gia3GioDau,
+  kiemKhoangThoiGian,
+  tinhSoDonVi,
+  uocTinhTien,
+} from './pricing'
 
 /**
  * Test cho công thức ước tính tiền ở giao diện.
@@ -38,7 +44,8 @@ describe('tinhSoDonVi', () => {
 })
 
 describe('uocTinhTien', () => {
-  it('TheoGio_NhanDungDonGiaGio', () => {
+  it('TheoGio_Dung3Gio_ThuTronGoiGiaCoSo', () => {
+    // 3 giờ đầu trọn gói — trước ngày 16/10 test này kỳ vọng 270.000 (3 × 90.000).
     expect(
       uocTinhTien(
         BookingType.HOUR,
@@ -47,7 +54,20 @@ describe('uocTinhTien', () => {
         new Date('2026-10-05T14:00:00'),
         new Date('2026-10-05T17:00:00'),
       ),
-    ).toBe(270000)
+    ).toBe(90000)
+  })
+
+  it('TheoGioVuot3Gio_Cong50NganChoMoiGioVuot', () => {
+    // 5 giờ = giá cơ sở 200.000 + 2 giờ vượt × 50.000 = 300.000.
+    expect(
+      uocTinhTien(
+        BookingType.HOUR,
+        200000,
+        550000,
+        new Date('2026-10-05T14:00:00'),
+        new Date('2026-10-05T19:00:00'),
+      ),
+    ).toBe(300000)
   })
 
   it('TheoNgay_NhanDungDonGiaNgay', () => {
@@ -60,6 +80,22 @@ describe('uocTinhTien', () => {
         new Date('2026-10-07T12:00:00'),
       ),
     ).toBe(1100000)
+  })
+})
+
+describe('gia3GioDau', () => {
+  it('PhongNho_40vuongTroXuong_Gia200Ngan', () => {
+    expect(gia3GioDau(40)).toBe(200000)
+    expect(gia3GioDau(35)).toBe(200000)
+  })
+
+  it('PhongLon_Vuot40_Gia300Ngan', () => {
+    expect(gia3GioDau(41)).toBe(300000)
+    expect(gia3GioDau(55.5)).toBe(300000)
+  })
+
+  it('Bien401_VanLaPhongLon_KhongLamTronVeNho', () => {
+    expect(gia3GioDau(40.1)).toBe(300000)
   })
 })
 
