@@ -1124,3 +1124,53 @@ cache phiếu thu sau khi huỷ, `RoomDetail.tsx` đổi nút ẩn → nút `dis
 - Test nghiệp vụ backend liên quan (đã có, chạy xanh): `TaoDonAsync_...MoPhieuThu...`, `HuyDon_PhuieuThuDaThu_KhongDoiTrangThai`, `DanhDauDaThu_PhieuDaThatBai_TranLoi409`
 - SQL đối chiếu sau huỷ: `HS-261019-4130 | CANCELLED | FAILED | Đơn đã hủy`
 - Ảnh: `buoc27-phieu-thanh-toan-momo-…jpg` · `buoc27-nut-bi-khoa-khong-chon-gio-…jpg` · `buoc27-sau-huy-phi-that-bai-…jpg` · `buoc27-thanh-toan-cua-toi-sau-huy-…jpg` · `buoc27-admin-thanh-toan-…jpg`
+
+## 19. Làm đẹp trang khách bằng hiệu ứng CSS (Bước 28) — 18/10/2026
+
+**Phạm vi:** Trang chủ (`/`) + Trang địa điểm (`/locations`). **Không thêm bất kỳ
+package nào** — mọi hiệu ứng là CSS thuần (keyframes + Tailwind + IntersectionObserver
+bằng API có sẵn của trình duyệt).
+
+**Hiệu ứng đã thêm:**
+
+| Khối | Hiệu ứng |
+|------|-----------|
+| Hero trang chủ | Nền **zoom chậm ken burns** (24s, lặp vô hạn) + badge/tiêu đề/mô tả/thanh tìm kiếm **trồi lên lần lượt** (`anim-fade-up`, delay 0/120/240/360ms) |
+| Thanh tìm kiếm | Nền trắng + `shadow-2xl` + ring amber; nút "Tìm phòng" gradient; **sửa lỗi chữ dropdown** (`text-gray-900` — option `<select>` đang trắng trên nền trắng) |
+| 3 Trải nghiệm · 3 Quy định | Vào màn hình **trồi lên stagger 100ms** (`<FadeIn>` + IntersectionObserver); hover **nâng thẻ + icon nghiêng/zoom**; nền gradient nhẹ; underline gradient dưới tiêu đề |
+| Phòng nổi bật | Card dùng lại `card-phong` (hover zoom ảnh + nâng — trùng DRY với trang `/rooms`); badge "Còn trống" có **chấm xanh nhấp nháy** |
+| Địa điểm | Card `card-phong` + stagger; dòng "Xem chi tiết →" **hiện dần khi hover**; nền "Chưa có ảnh" chuyển gradient |
+| Nút mạng xã hội (footer) | Hover scale 110% + đổ bóng |
+| Truy cập | `@media (prefers-reduced-motion: reduce)` — **tắt toàn bộ animation**, nội dung hiện ngay |
+
+**Kịch bản kiểm thử tay (trình duyệt thật, ảnh chụp trong `.openchamber/screenshots/`):**
+
+| STT | Kịch bản | Kỳ vọng | Thực tế | Kết quả |
+|-----|----------|---------|---------|---------|
+| 19.1 | Mở `/` (desktop) | Hero hiện dần từng lớp; dropdown "Chi nhánh" đọc rõ | Ảnh `buoc28-trang-chu-moi` + `buoc28-the-trai-nghiem-phong-noi-bat`; inspect `<select>`: `color: rgb(17,24,39)` = gray-900 | ✅ |
+| 19.2 | Cuộn trang chủ hết khung | Khối nào vừa vào màn hình cũng trồi lên, đủ 3 thẻ mỗi khối | Ảnh `buoc28-trang-chu-sau-cuon` (đang transition) + `buoc28-kh-i-giua-settled` + `buoc28-trang-chu-on-dinh` (đã settle, footer bình thường) | ✅ |
+| 19.3 | Mở trực tiếp URL `/locations` (không qua menu) | Đủ 3 thẻ, stagger lần lượt, underline gradient | DOM snapshot: 3 link `/locations/0..2` đủ bounds; ảnh `buoc28-dia-diem-lan-3` | ✅ |
+| 19.4 | Mở `/` ở chế độ mobile 390×844 | Hero + search bar xếp dọc, không tràn | Ảnh `buoc28-trang-chu-mobile` | ✅ |
+
+### Bằng chứng
+
+- Frontend: `tsc -b` 0 lỗi · `vitest run` **31/31 file · 312/312 test pass** (thêm 4 test `FadeIn.test.tsx`) · `vite build` sạch
+- **Bug phát hiện & sửa khi build:** `@apply duration-600` trong `.fade-in` là class
+  không có trong theme Tailwind → `vite build` FAIL dù `vite dev` vẫn chạy (bài học 109)
+- Ảnh: `buoc28-trang-chu-moi` · `buoc28-trang-chu-sau-cuon` · `buoc28-kh-i-giua-settled` · `buoc28-trang-chu-on-dinh` · `buoc28-trang-chu-mobile` · `buoc28-dia-diem-lan-3`
+
+### Giải thích bằng lời (chuẩn bị bảo vệ)
+
+1. **Hiệu ứng "trồi lên" chạy thế nào?** Mỗi khối được bọc `<FadeIn>` — component duy
+   nhất thêm class `visible` khi khối vào màn hình (IntersectionObserver, API có sẵn
+   của trình duyệt). Việc chuyển động do CSS `.fade-in → .fade-in.visible` xử lý —
+   không thư viện hiệu ứng nào được cài thêm.
+2. **Vì sao có `delay` 100ms tăng dần?** Để các thẻ trong một lưới vào màn hình **lần
+   lượt** thay vì cùng lúc — `delay` dịch thành `transitionDelay` của CSS, giá trị do
+   chỉ số thẻ trong `map` quyết định.
+3. **Nếu trình duyệt thiếu IntersectionObserver thì sao?** Component hiện nội dung
+   ngay lập tức (test `KhongCoIntersectionObserver_VanHienNgay_KhongBiAnMai` bảo vệ
+   nhánh này) — không bao giờ để nội dung bị ẩn vĩnh viễn.
+4. **Ken burns hoạt động ra sao?** Ảnh nền hero là một div tuyệt đối riêng + keyframe
+   `scale(1) → scale(1.08)` trong 24s, lặp `alternate` — tách khỏi lớp overlay tối và
+   lớp nội dung để transform không kéo theo chữ.

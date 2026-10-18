@@ -2705,3 +2705,30 @@ không chỉ query của bảng chính. Thêm 2 dòng
 > 3. Viết **test tái hiện bug** bằng cách cho mock trả dữ liệu cũ → sau khi thao tác →
 >    trả dữ liệu mới, rồi assert UI đã đổi. Test này **phải FAIL khi bỏ fix** — cách duy
 >    nhất chứng minh test có sức bắt lỗi, không phải test "tự nhiên xanh".
+
+---
+
+## 109. `@apply duration-600` — class không có thật trong theme Tailwind, build mới nổ dù code cũ
+
+**Ngày:** 18/10/2026 · **Vị trí:** `client/src/index.css` → `.fade-in`
+
+**Sai ở đâu:** thêm hiệu ứng cho trang khách, chạy `vite build` để đóng gói → build
+FAIL tại `index.css:94`: *"The `duration-600` class does not exist"*.
+
+**Vì sao trước đây không ai thấy:** dòng `@apply … duration-600` nằm trong `.fade-in` —
+một class **không component nào dùng tới** (khai báo rồi để không từ Bước 19). Tailwind
+3.4 chỉ validate `@apply` lúc **build CSS**, còn `vite dev` vẫn chạy được nên trang vẫn
+hiện bình thường khi phát triển. Nghĩa là: **CSS "chết" vẫn được kiểm khi build** — và
+lỗi nằm ở code cũ, không phải code vừa viết.
+
+**Cách sửa:** `duration-600` không có trong theme mặc định Tailwind (chỉ có 75/100/150/
+200/300/500/700/1000) → đổi sang `duration-500`. Build lại sạch.
+
+> **Quy tắc tránh lặp:**
+> 1. **`vite dev` xanh ≠ `vite build` xanh.** Mọi thay đổi CSS phải qua `vite build`
+>    thật trước khi kết luận "sạch" (AGENTS.md mục 10).
+> 2. Class dùng trong `@apply` PHẢI tồn tại trong theme — kiểm bằng docs Tailwind hoặc
+>    dùng arbitrary value `duration-[600ms]` nếu thật sự muốn số lạ.
+> 3. Class khai báo mà chưa dùng vẫn phải **build thử trọn dự án** định kỳ — đó là cách
+>    duy nhất phát hiện "lô cốt" kiểu này trước khi nó nổ vào lúc chốt hạn.
+

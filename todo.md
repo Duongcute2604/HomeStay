@@ -1045,6 +1045,39 @@ Lưu ý mẫu vẫn ghi **"Kiến trúc hệ thống StayEasy"** — tên cũ, p
 | Bug phat hien & sua | `xuLyHuy` quen invalidate cache react-query cua phieu thu → them 2 `invalidateQueries`; test `HuyDon_TaiLaiPhieuThu_KhongConHienChuaThanhToan` **xac nhan bat duoc bug** (revert fix → FAIL, lap lai → PASS) |
 | Anh chup | `buoc27-phieu-thanh-toan-momo` · `buoc27-nut-bi-khoa-khong-chon-gio` · `buoc27-sau-huy-phi-that-bai` · `buoc27-thanh-toan-cua-toi-sau-huy` · `buoc27-admin-thanh-toan` |
 
+### [x] BƯỚC 28 — Làm đẹp trang khách bằng hiệu ứng CSS (18/10) · **XONG 18/10/2026**
+
+> Bối cảnh: khách gửi ảnh 2 trang (Trang chủ, Địa điểm) nói "nhìn tạm được nhưng
+> thêm hiệu ứng vào cho đẹp". Yêu cầu: **CSS/Tailwind thuần — không thêm package
+> nào** (đúng ghim phiên bản AGENTS mục 1.1/1.3).
+
+- **Mục tiêu đo được:**
+  1. Trang chủ: hero có nền **zoom chậm (ken burns)** + badge/tiêu đề/thanh tìm
+     kiếm **trồi lên lần lượt**; 3 thẻ trải nghiệm & quy định có **hover nâng +
+     icon nghiêng/zoom**; thẻ phòng nổi bật **zoom ảnh khi hover** (`card-phong`)
+  2. Trang Địa điểm: card **zoom ảnh + nâng khi hover**, vào màn hình **trồi lên
+     lần lượt** (stagger 100ms), có dòng "Xem chi tiết →" hiện dần khi hover
+  3. Sửa lỗi hiển thị: dropdown "Chi nhánh" của thanh tìm kiếm **chữ trắng trên
+     nền trắng** (thiếu `text-gray-900`)
+  4. Tôn trọng **`prefers-reduced-motion`**: tắt toàn bộ animation khi hệ thống
+     yêu cầu giảm chuyển động
+  5. Component chung `FadeIn` (IntersectionObserver) có **unit test ≥ 3 case**:
+     vừa render chưa hiện · cuộn tới thì hiện · không có IntersectionObserver
+     vẫn hiện (không bị ẩn mãi)
+- **Không làm (YAGNI):** không thêm framer-motion/animation library · không sửa
+  trang admin · không đổi nội dung/chữ (test text hiện có phải xanh nguyên)
+- **Bằng chứng:** `tsc -b` 0 · `vitest run` xanh (test cũ + test mới) ·
+  `vite build` sạch · chạy tay 3 kịch bản trên trình duyệt + ảnh chụp ·
+  commit riêng 1 chức năng
+
+**Kết quả (18/10/2026):**
+| Hạng mục | Bằng chứng |
+|---|---|
+| Frontend | `tsc -b` 0 lỗi · `vitest run` **312/312** (31/31 file, thêm 4 test `FadeIn.test.tsx`) · `vite build` sạch |
+| Test tay (muc 19 KIEM_THU_TAY) | **4/4 ✓** — trang chu desktop + mobile 390px + trang Dia diem mo URL truc tiep + cuon xuat hien tung the |
+| Bug phat hien & sua | (1) dropdown "Chi nhanh" chu trang tren nen trang → them `text-gray-900`; (2) `@apply duration-600` khong co trong theme Tailwind → `vite build` FAIL → doi `duration-500` (bai hoc 109) |
+| Anh chup | `buoc28-trang-chu-moi` · `buoc28-trang-chu-sau-cuon` · `buoc28-kh-i-giua-settled` · `buoc28-trang-chu-on-dinh` · `buoc28-trang-chu-mobile` · `buoc28-dia-diem-lan-3` |
+
 ## Danh sách cắt được (nếu trượt tiến độ)
 
 | Thứ tự | Cắt gì | Bước liên quan |
