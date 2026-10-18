@@ -52,6 +52,18 @@ export const NHAN_TRANG_THAI_PHONG: Record<RoomStatus, string> = {
   [RoomStatus.MAINTENANCE]: 'Bảo trì',
 }
 
+/**
+ * 5 trạng thái theo đúng thứ tự vòng đời — dùng cho bộ chọn trạng thái
+ * (bảng quản trị, popup Sơ đồ phòng) và chú giải, khỏi khai báo lại mỗi chỗ.
+ */
+export const DS_TRANG_THAI_PHONG: RoomStatus[] = [
+  RoomStatus.AVAILABLE,
+  RoomStatus.BOOKED,
+  RoomStatus.OCCUPIED,
+  RoomStatus.CLEANING,
+  RoomStatus.MAINTENANCE,
+]
+
 /** Tóm tắt một phòng trong trang chi tiết địa điểm. Không có `Id`. */
 export interface RoomSummary {
   name: string

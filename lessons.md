@@ -2653,3 +2653,29 @@ chuỗi xây từ `[char]0xXXXX` khi shell làm hỏng encoding.
 
 > **Quy tắc tránh lặp:** sau mỗi lần AI sửa file text, quét ký tự CJK/Hàn/Nhật lọt
 > vào nội dung tiếng Việt (comment, câu thông báo, docs) trước khi commit.
+## 107. So sánh chuỗi tiếng Việt trong SQL qua shell = kết quả sai 100% (gần báo "seed hỏng")
+
+**Ngày:** 18/10/2026 · **Vị trí:** lệnh kiểm chứng seed `docker exec ... mysql -e "SELECT ...
+SUM(a.Name = 'Bếp chung') ..."`
+
+**Sai ở đâu:** sau khi seed xong, mình kiểm luật tiện nghi bằng truy vấn SQL so sánh
+`a.Name = 'Bếp chung'` (chuỗi tiếng Việt) gửi từ PowerShell qua `docker exec` sang
+mysql client. Mọi dòng trả về **0 hết cả 12 phòng** — mình suýt kết luận seed gán
+tiện nghi sai sự thật và đi sửa code seed đã đúng.
+
+**Vì sao sai:** chuỗi PowerShell/console encode theo một kiểu chữ, docker exec truyền
+theo kiểu khác, mysql client so sánh theo thứ ba → 3 bên "nhìn" cùng một câu nhưng
+khác bytes → `=` luôn sai. Dấu hiệu nhận biết: **cùng lệnh đó**, output bảng `Amenities`
+đã hiện `WiFi mi?n ph?` (mojibake) ngay trên console — cờ đỏ đã bật ngay lúc đó nhưng
+mình chỉ đọc phần số.
+
+**Cách sửa:** kiểm bằng **khóa số (ID)** thay vì chuỗi: `SELECT Id, CHAR_LENGTH(Name)`
+để xác định tên, và `GROUP_CONCAT(ra.AmenityId)` để xác định liên kết phòng–tiện nghi.
+Khi đó kết quả khớp 100% bảng thiết kế (phòng nhỏ có `9`, phòng lớn có `5,6`).
+
+> **Quy tắc tránh lặp:**
+> 1. **Không bao giờ so sánh chuỗi tiếng Việt trong SQL khi truy vấn đi qua shell**
+>    (PowerShell → docker/cmd → mysql/sqlcmd). Dùng ID, HEX() hoặc CHAR_LENGTH().
+> 2. Trước khi tin kết quả "tất cả đều 0/sai", nhìn lại output **bản ghi tham chiếu**
+>    trong cùng lệnh — nếu nó cũng lỗi mã hóa thì nguyên nhân nằm ở đường truyền,
+>    không phải dữ liệu.

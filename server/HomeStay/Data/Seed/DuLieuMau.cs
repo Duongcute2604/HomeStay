@@ -87,7 +87,7 @@ public static class DuLieuMau
         ];
     }
 
-    /// <summary>8 tiện nghi dùng chung — thứ tự là chỉ số trong <see cref="TaoLienKetTienNghi"/>.</summary>
+    /// <summary>9 tiện nghi dùng chung — thứ tự là chỉ số trong <see cref="TaoLienKetTienNghi"/>.</summary>
     public static List<Amenity> TaoTienNghi()
     {
         return
@@ -99,7 +99,9 @@ public static class DuLieuMau
             new Amenity { Name = "Bồn tắm nước nóng", Icon = "hot-tub", Description = "Bồn tắm thư giã" },
             new Amenity { Name = "Bếp chung", Icon = "kitchen", Description = "Dụng cụ nấu ăn đầy đủ" },
             new Amenity { Name = "Bàn làm việc", Icon = "desk", Description = "Có ổ cắm và đèn học" },
-            new Amenity { Name = "Chỗ đỗ xe máy", Icon = "parking", Description = "Đỗ xe miễn phí trong sân" }
+            new Amenity { Name = "Chỗ đỗ xe máy", Icon = "parking", Description = "Đỗ xe miễn phí trong sân" },
+            // Máy chiếu chỉ gán cho phòng nhỏ (≤ 40 m²) — xem TienNghiTheoPhong.
+            new Amenity { Name = "Máy chiếu", Icon = "projector", Description = "Màn hình lớn xem phim trong phòng" }
         ];
     }
 
@@ -308,21 +310,35 @@ public static class DuLieuMau
         return anhList;
     }
 
-    /// <summary>Số chỉ số tiện nghi của từng phòng, theo đúng thứ tự phòng trong <see cref="TaoPhong"/>.</summary>
+    /// <summary>
+    /// Số chỉ số tiện nghi của từng phòng, theo đúng thứ tự phòng trong <see cref="TaoPhong"/>.
+    ///
+    /// Luật nghiệp vụ (chốt 18/10): phòng LỚN (&gt; 40 m²) luôn có Bếp chung (6)
+    /// và Bồn tắm nước nóng (5); phòng NHỎ (≤ 40 m²) luôn có Máy chiếu (9).
+    /// Các tiện nghi còn lại (1–4, 7, 8) gán tùy từng phòng để danh sách không
+    /// giống hệt nhau. Test <c>SeedDataTests</c> bắt sai luật này.
+    /// </summary>
     private static readonly int[][] TienNghiTheoPhong =
     [
-        [1, 2, 3, 4, 8],
-        [1, 2, 3, 4, 8],
-        [1, 2, 3, 4, 5, 8],
-        [1, 2, 3, 4, 6, 7, 8],
-        [1, 2, 3, 4, 5, 8],
-        [1, 2, 3, 4, 8],
-        [1, 2, 3, 4, 6, 7, 8],
-        [1, 2, 3, 4, 5, 7, 8],
-        [1, 2, 3, 4, 8],
-        [1, 2, 3, 4, 5, 7, 8],
-        [1, 2, 3, 4, 6, 7, 8],
-        [1, 2, 3, 4, 5, 7, 8]
+        // A101 (35 m²) · A102 (34 m²) · A201 (40 m²) — phòng nhỏ
+        [1, 2, 3, 4, 8, 9],
+        [1, 2, 3, 4, 7, 9],
+        [1, 2, 3, 4, 8, 9],
+        // A301 (55 m²) — phòng lớn: bếp + bồn tắm
+        [1, 2, 3, 4, 5, 6, 7, 8],
+        // A401 (32 m²) — phòng nhỏ
+        [1, 2, 3, 4, 7, 9],
+        // B101 (38 m²) · B102 (36 m²) — phòng nhỏ
+        [1, 2, 3, 4, 8, 9],
+        [1, 2, 3, 4, 7, 9],
+        // B201 (50 m²) · B301 (42 m²) — phòng lớn
+        [1, 2, 3, 4, 5, 6, 7, 8],
+        [1, 2, 3, 4, 5, 6, 8],
+        // C101 (33 m²) — phòng nhỏ
+        [1, 2, 3, 4, 7, 9],
+        // C102 (41 m²) · C201 (52 m²) — phòng lớn
+        [1, 2, 3, 4, 5, 6, 7, 8],
+        [1, 2, 3, 4, 5, 6, 8]
     ];
 
     /// <summary>Nối phòng với tiện nghi. Mỗi phòng có tiện nghi chung và vài tiện nghi riêng theo loại phòng.</summary>

@@ -1006,6 +1006,20 @@ Lưu ý mẫu vẫn ghi **"Kiến trúc hệ thống StayEasy"** — tên cũ, p
 - **Tài liệu:** `docs/NGUON_ANH.md` viết lại (bảng 12 bộ ảnh + giấy phép + 4 nguồn đã thử) · `KIEM_THU_TAY.md` mục 15 (13 kịch bản) · `BAO_CAO_TIEN_DO.md` dòng 25 · `lessons.md` mục 98–100
 - **Bài học:** xem `lessons.md` mục 98–100 — kho ảnh stock không có quan hệ "cùng chủ thể"; dữ liệu mẫu phải tham chiếu bằng khóa kinh doanh chứ không bằng vị trí
 
+### [x] BƯỚC 26 — Sơ đồ phòng Admin theo khu vực + quy tắc tiện nghi theo diện tích (18/10) · **XONG 18/10/2026**
+
+- **Mục tiêu đo được:**
+  1. Trang Phòng có 2 chế độ xem **Sơ đồ | Bảng** (mặc định Sơ đồ); sơ đồ gộp phòng theo **Cơ sở**, **5 màu = 5 trạng thái** (trống · đã đặt · đang ở · dọn dẹp · bảo trì) kèm chú giải, mỗi ô hiện số phòng + tên phòng
+  2. Bấm ô → popup: **ảnh phòng bấm đổi được** (1 ảnh lớn + thumbnail) + số liệu (diện tích, sức chứa, giá 3h đầu, giá ngày) + **thẻ tiện nghi** + **5 nút đổi trạng thái ngay trong popup**
+  3. Quy tắc seed tiện nghi theo diện tích: **> 40 m² → có Bếp chung + Bồn tắm nước nóng**; **≤ 40 m² → có Máy chiếu** (tiện nghi mới, thêm vào danh mục); còn lại tùy từng phòng
+- **Bằng chứng bắt buộc:**
+  - `dotnet test` xanh với ≥ 2 test mới: `SeedAsync_PhangLonHon40m2_DeuCoBepVaBonTam` · `SeedAsync_PhangNhoHonHoacBang40m2_DeuCoMayChieu`
+  - `vitest` xanh với `AdminRoomMap.test.tsx` ≥ 4 test: nhóm theo cơ sở · màu theo trạng thái · popup hiện ảnh+tiện nghi+giá · bấm nút trạng thái gọi đúng callback
+  - Chạy tay 3 kịch bản, ghi `docs/KIEM_THU_TAY.md` mục 17
+  - `dotnet build` 0/0 · `tsc -b` + `vite build` sạch
+- **Không làm (YAGNI):** hiện "đơn sắp tới" trong popup (cần API mới — chưa yêu cầu) · upload ảnh · kéo thả phòng · đổi backend DTO (đã đủ `Images` + `AmenityNames` + `LocationName`)
+- **Lưu ý vận hành:** `SeedAsync` chỉ chạy khi `Users` rỗng → phải **DROP DATABASE** rồi khởi động lại backend để seed tiện nghi mới vào CSDL dev
+
 ## Danh sách cắt được (nếu trượt tiến độ)
 
 | Thứ tự | Cắt gì | Bước liên quan |

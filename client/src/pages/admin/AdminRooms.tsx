@@ -4,10 +4,18 @@ import { useState } from 'react'
 import { layThongBaoLoi } from '../../api/client'
 import Button from '../../components/common/Button'
 import FormMessage from '../../components/common/FormMessage'
+import RoomMap from '../../components/admin/RoomMap'
+import RoomMapModal from '../../components/admin/RoomMapModal'
 import { adminService } from '../../services/adminService'
 import { useToastStore } from '../../store/toastStore'
 import type { AdminRoom, Amenity, RoomPayload } from '../../types/admin'
-import { NHAN_LOAI_PHONG, NHAN_TRANG_THAI_PHONG, RoomStatus, RoomType } from '../../types/location'
+import {
+  DS_TRANG_THAI_PHONG,
+  NHAN_LOAI_PHONG,
+  NHAN_TRANG_THAI_PHONG,
+  RoomStatus,
+  RoomType,
+} from '../../types/location'
 import { formatVnd } from '../../utils/format'
 import { gia3GioDau } from '../../utils/pricing'
 
@@ -27,25 +35,22 @@ const FORM_RONG: RoomPayload = {
   amenityIds: [],
 }
 
-const TRANG_THAI: RoomStatus[] = [
-  RoomStatus.AVAILABLE,
-  RoomStatus.BOOKED,
-  RoomStatus.OCCUPIED,
-  RoomStatus.CLEANING,
-  RoomStatus.MAINTENANCE,
-]
-
 /**
  * Trang quản lý phòng (Bước 12).
  *
  * Ảnh phòng nhập bằng đường dẫn tới file trong `public/images`, không upload
  * lên máy chủ. Đồ án này không có bước lưu trữ tệp; nếu sau này cần upload thật
  * thì thay chỗ nhập này, còn phần còn lại của trang không phải sửa.
+ *
+ * Có 2 chế độ xem (Bước 26): **Sơ đồ** — quét nhanh trạng thái từng phòng theo
+ * cơ sở; **Bảng** — thao tác hàng loạt (sửa giá, xoá nhiều).
  */
 export default function AdminRooms(): JSX.Element {
   const queryClient = useQueryClient()
   const themToast = useToastStore((s) => s.themToast)
 
+  const [cheDoXem, setCheDoXem] = useState<'so-do' | 'bang'>('so-do')
+  const [phongDangXem, setPhongDangXem] = useState<number | null>(null)
   const [dangMoForm, setDangMoForm] = useState(false)
   const [dangSua, setDangSua] = useState<AdminRoom | null>(null)
   const [form, setForm] = useState<RoomPayload>(FORM_RONG)
@@ -191,6 +196,11 @@ export default function AdminRooms(): JSX.Element {
 
   const danhSach = data ?? []
 
+  // Tra lại theo id trong danh sách MỚI nhất: sau khi đổi trạng thái, query
+  // được invalidate và refetch — popup tự hiển thị trạng thái mới mà không cần
+  // tự cập nhật state (state chỉ giữ "đang xem phòng nào").
+  const phongTrongPopup = danhSach.find((phong) => phong.id === phongDangXem) ?? null
+
   return (
     <section>
       <header className="flex flex-wrap items-center justify-between gap-3">
@@ -198,7 +208,39 @@ export default function AdminRooms(): JSX.Element {
           <h1 className="text-2xl font-bold text-stone-800">Phòng</h1>
           <p className="text-sm text-stone-500">Tổng {danhSach.length} phòng trong hệ thống</p>
         </div>
-        <Button onClick={() => moForm(null)}>Thêm phòng</Button>
+        <div className="flex items-center gap-3">
+          <div
+            className="flex rounded-lg border border-stone-300 p-1"
+            role="group"
+            aria-label="Chế độ xem"
+          >
+            <button
+              type="button"
+              aria-pressed={cheDoXem === 'so-do'}
+              onClick={() => setCheDoXem('so-do')}
+              className={
+                cheDoXem === 'so-do'
+                  ? 'rounded-md bg-amber-500 px-3 py-1.5 text-sm font-medium text-white'
+                  : 'rounded-md px-3 py-1.5 text-sm text-stone-600 hover:bg-stone-100'
+              }
+            >
+              Sơ đồ
+            </button>
+            <button
+              type="button"
+              aria-pressed={cheDoXem === 'bang'}
+              onClick={() => setCheDoXem('bang')}
+              className={
+                cheDoXem === 'bang'
+                  ? 'rounded-md bg-amber-500 px-3 py-1.5 text-sm font-medium text-white'
+                  : 'rounded-md px-3 py-1.5 text-sm text-stone-600 hover:bg-stone-100'
+              }
+            >
+              Bảng
+            </button>
+          </div>
+          <Button onClick={() => moForm(null)}>Thêm phòng</Button>
+        </div>
       </header>
 
       {dangMoForm && (
@@ -395,6 +437,8 @@ export default function AdminRooms(): JSX.Element {
         <p className="card mt-5 p-6 text-center text-sm text-stone-500">
           Chưa có phòng nào. Bấm "Thêm phòng" để bắt đầu.
         </p>
+      ) : cheDoXem === 'so-do' ? (
+        <RoomMap danhSach={danhSach} onChonPhong={(phong) => setPhongDangXem(phong.id)} />
       ) : (
         <div className="card-phong mt-5 overflow-x-auto">
           <table className="w-full min-w-[900px] text-sm">
@@ -448,7 +492,7 @@ export default function AdminRooms(): JSX.Element {
                         })
                       }
                     >
-                      {TRANG_THAI.map((tt) => (
+                      {DS_TRANG_THAI_PHONG.map((tt) => (
                         <option key={tt} value={tt}>
                           {NHAN_TRANG_THAI_PHONG[tt]}
                         </option>
@@ -478,6 +522,20 @@ export default function AdminRooms(): JSX.Element {
             </tbody>
           </table>
         </div>
+      )}
+
+      {phongTrongPopup !== null && (
+        <RoomMapModal
+          phong={phongTrongPopup}
+          onDoiTrangThai={(trangThai) =>
+            doiTrangThai.mutate({ id: phongTrongPopup.id, status: trangThai })
+          }
+          onSua={() => {
+            setPhongDangXem(null)
+            moForm(phongTrongPopup)
+          }}
+          onDong={() => setPhongDangXem(null)}
+        />
       )}
 
       {(xoa.isError || doiTrangThai.isError) && (

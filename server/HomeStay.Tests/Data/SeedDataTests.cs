@@ -32,7 +32,7 @@ public class SeedDataTests
         Assert.Equal(4, await db.Users.CountAsync());
         Assert.Equal(3, await db.Locations.CountAsync());
         Assert.Equal(SoPhong, await db.Rooms.CountAsync());
-        Assert.Equal(8, await db.Amenities.CountAsync());
+        Assert.Equal(9, await db.Amenities.CountAsync());
         Assert.Equal(SoPhong * SoAnhMoiPhong, await db.RoomImages.CountAsync());
         Assert.Equal(15, await db.Bookings.CountAsync());
         Assert.Equal(6, await db.Reviews.CountAsync());
@@ -327,6 +327,60 @@ public class SeedDataTests
         Assert.All(
             lienKetList.GroupBy(x => x.RoomId),
             x => Assert.True(x.Count() >= 5, $"Phòng chỉ có {x.Count()} tiện nghi."));
+    }
+
+    /// <summary>
+    /// Luật seed 18/10 — dữ liệu mẫu phải phản ánh quy tắc kinh doanh:
+    /// phòng lớn (&gt; 40 m²) luôn có Bếp chung + Bồn tắm nước nóng,
+    /// phòng nhỏ (≤ 40 m²) luôn có Máy chiếu và không có hai thứ kia.
+    /// Sơ đồ phòng Admin hiển thị đúng tiện nghi từ chính dữ liệu này.
+    /// </summary>
+    [Fact]
+    public async Task SeedAsync_PhongLonHon40m2_DeuCoBepVaBonTam()
+    {
+        await using HomeStayDbContext db = TestDbContextFactory.Create();
+        await SeedData.SeedAsync(db, CancellationToken.None);
+
+        List<RoomAmenity> lienKetPhongLon = await db.RoomAmenities.AsNoTracking()
+            .Include(x => x.Room)
+            .Include(x => x.Amenity)
+            .Where(x => x.Room.Area > 40)
+            .ToListAsync();
+
+        Assert.NotEmpty(lienKetPhongLon);
+
+        foreach (IGrouping<int, RoomAmenity> phong in lienKetPhongLon.GroupBy(x => x.RoomId))
+        {
+            string[] tenTienNghi = phong.Select(x => x.Amenity.Name).ToArray();
+
+            Assert.Contains("Bếp chung", tenTienNghi);
+            Assert.Contains("Bồn tắm nước nóng", tenTienNghi);
+            Assert.DoesNotContain("Máy chiếu", tenTienNghi);
+        }
+    }
+
+    [Fact]
+    public async Task SeedAsync_PhongNhoHonHoacBang40m2_DeuCoMayChieu()
+    {
+        await using HomeStayDbContext db = TestDbContextFactory.Create();
+        await SeedData.SeedAsync(db, CancellationToken.None);
+
+        List<RoomAmenity> lienKetPhongNho = await db.RoomAmenities.AsNoTracking()
+            .Include(x => x.Room)
+            .Include(x => x.Amenity)
+            .Where(x => x.Room.Area <= 40)
+            .ToListAsync();
+
+        Assert.NotEmpty(lienKetPhongNho);
+
+        foreach (IGrouping<int, RoomAmenity> phong in lienKetPhongNho.GroupBy(x => x.RoomId))
+        {
+            string[] tenTienNghi = phong.Select(x => x.Amenity.Name).ToArray();
+
+            Assert.Contains("Máy chiếu", tenTienNghi);
+            Assert.DoesNotContain("Bếp chung", tenTienNghi);
+            Assert.DoesNotContain("Bồn tắm nước nóng", tenTienNghi);
+        }
     }
 
     [Fact]

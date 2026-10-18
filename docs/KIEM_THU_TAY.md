@@ -1025,3 +1025,50 @@ Công thức mới: giờ 1–3 = giá trọn gói (≤ 40 m² → 200.000 ₫, 
 - Backend: `dotnet build --no-incremental` 0 error 0 warning · `dotnet test` **425/425 pass**
 - Frontend: `tsc -b` 0 lỗi · `vitest run` **294/294 pass** · `vite build` sạch
 - Chạy thật: MySQL Docker (migration + seed), backend 5080, Vite 5173 — 10/10 kiểm chứng bằng trình duyệt
+
+---
+
+## 17. Sơ đồ phòng Admin + tiện nghi theo diện tích (Bước 26) — 18/10/2026
+
+**Phạm vi:** trang `/admin/rooms` có 2 chế độ xem (Sơ đồ | Bảng), sơ đồ gộp phòng
+theo cơ sở với 5 màu = 5 trạng thái, popup chi tiết (ảnh + số liệu + tiện nghi +
+đổi trạng thái nhanh), và seed tiện nghi theo quy tắc: phòng > 40 m² có Bếp +
+Bồn tắm, phòng ≤ 40 m² có Máy chiếu.
+
+### Kịch bản 1 — Happy path
+
+| # | Kịch bản | Kỳ vọng | Thực tế | Kết quả |
+|---|----------|---------|---------|---------|
+| 17.1 | Vào thẳng URL `/admin/rooms` (không qua menu) | Mặc định hiện Sơ đồ: chú giải 5 màu + nhóm theo cơ sở | Legend `Còn trống (7) · Đã được đặt (2) · Đang có khách (1) · Đang dọn dẹp (1) · Bảo trì (1)` = 12; 3 khu: Hưng Yên 5 · Đà Lạt 4 · Hội An 3 | ✅ |
+| 17.2 | Bấm ô **A301** (phòng lớn 55 m²) | Popup hiện 4 ảnh + tiện nghi đúng luật phòng lớn | Popup: 4 thumbnail, `55 m² · 2 khách · 300.000 ₫/3h · 1.250.000 ₫/ngày`, tiện nghi **✓ Bồn tắm nước nóng ✓ Bếp chung** (không Máy chiếu) | ✅ |
+| 17.3 | Bấm ô **A101** (phòng nhỏ 35 m²) | Popup hiện đúng luật phòng nhỏ | **✓ Máy chiếu**, không Bếp/Bồn tắm; `35 m² · 200.000 ₫` | ✅ |
+| 17.4 | Bấm thumbnail ảnh 2 trong popup | Ảnh lớn đổi theo | Ảnh lớn src chuyển sang ảnh phụ (test `BamAnhPhu_DoiAnhLonDangXem`) | ✅ |
+
+### Kịch bản 2 — Edge case
+
+| # | Kịch bản | Kỳ vọng | Thực tế | Kết quả |
+|---|----------|---------|---------|---------|
+| 17.5 | Trong popup A101 bấm **"Đang dọn dẹp"** | Badge + ô + chú giải cập nhật ngay, không cần F5 | Legend `Còn trống (7→6) · Đang dọn dẹp (1→2)`; ô A101 đổi nhãn + màu tím; badge popup đổi | ✅ |
+| 17.6 | **F5** sau khi đổi trạng thái | Trạng thái nằm trong DB, tải lại vẫn đúng | Legend vẫn `(6)/(2)`; SQL: `A101 = CLEANING` | ✅ |
+
+### Kịch bản 3 — Bất thường / người dùng khác
+
+| # | Kịch bản | Kỳ vọng | Thực tế | Kết quả |
+|---|----------|---------|---------|---------|
+| 17.7 | Chuyển chế độ **"Bảng"** | Bảng cũ còn nguyên: 12 dòng, dropdown trạng thái, Sửa/Xoá | Đủ 9 cột + 12 dòng, A101 hiển thị "Còn trống" sau khi khôi phục | ✅ |
+| 17.8 | Trong popup bấm **"Sửa phòng"** | Đóng popup, mở form đúng dữ liệu phòng đó | Form "Sửa: Phòng Xuân Hương" · 55 m² · 300000; **9 checkbox tiện nghi** (có "Máy chiếu") | ✅ |
+| 17.9 | Khôi phục A101 về "Còn trống" qua popup | Trở lại đúng seed ban đầu | Legend về `Còn trống (7) · Dọn dẹp (1)` | ✅ |
+
+### Kiểm seed trong CSDL thật (SQL, không chỉ bằng mắt)
+
+| Phòng | Area | Bếp(6) | Bồn tắm(5) | Máy chiếu(9) | Đúng luật |
+|---|---|---|---|---|---|
+| A101 A102 A201 A401 B101 B102 C101 (≤40 m²) | 32–40 | – | – | **có** | ✅ 7/7 |
+| A301 B201 B301 C102 C201 (>40 m²) | 41–55 | **có** | **có** | – | ✅ 5/5 |
+
+### Bằng chứng
+
+- Backend: `dotnet build` 0 error 0 warning · `dotnet test` **427/427 pass** (thêm 2 test quy tắc tiện nghi, sửa 1 test đếm 8 → 9 tiện nghi)
+- Frontend: `tsc -b` 0 lỗi · `vitest run` **302/302 pass** (thêm `RoomMap.test.tsx` 8 test) · `vite build` sạch
+- Chạy thật: DROP + CREATE DATABASE → backend seed lại → 9 tiện nghi, liên kết đúng bảng ID ở trên; trình duyệt 9/9 kiểm chứng
+- Ảnh: `.openchamber/screenshots/so-do-phong-admin-2026-10-18T03-45-07-459.jpg`
