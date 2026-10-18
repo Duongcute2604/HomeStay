@@ -315,4 +315,95 @@ public class BookingServiceTests
             Assert.Equal(ErrorMessages.DatTruocItNhat2Gio, loi.Message);
         }
     }
+
+    // ---------------- Thanh toán khi đặt (Bước 27) ----------------
+
+    [Fact]
+    public async Task TaoDonAsync_ChonPhuongThucMoPhieuThu_PendingDungTienVaPhuongThuc()
+    {
+        var (db, khach, _) = await TaoDbCoSanAsync();
+        await using (db)
+        {
+            BookingService service = TaoService(db);
+            DateTime nhan = DateTime.Now.Date.AddDays(5).AddHours(14);
+            CreateBookingRequest request = TaoYeuCau(nhan, nhan.AddDays(1));
+            request.Method = (int)PaymentMethod.MOMO;
+
+            BookingResponseDto result = await service.TaoDonAsync(
+                khach.Id, request, CancellationToken.None);
+
+            // Đặt phòng phải mở đúng 1 phiếu thu: số tiền chụp từ đơn, trạng thái
+            // chờ thu, phương thức đúng theo lựa chọn của khách.
+            Payment phieu = await db.Payments.SingleAsync();
+            Assert.Equal(result.TotalAmount, phieu.Amount);
+            Assert.Equal(PaymentStatus.PENDING, phieu.Status);
+            Assert.Equal(PaymentMethod.MOMO, phieu.Method);
+        }
+    }
+
+    [Fact]
+    public async Task TaoDonAsync_PhuongThucThanhToanKhongHopLe_Bao400VaKhongTaoGi()
+    {
+        var (db, khach, _) = await TaoDbCoSanAsync();
+        await using (db)
+        {
+            BookingService service = TaoService(db);
+            DateTime nhan = DateTime.Now.Date.AddDays(5).AddHours(14);
+            CreateBookingRequest request = TaoYeuCau(nhan, nhan.AddDays(1));
+            request.Method = 7;
+
+            AppException loi = await Assert.ThrowsAsync<AppException>(() =>
+                service.TaoDonAsync(khach.Id, request, CancellationToken.None));
+
+            // Chặn trước khi chèn: không được để "số 7" lọt vào phiếu thu,
+            // và cũng không tạo đơn mồ côi không phiếu.
+            Assert.Equal(HttpStatusCode.BadRequest, loi.StatusCode);
+            Assert.Equal(0, await db.Bookings.CountAsync());
+            Assert.Equal(0, await db.Payments.CountAsync());
+        }
+    }
+
+    [Fact]
+    public async Task HuyDon_PhuieuThuChuaThu_ChuyenFAILED_GhiSoDonDaHuy()
+    {
+        var (db, khach, _) = await TaoDbCoSanAsync();
+        await using (db)
+        {
+            BookingService service = TaoService(db);
+            DateTime nhan = DateTime.Now.Date.AddDays(5).AddHours(14);
+            BookingResponseDto don = await service.TaoDonAsync(
+                khach.Id, TaoYeuCau(nhan, nhan.AddDays(1)), CancellationToken.None);
+
+            await service.HuyDonAsync(khach.Id, don.Code, null, CancellationToken.None);
+
+            // Phiếu chưa thu phải FAILED — nếu giữ PENDING thì trang "Thanh toán
+            // của tôi" vẫn hiện "còn phải thanh toán" cho một đơn đã huỷ.
+            Payment phieu = await db.Payments.SingleAsync();
+            Assert.Equal(PaymentStatus.FAILED, phieu.Status);
+            Assert.Equal("Đơn đã hủy", phieu.Note);
+        }
+    }
+
+    [Fact]
+    public async Task HuyDon_PhuieuThuDaThu_KhongDoiTrangThai()
+    {
+        var (db, khach, _) = await TaoDbCoSanAsync();
+        await using (db)
+        {
+            BookingService service = TaoService(db);
+            DateTime nhan = DateTime.Now.Date.AddDays(5).AddHours(14);
+            BookingResponseDto don = await service.TaoDonAsync(
+                khach.Id, TaoYeuCau(nhan, nhan.AddDays(1)), CancellationToken.None);
+
+            Payment phieu = await db.Payments.SingleAsync();
+            phieu.Status = PaymentStatus.PAID;
+            await db.SaveChangesAsync();
+
+            await service.HuyDonAsync(khach.Id, don.Code, null, CancellationToken.None);
+
+            // Tiền đã thu thì không được xoá dấu vết ở đây — hoàn tiền Admin
+            // xử lý riêng trên trang Phiếu thu.
+            Assert.Equal(PaymentStatus.PAID, (await db.Payments.SingleAsync()).Status);
+        }
+    }
 }

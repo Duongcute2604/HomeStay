@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { bookingService } from './bookingService'
+import { PaymentMethod } from '../types/payment'
 import { BookingType } from '../utils/pricing'
 
 /**
@@ -65,7 +66,25 @@ describe('bookingService.taoDon', () => {
       guestCount: 2,
       // Ghi chú toàn khoảng trắng thì bỏ — gửi chuỗi rỗng backend sẽ lưu rỗng.
       note: undefined,
+      // Không chọn gì thì gửi tiền mặt — backend mở phiếu thu ngay cùng transaction.
+      method: PaymentMethod.CASH,
     })
+  })
+
+  it('ChonViMoMo_GuiMethodBang1', async () => {
+    mockPost.mockResolvedValue({ data: { success: true, message: 'OK', data: donMau } })
+
+    await bookingService.taoDon({
+      locationIndex: 0,
+      roomIndex: 0,
+      type: BookingType.DAY,
+      checkIn: '2026-10-05T14:00:00',
+      checkOut: '2026-10-07T12:00:00',
+      guestCount: 2,
+      method: PaymentMethod.MOMO,
+    })
+
+    expect(mockPost.mock.calls[0][1].method).toBe(1)
   })
 
   it('TheoGio_TypeBang0', async () => {

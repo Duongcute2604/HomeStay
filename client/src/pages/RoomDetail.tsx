@@ -36,6 +36,10 @@ export default function RoomDetail(): JSX.Element {
     trong: null,
   })
 
+  // Nút đặt phòng chỉ bấm được khi khoảng giờ hợp lệ VÀ phòng còn trống —
+  // nút luôn hiển thị, thiếu điều kiện nào thì disabled kèm lý do ngay bên dưới.
+  const duocTiepTuc = luaChon.hopLe && luaChon.trong === true && luaChon.checkIn !== null && luaChon.checkOut !== null
+
   const { data, isPending, isError, error, refetch } = useQuery({
     queryKey: ['locations'],
     queryFn: () => locationService.layDanhSach(),
@@ -202,24 +206,39 @@ export default function RoomDetail(): JSX.Element {
         onThayDoi={setLuaChon}
       />
 
-      {luaChon.hopLe && luaChon.trong === true && luaChon.checkIn && luaChon.checkOut && (
-        <button
-          type="button"
-          className="btn-primary mt-4 w-full"
-          onClick={() => {
-            const thamSo = new URLSearchParams({
-              loai: luaChon.loai,
-              // Giờ địa phương: trang đặt phòng đọc lại bằng `new Date(chuỗi)`,
-              // chuỗi không ký `Z` mới được hiểu là giờ địa phương. Gửi UTC sẽ
-              // làm trang sau hiển thị lệch mốc giờ với lúc khách vừa chọn.
-              checkIn: luaChon.checkIn ? toLocalIsoString(luaChon.checkIn) : '',
-              checkOut: luaChon.checkOut ? toLocalIsoString(luaChon.checkOut) : '',
-            })
-            navigate(`/booking/${soDiaDiem}/${soPhong}?${thamSo.toString()}`)
-          }}
-        >
-          Tiếp tục đặt phòng
-        </button>
+      {/* Nút LUÔN hiển thị: ẩn nút đi khiến khách tưởng trang lỗi và "không đặt
+          được phòng" (phản hồi 18/10). Sai ở đâu thì disabled + nói rõ ở đó. */}
+      <button
+        type="button"
+        disabled={!duocTiepTuc}
+        onClick={() => {
+          if (!luaChon.checkIn || !luaChon.checkOut) {
+            return
+          }
+          const thamSo = new URLSearchParams({
+            loai: luaChon.loai,
+            // Giờ địa phương: trang đặt phòng đọc lại bằng `new Date(chuỗi)`,
+            // chuỗi không ký `Z` mới được hiểu là giờ địa phương. Gửi UTC sẽ
+            // làm trang sau hiển thị lệch mốc giờ với lúc khách vừa chọn.
+            checkIn: toLocalIsoString(luaChon.checkIn),
+            checkOut: toLocalIsoString(luaChon.checkOut),
+          })
+          navigate(`/booking/${soDiaDiem}/${soPhong}?${thamSo.toString()}`)
+        }}
+        className={
+          duocTiepTuc
+            ? 'btn-primary mt-4 w-full'
+            : 'mt-4 w-full cursor-not-allowed rounded-lg bg-gray-200 px-4 py-2 text-sm font-medium text-gray-500'
+        }
+      >
+        Tiếp tục đặt phòng
+      </button>
+      {!duocTiepTuc && (
+        <p className="mt-1 text-center text-xs text-gray-500">
+          {luaChon.trong === false
+            ? 'Phòng đã có người đặt trong khoảng đã chọn — hãy chọn khoảng giờ khác'
+            : 'Chọn giờ nhận và giờ trả hợp lệ để tiếp tục đặt phòng'}
+        </p>
       )}
 
       {moAnhLon && anhChinh && (

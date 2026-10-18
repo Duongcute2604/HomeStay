@@ -9,6 +9,7 @@ import { locationService } from '../services/locationService'
 import { roomService } from '../services/roomService'
 import { useAuthStore } from '../store/authStore'
 import { RoomStatus, RoomType } from '../types/location'
+import { NHAN_PHUONG_THUC, PaymentMethod } from '../types/payment'
 
 /**
  * Test cho trang đặt phòng.
@@ -194,5 +195,62 @@ describe('Booking - tao don', () => {
     await screen.findByText('Phòng đã có người đặt trong khoảng thời gian này')
     expect(screen.getByRole('button', { name: 'Xác nhận đặt phòng' })).toBeDisabled()
     expect(taoDonMock).not.toHaveBeenCalled()
+  })
+})
+
+describe('Booking - phuong thuc thanh toan (Buoc 27)', () => {
+  const phanHoiTaoDon = {
+    code: 'HS-261005-4821',
+    roomName: 'Phòng Hạnh Phúc',
+    locationName: 'Hưng Yên Ven Biển',
+    bookingType: 1,
+    checkIn: '2026-10-05T14:00:00',
+    checkOut: '2026-10-07T12:00:00',
+    guestCount: 1,
+    totalAmount: 1100000,
+    status: 0,
+    note: null,
+    createdAt: '2026-09-30T10:00:00',
+  }
+
+  it('HienDayDu3PhuongThucCoMoTa', async () => {
+    dungTrangTai(URL_HOP_LE)
+
+    await screen.findByRole('heading', { name: 'Xác nhận đặt phòng' })
+
+    for (const nhan of Object.values(NHAN_PHUONG_THUC)) {
+      expect(screen.getByText(nhan)).toBeInTheDocument()
+    }
+  })
+
+  it('KhongChonGi_GuiTienMatMacDinh', async () => {
+    taoDonMock.mockResolvedValue(phanHoiTaoDon)
+    dungTrangTai(URL_HOP_LE)
+
+    await screen.findByRole('heading', { name: 'Xác nhận đặt phòng' })
+    await screen.findByText('Phòng còn trống trong khoảng đã chọn')
+    fireEvent.click(screen.getByRole('button', { name: 'Xác nhận đặt phòng' }))
+
+    // Tiền mặt là mặc định — khách không chọn gì vẫn mở được phiếu thu.
+    expect(await screen.findByText('Đặt phòng thành công')).toBeInTheDocument()
+    expect(taoDonMock).toHaveBeenCalledWith(
+      expect.objectContaining({ method: PaymentMethod.CASH }),
+    )
+  })
+
+  it('ChonViMoMo_GuiDungMaPhuongThuc', async () => {
+    taoDonMock.mockResolvedValue(phanHoiTaoDon)
+    dungTrangTai(URL_HOP_LE)
+
+    await screen.findByRole('heading', { name: 'Xác nhận đặt phòng' })
+    await screen.findByText('Phòng còn trống trong khoảng đã chọn')
+
+    fireEvent.click(screen.getByLabelText(/Ví MoMo/))
+    fireEvent.click(screen.getByRole('button', { name: 'Xác nhận đặt phòng' }))
+
+    expect(await screen.findByText('Đặt phòng thành công')).toBeInTheDocument()
+    expect(taoDonMock).toHaveBeenCalledWith(
+      expect.objectContaining({ method: PaymentMethod.MOMO }),
+    )
   })
 })

@@ -33,6 +33,13 @@ public class CreateBookingRequest
     /// <summary>Ghi chú của khách, tối đa 500 ký tự, không bắt buộc.</summary>
     [StringLength(500, ErrorMessage = "Ghi chú không được vượt quá 500 ký tự")]
     public string? Note { get; set; }
+
+    /// <summary>
+    /// Phương thức thanh toán khách chọn lúc đặt (0 = tiền mặt, 1 = MoMo, 2 = chuyển
+    /// khoản). Không bắt buộc — thiếu hoặc để mặc định là tiền mặt. Hệ thống chỉ GHI NHẬN
+    /// lựa chọn (mở phiếu thu PENDING), không gọi API cổng thanh toán thật.
+    /// </summary>
+    public int Method { get; set; } = (int)PaymentMethod.CASH;
 }
 
 /// <summary>Đơn vừa tạo xong trả về cho khách.</summary>

@@ -1072,3 +1072,55 @@ Bồn tắm, phòng ≤ 40 m² có Máy chiếu.
 - Frontend: `tsc -b` 0 lỗi · `vitest run` **302/302 pass** (thêm `RoomMap.test.tsx` 8 test) · `vite build` sạch
 - Chạy thật: DROP + CREATE DATABASE → backend seed lại → 9 tiện nghi, liên kết đúng bảng ID ở trên; trình duyệt 9/9 kiểm chứng
 - Ảnh: `.openchamber/screenshots/so-do-phong-admin-2026-10-18T03-45-07-459.jpg`
+
+## 18. Thanh toán khi đặt phòng (Bước 27) — 18/10/2026
+
+**Phạm vi:** chọn phương thức thanh toán ngay lúc đặt (Tiền mặt · Ví MoMo · Chuyển
+khoản), backend mở **phiếu thu PENDING cùng transaction** với đơn, huỷ đơn thì phiếu
+chưa thu chuyển **FAILED**, và sửa hiểu nhầm "không đặt được phòng": nút "Tiếp tục đặt
+phòng" **luôn hiển thị**, sai điều kiện thì `disabled` kèm lý do.
+
+**Giải thích bằng lời (GVHD sẽ hỏi):** request `POST /api/bookings` mang thêm `method`.
+`BookingService.TaoDonAsync` (1) validate `Enum.IsDefined(PaymentMethod)` → 400 nếu số
+lạ, (2) trong transaction SERIALIZABLE chèn `Booking` + `BookingStatusHistory` +
+`Payment(Amount = don.TotalAmount, Status = PENDING)` — **một `SaveChanges` cho cả ba**,
+nên không bao giờ có đơn không phiếu. `HuDonAsync` khi thấy `Payment.Status == PENDING`
+thì chuyển `FAILED` + ghi chú "Đơn đã hủy"; phiếu `PAID` giữ nguyên (hoàn tiền là thao tác
+riêng của Admin). Giao diện `Booking.tsx` gửi `method`, `MyBookingDetail.tsx` invalidate
+cache phiếu thu sau khi huỷ, `RoomDetail.tsx` đổi nút ẩn → nút `disabled` + dòng lý do.
+
+### Kịch bản 1 — Happy path (đặt → có phiếu để thanh toán)
+
+| # | Kịch bản | Kỳ vọng | Thực tế | Kết quả |
+|---|----------|---------|---------|---------|
+| 18.1 | Đặt A101 19/10 14:00 → 20/10 12:00, chọn **Ví MoMo**, xác nhận | Tạo đơn + mở phiếu thu đúng số tiền + đúng phương thức | Đơn `HS-261019-4130`; thành công có dòng "Phiếu thu đã được mở kèm đơn" | ✅ |
+| 18.2 | Vào mục **Thanh toán** | Phiếu hiện ngay, `Chờ thanh toán`, đúng MoMo | `550.000 ₫ · Chờ thanh toán · Ví MoMo · Ngày mở phiếu 18/10/2026 11:37 · Chưa thanh toán` | ✅ |
+
+### Kịch bản 2 — Edge case (nút đặt phòng khi chưa hợp lệ)
+
+| # | Kịch bản | Kỳ vọng | Thực tế | Kết quả |
+|---|----------|---------|---------|---------|
+| 18.3 | Vào chi tiết A102, **chưa chọn giờ** | Nút vẫn thấy, `disabled` + lý do (sửa hiểu nhầm "không đặt được") | Nút "Tiếp tục đặt phòng" hiện mờ + dòng "Vui lòng chọn giờ nhận và giờ trả phòng" | ✅ |
+
+### Kịch bản 3 — Bất thường (huỷ đơn → phiếu FAILED, không còn "còn nợ")
+
+| # | Kịch bản | Kỳ vọng | Thực tế | Kết quả |
+|---|----------|---------|---------|---------|
+| 18.4 | Huỷ `HS-261019-4130` từ trang chi tiết | Phiếu chuyển `Thanh toán thất bại`, không còn "Chờ thanh toán" | `Thanh toán thất bại · Phiếu thu đã đóng: Đơn đã hủy.` | ✅ |
+| 18.5 | Vào **Thanh toán của tôi** | Đơn huỷ không bị cộng vào "còn phải thanh toán" | "CÒN PHẢI THANH TOÁN" giảm 550.000 ₫ → còn **2.550.000 ₫**; ghi chú "Đơn đã hủy" | ✅ |
+| 18.6 | Đăng **admin**, vào `/admin/payments` | Thấy phiếu FAILED của đơn huỷ, **không** có nút thu tiền | Dòng 1: `HS-261019-4130 · 550.000 ₫ · Ví MoMo · Thanh toán thất bại · Đơn đã hủy · —` | ✅ |
+
+### Bug phát hiện & đã sửa khi kiểm thử tay
+
+| Bug | Triệu chứng | Nguyên nhân | Cách sửa |
+|-----|-------------|-------------|----------|
+| Sau khi huỷ, khối "Thanh toán" vẫn hiện **"Chờ thanh toán"** | UI sai, DB đã đúng (`CANCELLED`/`FAILED` — kiểm bằng SQL) | `xuLyHuy` chỉ invalidate `['bookings', …]`, **quên** invalidate cache react-query của phiếu thu | Thêm `invalidateQueries(['payments','booking',code])` + `['payments','my']` trong `MyBookingDetail.tsx` |
+| (bảo vệ hồi quy) | — | — | Test mới `HuyDon_TaiLaiPhieuThu_KhongConHienChuaThanhToan` — **xác nhận bắt được bug**: revert fix → FAIL, lắp lại → PASS |
+
+### Bằng chứng
+
+- Backend: `dotnet build` 0 error 0 warning · `dotnet test -c Release` **431/431 pass** (chạy Release vì backend Debug đang giữ khoá file)
+- Frontend: `tsc -b` 0 lỗi · `vitest run` **30/30 file · 307/307 test pass** · `vite build` sạch
+- Test nghiệp vụ backend liên quan (đã có, chạy xanh): `TaoDonAsync_...MoPhieuThu...`, `HuyDon_PhuieuThuDaThu_KhongDoiTrangThai`, `DanhDauDaThu_PhieuDaThatBai_TranLoi409`
+- SQL đối chiếu sau huỷ: `HS-261019-4130 | CANCELLED | FAILED | Đơn đã hủy`
+- Ảnh: `buoc27-phieu-thanh-toan-momo-…jpg` · `buoc27-nut-bi-khoa-khong-chon-gio-…jpg` · `buoc27-sau-huy-phi-that-bai-…jpg` · `buoc27-thanh-toan-cua-toi-sau-huy-…jpg` · `buoc27-admin-thanh-toan-…jpg`

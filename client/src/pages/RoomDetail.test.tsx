@@ -212,3 +212,22 @@ describe('RoomDetail - chi so sai', () => {
     expect(screen.getByRole('button', { name: 'Thử lại' })).toBeInTheDocument()
   })
 })
+
+describe('RoomDetail - nut dat phong luon hien (Buoc 27)', () => {
+  it('ChuaChonNgay_NutTiepTucVanHien_NhungBiKhoaVaBaoLyDo', async () => {
+    layDanhSachMock.mockResolvedValue(motDiaDiem)
+
+    dungTrangTai('/locations/0/rooms/0')
+
+    // Chờ theo heading vì tên phòng xuất hiện 2 chỗ (heading + breadcrumb).
+    await screen.findByRole('heading', { name: 'Phòng Hạnh Phúc' })
+
+    // Nút PHẢI luôn thấy: ẩn nút đi khiến khách tưởng trang lỗi, không đặt được
+    // phòng (phản hồi người dùng 18/10).
+    const nut = await screen.findByRole('button', { name: 'Tiếp tục đặt phòng' })
+    expect(nut).toBeDisabled()
+    expect(
+      screen.getByText('Chọn giờ nhận và giờ trả hợp lệ để tiếp tục đặt phòng'),
+    ).toBeInTheDocument()
+  })
+})

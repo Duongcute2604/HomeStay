@@ -35,8 +35,8 @@ export default function MyPayments(): JSX.Element {
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-stone-800">Thanh toán của tôi</h1>
         <p className="mt-1 text-sm text-stone-500">
-          Lịch sử các khoản đã thanh toán. Mỗi đơn hoàn thành sẽ có một phiếu thu, quản trị
-          viên xác nhận sau khi nhận đủ tiền.
+          Lịch sử các khoản thanh toán. Phiếu thu được mở ngay khi bạn đặt phòng;
+          quản trị viên xác nhận sau khi nhận đủ tiền.
         </p>
       </div>
 
@@ -60,7 +60,7 @@ export default function MyPayments(): JSX.Element {
         <div className="card mx-auto mt-8 max-w-md p-6 text-center">
           <p className="font-semibold text-stone-800">Chưa có khoản thanh toán nào</p>
           <p className="mt-1 text-sm text-stone-500">
-            Phiếu thu được mở khi đơn của bạn chuyển sang trạng thái hoàn thành.
+            Phiếu thu được mở ngay khi bạn đặt phòng. Đặt một đơn để bắt đầu.
           </p>
           <Link to="/bookings" className="mt-3 inline-block text-sm text-amber-600 hover:text-amber-800">
             Xem đơn của tôi →

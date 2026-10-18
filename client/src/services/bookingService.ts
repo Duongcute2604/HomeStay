@@ -9,6 +9,7 @@ import type {
   MyReview,
 } from '../types/booking'
 import type { PagedResult } from '../types/room'
+import { PaymentMethod } from '../types/payment'
 import { BookingType } from '../utils/pricing'
 
 /**
@@ -34,6 +35,8 @@ export const bookingService = {
       // Ghi chú toàn khoảng trắng thì bỏ — phải `trim()` trước vì `'  '`
       // là truthy, `|| undefined` không bắt được.
       note: payload.note?.trim() || undefined,
+      // Phương thức thanh toán chọn lúc đặt — backend mở phiếu thu cùng transaction.
+      method: payload.method ?? PaymentMethod.CASH,
     })
     return bocDuLieu(response.data)
   },

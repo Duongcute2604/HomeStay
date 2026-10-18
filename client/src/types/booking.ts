@@ -1,4 +1,5 @@
 import type { BookingType } from '../utils/pricing'
+import type { PaymentMethod } from './payment'
 
 /**
  * Kiểu dữ liệu phía giao diện cho phần đặt phòng.
@@ -16,6 +17,11 @@ export interface CreateBookingPayload {
   checkOut: string
   guestCount: number
   note?: string
+  /**
+   * Phương thức thanh toán khách chọn lúc đặt — backend mở phiếu thu ngay cùng
+   * transaction với đơn. Thiếu thì mặc định tiền mặt.
+   */
+  method?: PaymentMethod
 }
 
 /** Đơn vừa tạo xong. Không có `Id` — tra cứu bằng `code`. */

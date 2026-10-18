@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import MyBookingDetail from './MyBookingDetail'
 import { bookingService } from '../services/bookingService'
+import { paymentService } from '../services/paymentService'
 import { BookingStatus } from '../types/booking'
 import type { BookingDetail } from '../types/booking'
 
@@ -16,8 +17,13 @@ vi.mock('../services/bookingService', () => ({
   bookingService: { taoDon: vi.fn(), layCuaToi: vi.fn(), layChiTiet: vi.fn(), huyDon: vi.fn() },
 }))
 
+vi.mock('../services/paymentService', () => ({
+  paymentService: { layTheoDon: vi.fn() },
+}))
+
 const layChiTietMock = vi.mocked(bookingService.layChiTiet)
 const huyDonMock = vi.mocked(bookingService.huyDon)
+const layTheoDonMock = vi.mocked(paymentService.layTheoDon)
 
 const chiTietMau: BookingDetail = {
   code: 'HS-261005-4821',
@@ -71,6 +77,7 @@ function dungTrangTai(url: string) {
 beforeEach(() => {
   layChiTietMock.mockReset()
   huyDonMock.mockReset()
+  layTheoDonMock.mockReset()
 })
 
 describe('MyBookingDetail - hien thi', () => {
@@ -145,6 +152,65 @@ describe('MyBookingDetail - huy don', () => {
 
     expect(huyDonMock).toHaveBeenCalledWith('HS-261005-4821', 'Đổi kế hoạch công tác')
     expect(await screen.findByText('Đã hủy')).toBeInTheDocument()
+  })
+
+  it('HuyDon_TaiLaiPhieuThu_KhongConHienChuaThanhToan', async () => {
+    // Huỷ đơn làm backend chuyển phiếu thu sang FAILED. Nếu trang không
+    // invalidate cache phiếu thu thì khối "Thanh toán" vẫn hiện "Chờ thanh
+    // toán" (bug bắt được khi chạy tay 18/10).
+    let goiLayChiTiet = 0
+    layChiTietMock.mockImplementation(() => {
+      goiLayChiTiet++
+      if (goiLayChiTiet === 1) {
+        return Promise.resolve(chiTietMau)
+      }
+      return Promise.resolve({ ...chiTietMau, status: BookingStatus.CANCELLED })
+    })
+    huyDonMock.mockResolvedValue({ ...chiTietMau, status: BookingStatus.CANCELLED })
+
+    let goiLayPhieu = 0
+    layTheoDonMock.mockImplementation(() => {
+      goiLayPhieu++
+      if (goiLayPhieu === 1) {
+        return Promise.resolve({
+          id: 77,
+          bookingCode: 'HS-261005-4821',
+          roomName: 'Phòng Hạnh Phúc',
+          roomNumber: 'A101',
+          locationName: 'Hưng Yên Ven Biển',
+          amount: 1100000,
+          method: 0,
+          status: 0,
+          note: null,
+          paidAt: null,
+          createdAt: '2026-09-30T10:00:00',
+        })
+      }
+      return Promise.resolve({
+        id: 77,
+        bookingCode: 'HS-261005-4821',
+        roomName: 'Phòng Hạnh Phúc',
+        roomNumber: 'A101',
+        locationName: 'Hưng Yên Ven Biển',
+        amount: 1100000,
+        method: 0,
+        status: 2,
+        note: 'Đơn đã hủy',
+        paidAt: null,
+        createdAt: '2026-09-30T10:00:00',
+      })
+    })
+
+    dungTrangTai('/bookings/HS-261005-4821')
+
+    await screen.findByText('Chờ thanh toán')
+    fireEvent.click(screen.getByRole('button', { name: 'Hủy đơn' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Chắc chắn hủy đơn' }))
+
+    // Chờ hết invalidate + refetch để assert trên state đã ổn định.
+    await screen.findByText('Thanh toán thất bại')
+    expect(layTheoDonMock.mock.calls.length).toBeGreaterThanOrEqual(2)
+    expect(screen.queryByText('Chờ thanh toán')).not.toBeInTheDocument()
   })
 
   it('HuyThatBai_HienLoi_GiuFormDeThuLai', async () => {

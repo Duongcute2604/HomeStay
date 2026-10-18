@@ -60,6 +60,13 @@ public class BookingService : IBookingService
             throw new AppException(HttpStatusCode.BadRequest, "Số khách phải từ 1 trở lên");
         }
 
+        // Phương thức thanh toán phải là giá trị trong enum — client gửi số lạ
+        // thì phải chặn ngay, không để "số 7" lọt vào phiếu thu.
+        if (!Enum.IsDefined(typeof(PaymentMethod), request.Method))
+        {
+            throw new AppException(HttpStatusCode.BadRequest, ErrorMessages.DuLieuKhongHopLe);
+        }
+
         // Chống 2 tab cùng đặt một phòng một khung giờ: transaction SERIALIZABLE
         // biến các SELECT kiểm tra thành đọc khoá — tab thứ hai phải đợi tab thứ
         // nhất xong mới đọc, lúc đó đã thấy đơn vừa chèn nên báo trùng.
@@ -152,8 +159,22 @@ public class BookingService : IBookingService
                 ChangedAt = DateTime.Now,
             });
 
-            // Một SaveChanges cho cả đơn + lịch sử — một trong hai hỏng thì cả hai
-            // cùng lùi, không bao giờ có đơn không lịch sử.
+            // Mở phiếu thu NGAY LÚC ĐẶT, cùng transaction với đơn: mỗi đơn đúng 1 phiếu
+            // (unique index trên BookingId), số tiền chụp từ TotalAmount chứ không nhận
+            // từ client. Admin xác nhận đã thu ở trang Phiếu thu; đơn bị huỷ thì phiếu
+            // chưa thu được chuyển FAILED ở HuDonAsync.
+            _db.Payments.Add(new Payment
+            {
+                Booking = don,
+                Amount = don.TotalAmount,
+                Method = (PaymentMethod)request.Method,
+                Status = PaymentStatus.PENDING,
+                CreatedAt = DateTime.Now,
+                UpdatedAt = DateTime.Now,
+            });
+
+            // Một SaveChanges cho cả đơn + lịch sử + phiếu thu — một hỏng thì cả
+            // nhóm cùng lùi, không bao giờ có đơn không phiếu hay phiếu mồ côi.
             await _db.SaveChangesAsync(ct);
             await giaoDich.CommitAsync(ct);
 
@@ -424,6 +445,20 @@ public class BookingService : IBookingService
                 ChangedByUserId = userId,
                 ChangedAt = DateTime.Now,
             });
+
+            // Phiếu thu của đơn huỷ: phiếu CHƯA thu tiền chuyển FAILED để trang
+            // "Thanh toán của tôi" không hiện "còn phải thanh toán" cho một đơn
+            // đã huỷ. Phiếu PAID giữ nguyên — tiền đã thu thì việc hoàn tiền là
+            // thao tác riêng của Admin, không được xoá dấu vết ở đây.
+            Payment? phieu = await _db.Payments
+                .FirstOrDefaultAsync(p => p.BookingId == don.Id, ct);
+
+            if (phieu is not null && phieu.Status == PaymentStatus.PENDING)
+            {
+                phieu.Status = PaymentStatus.FAILED;
+                phieu.Note = "Đơn đã hủy";
+                phieu.UpdatedAt = DateTime.Now;
+            }
 
             await _db.SaveChangesAsync(ct);
             await giaoDich.CommitAsync(ct);

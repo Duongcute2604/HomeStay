@@ -14,6 +14,11 @@ import { locationService } from '../services/locationService'
 import { roomService } from '../services/roomService'
 import type { BookingResult } from '../types/booking'
 import { NHAN_LOAI_PHONG } from '../types/location'
+import {
+  MO_TA_PHUONG_THUC,
+  NHAN_PHUONG_THUC,
+  PaymentMethod,
+} from '../types/payment'
 import { formatNgay, formatVnd, toLocalIsoString } from '../utils/format'
 import {
   BookingType,
@@ -38,6 +43,8 @@ export default function Booking(): JSX.Element {
   const { chiSoDiaDiem, chiSoPhong } = useParams<{ chiSoDiaDiem: string; chiSoPhong: string }>()
   const [thamSo] = useSearchParams()
   const [donDaTao, setDonDaTao] = useState<BookingResult | null>(null)
+  // Phương thức thanh toán chọn ngay lúc đặt — backend mở phiếu thu cùng transaction.
+  const [phuongThuc, setPhuongThuc] = useState<PaymentMethod>(PaymentMethod.CASH)
 
   const loai = thamSo.get('loai') === BookingType.HOUR ? BookingType.HOUR : BookingType.DAY
   const checkIn = useMemo(() => {
@@ -147,9 +154,15 @@ export default function Booking(): JSX.Element {
         <p className="mt-2 text-sm text-amber-600">
           Đơn đang chờ quản trị viên xác nhận. Hãy giữ lại mã đơn để tra cứu.
         </p>
+        <p className="mt-1 text-sm text-amber-600">
+          Phiếu thu đã được mở kèm đơn — theo dõi tại mục "Thanh toán".
+        </p>
         <div className="mt-4 flex flex-wrap justify-center gap-3">
           <Link to={`/bookings/${donDaTao.code}`} className="btn-primary">
             Xem đơn của tôi
+          </Link>
+          <Link to="/payments" className="btn-outline">
+            Xem thanh toán
           </Link>
           <Link to="/" className="btn-outline">
             Về trang chủ
@@ -183,6 +196,7 @@ export default function Booking(): JSX.Element {
         checkOut: toLocalIsoString(checkOut),
         guestCount: duLieu.guestCount,
         note: duLieu.note || undefined,
+        method: phuongThuc,
       })
       setDonDaTao(don)
       window.scrollTo({ top: 0 })
@@ -255,6 +269,39 @@ export default function Booking(): JSX.Element {
           />
           {errors.note && <p className="mt-1 text-sm text-red-600">{errors.note.message}</p>}
         </div>
+
+        <fieldset>
+          <legend className="mb-1 block text-sm font-medium text-gray-700">
+            Phương thức thanh toán
+          </legend>
+          <div className="space-y-2">
+            {(Object.values(PaymentMethod) as PaymentMethod[]).map((m) => (
+              <label
+                key={m}
+                className={`flex cursor-pointer items-start gap-3 rounded-lg border px-3 py-2 transition-colors ${
+                  phuongThuc === m
+                    ? 'border-amber-500 bg-amber-50'
+                    : 'border-gray-300 hover:border-amber-300'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="phuong-thuc"
+                  value={m}
+                  checked={phuongThuc === m}
+                  onChange={() => setPhuongThuc(m)}
+                  className="mt-0.5"
+                />
+                <span className="text-left">
+                  <span className="block text-sm font-medium text-gray-900">
+                    {NHAN_PHUONG_THUC[m]}
+                  </span>
+                  <span className="block text-xs text-gray-500">{MO_TA_PHUONG_THUC[m]}</span>
+                </span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
 
         <Button type="submit" dangTai={isSubmitting} disabled={!duocDat} className="w-full">
           Xác nhận đặt phòng

@@ -38,17 +38,17 @@ export default function MyBookingDetail(): JSX.Element {
     retry: false,
   })
 
-  // Phiếu thu chỉ tồn tại khi đơn đã hoàn thành.
+  // Phiếu thu được mở NGAY LÚC ĐẶT phòng (Bước 27) — đơn cũ trước cập nhật này
+  // có thể chưa có phiếu, nên API trả `null` là bình thường chứ không phải lỗi.
   //
   // Hook này đặt **trước** hai `return` sớm bên dưới, cùng với `useQuery` ở trên.
   // React bắt buộc gọi hook theo đúng thứ tự mọi lần render; đặt sau `return` thì lần
   // render đầu (đang tải) gọi ít hook hơn lần sau → lỗi "Rendered more hooks than during
   // the previous render". Đã xảy ra thật và bị test bắt.
-  const donDaHoanThanh = don?.status === BookingStatus.COMPLETED
   const { data: phieuThu } = useQuery({
     queryKey: ['payments', 'booking', code],
     queryFn: () => paymentService.layTheoDon(code),
-    enabled: donDaHoanThanh,
+    enabled: don !== undefined,
   })
 
   if (isPending) {
@@ -77,9 +77,12 @@ export default function MyBookingDetail(): JSX.Element {
 
   // `duocChonPhuongThuc` bật khi phiếu đang CHỜ thu **hoặc** đã thất bại — trường hợp
   // thất bại thì khách cần chọn lại được. Đã thu tiền rồi thì không đổi được, và backend
-  // cũng chặn lại bằng `409`.
+  // cũng chặn lại bằng `409`. Không phụ thuộc trạng thái đơn: phiếu đã mở ngay lúc đặt.
+  // Đơn đã huỷ/từ chối thì phiếu đã đóng — không còn gì để chọn (FAILED ở đây là
+  // hậu quả của việc huỷ, không phải giao dịch lỗi).
   const duocChonPhuongThuc =
-    duocDanhGia &&
+    don.status !== BookingStatus.CANCELLED &&
+    don.status !== BookingStatus.REJECTED &&
     phieuThu !== undefined &&
     phieuThu !== null &&
     (phieuThu.status === PaymentStatus.PENDING || phieuThu.status === PaymentStatus.FAILED)
@@ -123,6 +126,11 @@ export default function MyBookingDetail(): JSX.Element {
       setLoiHuy(null)
       await queryClient.invalidateQueries({ queryKey: ['bookings', 'detail', code] })
       await queryClient.invalidateQueries({ queryKey: ['bookings', 'my'] })
+      // Huỷ đơn làm backend chuyển phiếu chưa thu sang FAILED — phải tải lại
+      // phiếu của đơn này và danh sách "Thanh toán của tôi", nếu không khối
+      // Thanh toán trên trang vẫn hiện cache cũ "Chờ thanh toán".
+      await queryClient.invalidateQueries({ queryKey: ['payments', 'booking', code] })
+      await queryClient.invalidateQueries({ queryKey: ['payments', 'my'] })
     } catch (error) {
       setLoiHuy(layThongBaoLoi(error))
     }
@@ -188,7 +196,7 @@ export default function MyBookingDetail(): JSX.Element {
         <p className="mt-1 text-left text-sm text-red-600">Lý do hủy: {don.cancelReason}</p>
       )}
 
-      {duocDanhGia && phieuThu !== undefined && phieuThu !== null && (
+      {phieuThu !== undefined && phieuThu !== null && (
         <section className="card mt-4 p-4">
           <div className="flex items-start justify-between gap-2">
             <h2 className="font-semibold text-gray-900">Thanh toán</h2>
@@ -212,7 +220,13 @@ export default function MyBookingDetail(): JSX.Element {
                   <button
                     key={m}
                     type="button"
-                    className="w-full rounded-lg border border-stone-300 px-3 py-2 text-left text-sm transition-colors hover:border-amber-500 hover:bg-amber-50 disabled:opacity-50"
+                    // Đánh dấu cách đã chọn để khách thấy phiếu đang ghi nhận gì.
+                    aria-pressed={phieuThu.method === m && phieuThu.status === PaymentStatus.PENDING}
+                    className={`w-full rounded-lg border px-3 py-2 text-left text-sm transition-colors disabled:opacity-50 ${
+                      phieuThu.method === m && phieuThu.status === PaymentStatus.PENDING
+                        ? 'border-amber-500 bg-amber-50'
+                        : 'border-stone-300 hover:border-amber-500 hover:bg-amber-50'
+                    }`}
                     disabled={dangChonPhuongThuc}
                     onClick={() => void xuLyChonPhuongThuc(m)}
                   >
@@ -235,9 +249,11 @@ export default function MyBookingDetail(): JSX.Element {
 
           {phieuThu.status === PaymentStatus.FAILED && (
             <p className="mt-2 text-left text-sm text-red-600">
-              Giao dịch trước không thành công
-              {phieuThu.note !== null ? ': ' + phieuThu.note : '.'} Vui lòng chọn lại phương
-              thức bên dưới.
+              {duocChonPhuongThuc
+                ? `Giao dịch trước không thành công${
+                    phieuThu.note !== null ? ': ' + phieuThu.note : '.'
+                  } Vui lòng chọn lại phương thức bên dưới.`
+                : `Phiếu thu đã đóng: ${phieuThu.note ?? 'đơn không thành công'}.`}
             </p>
           )}
 

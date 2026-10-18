@@ -1020,6 +1020,31 @@ Lưu ý mẫu vẫn ghi **"Kiến trúc hệ thống StayEasy"** — tên cũ, p
 - **Không làm (YAGNI):** hiện "đơn sắp tới" trong popup (cần API mới — chưa yêu cầu) · upload ảnh · kéo thả phòng · đổi backend DTO (đã đủ `Images` + `AmenityNames` + `LocationName`)
 - **Lưu ý vận hành:** `SeedAsync` chỉ chạy khi `Users` rỗng → phải **DROP DATABASE** rồi khởi động lại backend để seed tiện nghi mới vào CSDL dev
 
+### [x] BƯỚC 27 — Thanh toán khi đặt phòng (18/10) · **XONG 18/10/2026**
+
+> Bối cảnh: khách phản hồi "có mục Thanh toán nhưng **đặt phòng không ra nút** để
+> thanh toán". Hai việc: (a) mở phiếu thu **ngay khi đặt phòng** chọn phương thức,
+> (b) sửa hiểu nhầm: nút "Tiếp tục đặt phòng" ẩn hẳn khi khoảng giờ sai → đổi thành
+> **nút luôn hiện, sai thì disabled kèm lý do**.
+
+- **Mục tiêu đo được:**
+  1. Trang xác nhận đặt phòng có ô chọn phương thức (**Tiền mặt · Ví MoMo · Chuyển khoản**); tạo đơn xong backend mở **phiếu thu PENDING** đúng số tiền + đúng phương thức trong CÙNG transaction với đơn — kiểm bằng ≥ 2 unit test (`TaoDon_...`, `TaoDon_PhuongThucKhongHopLe_...`)
+  2. **Huỷ đơn** → phiếu PENDING chuyển **FAILED** (ghi chú "Đơn đã hủy"), phiếu PAID giữ nguyên không đụng — ≥ 1 unit test
+  3. Trang **"Thanh toán của tôi"** hiện phiếu ngay sau khi đặt (sửa chữ hướng dẫn cũ "mở khi đơn hoàn thành"); trang **chi tiết đơn** hiện phiếu thu (phương thức + trạng thái)
+  4. Nút **"Tiếp tục đặt phòng"** luôn hiển thị: chưa chọn ngày/hết phòng → `disabled` + dòng lý do ngay trên nút — khách không còn hiểu nhầm "không đặt được"
+  5. Test FE: Booking page gửi `method` trong payload · nút RoomDetail disabled khi khoảng giờ sai
+- **Không làm (giữ ranh giới):** không gọi API cổng thanh toán thật (VNPay/MoMo API) — đúng như `PaymentMethod` enum đã ghi; không đổi máy trạng thái đơn (PENDING → CONFIRMED vẫn do Admin)
+- **Bằng chứng:** `dotnet test` xanh (thêm test) · `vitest` xanh (thêm test) · chạy tay 3 kịch bản ghi `KIEM_THU_TAY` mục 18 · build 0 lỗi · commit riêng 1 chức năng + push GitHub
+
+**Kết quả (18/10/2026):**
+| Hạng mục | Bằng chứng |
+|---|---|
+| Backend | `dotnet build` 0 error 0 warning · `dotnet test -c Release` **431/431** (chạy Release vì backend Debug đang giữ khoá file build) |
+| Frontend | `tsc -b` 0 lỗi · `vitest run` **307/307** (30/30 file) · `vite build` sạch |
+| Test tay (muc 18 KIEM_THU_TAY) | **6/6 ✓** — 3 kich ban tren trinh duyet + SQL doi chieu |
+| Bug phat hien & sua | `xuLyHuy` quen invalidate cache react-query cua phieu thu → them 2 `invalidateQueries`; test `HuyDon_TaiLaiPhieuThu_KhongConHienChuaThanhToan` **xac nhan bat duoc bug** (revert fix → FAIL, lap lai → PASS) |
+| Anh chup | `buoc27-phieu-thanh-toan-momo` · `buoc27-nut-bi-khoa-khong-chon-gio` · `buoc27-sau-huy-phi-that-bai` · `buoc27-thanh-toan-cua-toi-sau-huy` · `buoc27-admin-thanh-toan` |
+
 ## Danh sách cắt được (nếu trượt tiến độ)
 
 | Thứ tự | Cắt gì | Bước liên quan |

@@ -2679,3 +2679,29 @@ Khi đó kết quả khớp 100% bảng thiết kế (phòng nhỏ có `9`, phò
 > 2. Trước khi tin kết quả "tất cả đều 0/sai", nhìn lại output **bản ghi tham chiếu**
 >    trong cùng lệnh — nếu nó cũng lỗi mã hóa thì nguyên nhân nằm ở đường truyền,
 >    không phải dữ liệu.
+
+## 108. "Đổi trạng thái xong UI vẫn hiện giá trị cũ" — cache react-query, không phải backend sai
+
+**Ngày:** 18/10/2026 · **Vị trí:** `client/src/pages/MyBookingDetail.tsx` → `xuLyHuy`
+
+**Sai ở đâu:** huỷ đơn trên trang chi tiết thì đơn chuyển "Đã hủy" đúng, nhưng khối
+"Thanh toán" **vẫn hiện "Chờ thanh toán"**. Mình suýt kết luận backend không chạy rule
+"huỷ đơn → phiếu FAILED".
+
+**Vì sao không phải backend:** kiểm ngay bằng SQL thì DB đúng hoàn toàn
+(`CANCELLED` / `FAILED`). Nguyên nhân nằm ở FE: `xuLyHuy` chỉ
+`invalidateQueries(['bookings', …])` — **quên** invalidating cache của phiếu thu
+(`['payments','booking',code]`), nên react-query trả giá trị cũ đã cache.
+
+**Cách sửa:** sau khi huỷ, invalidate **tất cả query bị ảnh hưởng bởi thao tác đó**,
+không chỉ query của bảng chính. Thêm 2 dòng
+`invalidateQueries(['payments','booking',code])` + `['payments','my']`.
+
+> **Quy tắc tránh lặp:**
+> 1. **Khi một mutation làm thay đổi dữ liệu ở 2 query khác nhau, PHẢI invalidate cả 2.**
+>    Danh sách query bị ảnh hưởng = "những màn hình nào sẽ hiển thị giá trị này".
+> 2. Khi nghi ngờ "backend không chạy rule", **kiểm DB bằng SQL TRƯỚC** rồi mới sửa code —
+>    đúng như AGENTS.md mục 0.6 "Khi có bug → ĐỌC LOG/TRẠNG THÁI TRƯỚC".
+> 3. Viết **test tái hiện bug** bằng cách cho mock trả dữ liệu cũ → sau khi thao tác →
+>    trả dữ liệu mới, rồi assert UI đã đổi. Test này **phải FAIL khi bỏ fix** — cách duy
+>    nhất chứng minh test có sức bắt lỗi, không phải test "tự nhiên xanh".
